@@ -18,7 +18,8 @@ The challenge began when the mixture of HTML and ruby occurred. One of my bigges
 href=”/users/<%=current_user.id%>”>My Account 
 href=”/users/”#{current_user.id}”>My Account
 
-` Do you see what the problem was? Good old, ERB tags.
+` 
+Do you see what the problem was? Good old, ERB tags.
 
 Once I figured that out and issues with my controllers, I was pretty content with the project. It’s definitely not the prettiest but it works and looking back a few months from now when I barely knew anything about code - it’s not bad.
 
