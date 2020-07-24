@@ -13,8 +13,8 @@ For my Sinatra project Content Management System (CSM), I decided to build a wor
 The challenge began when the mixture of HTML and ruby occurred. One of my biggest challenges was a button that I wanted to add which would direct the user to “/user/show”, the home page but I could not figure out what was broken.
 
 `
->  href="/users/<%=current_user.id%>"><button>My Account</button></a><br>  
->  href="/users/"#{current_user.id}"><button>My Account</button></a><br> 
+>  href="/users/<%=current_user.id%>"><button>My Account</button> 
+>  href="/users/"#{current_user.id}"><button>My Account</button>
 
 `
 Do you see what the problem was? Good old, ERB tags. 
