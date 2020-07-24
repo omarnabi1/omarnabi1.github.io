@@ -13,12 +13,9 @@ For my Sinatra project Content Management System (CSM), I decided to build a wor
 
 The challenge began when the mixture of HTML and ruby occurred. One of my biggest challenges was a button that I wanted to add which would direct the user to “/user/show”, the home page but I could not figure out what was broken.
 
-`
+`href=”/users/<%=current_user.id%>”>My Account 
+href=”/users/”#{current_user.id}”>My Account ` 
 
-href=”/users/<%=current_user.id%>”>My Account 
-href=”/users/”#{current_user.id}”>My Account
-
-` 
 Do you see what the problem was? Good old, ERB tags.
 
 Once I figured that out and issues with my controllers, I was pretty content with the project. It’s definitely not the prettiest but it works and looking back a few months from now when I barely knew anything about code - it’s not bad.
