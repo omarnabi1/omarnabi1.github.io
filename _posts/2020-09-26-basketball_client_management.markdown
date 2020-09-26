@@ -1,7 +1,7 @@
 ---
 layout: post
 title:      "Basketball Client Management "
-date:       2020-09-26 17:37:06 +0000
+date:       2020-09-26 13:37:07 -0400
 permalink:  basketball_client_management
 ---
 
@@ -46,6 +46,8 @@ In my case I decided on 4 models:
 2. `client.rb`
 3. `appointment.rb`
 4. `location.rb`
+
+
 
 
 
