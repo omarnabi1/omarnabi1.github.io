@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy · Omar Nabi</title>
+<meta name="description" content="What omarnabi.com collects, who sees it, and how to opt out.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..800&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root{--bg:#EEF0F3;--tile:#fff;--ink:#0E1116;--muted:#5C6370;--acc:#F2541B;--line:#DADDE3}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0D11;--tile:#14171D;--ink:#ECEEF2;--muted:#9AA1AD;--acc:#FF6B33;--line:#262A33}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Hanken Grotesk",system-ui,sans-serif}
+main{max-width:680px;margin:0 auto;padding:56px 16px 80px}
+h1{font:400 clamp(2.4rem,7vw,3.4rem)/1.05 "Instrument Serif",Georgia,serif;margin:0 0 8px}
+h2{font-size:1.05rem;margin:32px 0 6px}
+p,li{color:var(--muted)} b{color:var(--ink)}
+a{color:var(--acc)}
+.card{background:var(--tile);border:1px solid var(--line);border-radius:18px;padding:6px 22px 18px;margin-top:24px}
+button{font:inherit;font-size:.9rem;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--tile);color:var(--ink);cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+<p><a href="/">← omarnabi.com</a></p>
+<h1>Privacy, plainly</h1>
+<p>This is a personal site. It has a live layer so visitors can see each other, and simple analytics so I can see what people enjoy. No ads, no selling data, no third-party trackers beyond what's listed here.</p>
+<div class="card">
+<h2>What other visitors can see</h2>
+<p>While you have the site open, other visitors see a random nickname (like "Calm Otter"), your cursor, which tile you're on, any reactions or messages you send, and your approximate city. Close the tab and you disappear.</p>
+<h2>What I can see</h2>
+<p>I see the same live view, plus your approximate city and country, the network you're on (for company networks, that can be the company name), device type, and the site that sent you, if any. I keep a short log of finished visits with those details and what you did on the page (for example, "won a series 4-2"). Visit logs are capped at the most recent 2,000.</p>
+<h2>What I don't collect</h2>
+<p>No names unless you type one into a game, no email addresses, no precise location. Your IP address is never stored; it's turned into a one-way hash used only for rate limits and blocking abuse.</p>
+<h2>Analytics</h2>
+<p>I use PostHog for page views and clicks, sent through this site's own domain. It's turned off if your browser sends Do Not Track or Global Privacy Control.</p>
+<h2>Leaderboard</h2>
+<p>If you add a name to the forecasting game, your name and score appear on the public leaderboard. Want it removed? Email me.</p>
+<h2>Opt out on this device</h2>
+<p><button type="button" id="optout">Turn off analytics here</button> <span id="optmsg"></span></p>
+</div>
+<p style="margin-top:28px;font-size:.9rem">Questions: use the email on the <a href="/#t-contact">home page</a>.</p>
+</main>
+<script>
+document.getElementById("optout").addEventListener("click", function () {
+  try { localStorage.setItem("ph-optout", "1"); if (window.posthog && posthog.opt_out_capturing) posthog.opt_out_capturing(); } catch (e) {}
+  document.getElementById("optmsg").textContent = "Done. Analytics is off in this browser.";
+});
+</script>
+</body>
+</html>

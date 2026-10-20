@@ -1,0 +1,16 @@
+.git
+.github
+.gitignore
+.assetsignore
+.nojekyll
+.wrangler
+.dev.vars
+.dev.vars.example
+node_modules
+src
+test
+scripts
+package.json
+package-lock.json
+wrangler.jsonc
+README.md

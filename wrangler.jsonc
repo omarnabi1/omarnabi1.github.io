@@ -1,0 +1,41 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "omarnabi",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-06-01",
+
+  // The site itself. Requests for these paths run the Worker first; everything else is a static file.
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/live", "/api/*", "/ingest/*", "/ingest"]
+  },
+
+  // One Durable Object holds the live room, the leaderboard, and visit history (SQLite).
+  "durable_objects": {
+    "bindings": [{ "name": "LOBBY", "class_name": "Lobby" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Lobby"] }],
+
+  "vars": {
+    "SITE_URL": "https://omarnabi.com",
+    "POSTHOG_REGION": "us",
+    // "1" shows each visitor's city next to their cursor for everyone. "0" shows it only to you.
+    "SHARE_CITY": "1",
+    // "1" sends a phone alert every time someone opens the site. Key moments alert either way.
+    "NOTIFY_JOINS": "0"
+  },
+  // Secrets (set with `npx wrangler secret put NAME`, never committed):
+  //   OWNER_KEY   your private key; open https://omarnabi.com/#owner=KEY once per device
+  //   NTFY_TOPIC  a long random ntfy.sh topic name for phone alerts
+
+  // Uncomment once omarnabi.com is on your Cloudflare account (see README, step 5).
+  // "routes": [
+  //   { "pattern": "omarnabi.com", "custom_domain": true },
+  //   { "pattern": "www.omarnabi.com", "custom_domain": true }
+  // ],
+
+  "observability": { "enabled": true }
+}
