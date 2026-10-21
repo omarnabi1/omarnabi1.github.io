@@ -383,15 +383,36 @@ main.wrap, .top, footer { position: relative; z-index: 1; }
 .t::before { content: ""; position: absolute; inset: 0; border-radius: inherit; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .3s;
   background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--acc) 9%, transparent), transparent 45%); }
 .t:hover::before { opacity: 1; }
-.t.pre { transform: translateY(26px) scale(.985); }
+.t.pre { transform: translate(var(--px, 0px), 26px) scale(.985); }
+/* Convergence: on load, the first tiles start pushed out and get reeled into place */
+body { overflow-x: clip; }
+.t.scat { translate: var(--sx, 0px) var(--sy, 0px); rotate: var(--sr, 0deg); }
+.t.gather { transition: translate 1s cubic-bezier(.2,.9,.25,1.12), rotate 1s cubic-bezier(.2,.9,.25,1.12), opacity .35s, filter .35s, transform .35s, border-color .25s, box-shadow .35s; }
+.t.tug { animation: tug .7s cubic-bezier(.3,1.6,.5,1); }
+@keyframes tug { 35% { translate: var(--tx, 0px) var(--ty, 0px); } 100% { translate: 0 0; } }
 .t.rise { transition: transform .8s cubic-bezier(.2,.8,.2,1), opacity .35s, filter .35s, border-color .25s, box-shadow .35s; }
 .intro h1 { min-height: 1.96em; }
 .dec { display: inline-block; }
 .dec .g { color: var(--muted); font-family: var(--mono); font-style: normal; font-size: .62em; vertical-align: .12em; }
 #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; overflow: visible; }
 #links path { fill: none; stroke: var(--acc); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .85; animation: drawL .9s cubic-bezier(.5,0,.2,1) forwards; }
-#links circle { fill: var(--acc); transform-box: fill-box; transform-origin: center; animation: popC .4s cubic-bezier(.2,1.6,.4,1) both; }
-#links .src { fill: var(--tile); stroke: var(--acc); stroke-width: 3; }
+#links .glow { stroke-width: 8; opacity: .13; }
+#links .src { fill: var(--tile); stroke: var(--acc); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: popC .4s cubic-bezier(.2,1.6,.4,1) both; }
+#links .cl { animation: clawIn .5s cubic-bezier(.2,1.4,.4,1) both; }
+#links .kn { fill: var(--acc); }
+#links .cp { fill: none; stroke: var(--acc); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+#links .c1 { animation: gripT .7s cubic-bezier(.3,1.5,.5,1) both; animation-delay: inherit; }
+#links .c2 { animation: gripB .7s cubic-bezier(.3,1.5,.5,1) both; animation-delay: inherit; }
+#links .pulse { fill: var(--acc); opacity: 0; filter: drop-shadow(0 0 4px var(--acc)); }
+#links .feel .ln { opacity: .4; stroke-width: 1.5; animation-duration: .45s; }
+#links .feel .glow, #links .feel .clw, #links .feel .pulse, #links .feel .src { display: none; }
+#links .ret .ln, #links .ret .glow { animation: retL .45s cubic-bezier(.6,0,.8,.2) forwards !important; animation-delay: 0s !important; }
+#links .ret .clw, #links .ret .pulse, #links .ret .src { opacity: 0; transition: opacity .2s; }
+@keyframes clawIn { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
+@keyframes gripT { 0%, 55% { transform: rotate(-58deg); } 100% { transform: rotate(0deg); } }
+@keyframes gripB { 0%, 55% { transform: rotate(58deg); } 100% { transform: rotate(0deg); } }
+@keyframes retL { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 1; } }
+.lens-btns button.demo { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
 @keyframes drawL { to { stroke-dashoffset: 0; } }
 @keyframes popC { from { transform: scale(0); } }
 /* terminal */
@@ -992,25 +1013,133 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
     $("lensBtns").querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-k") === curLens ? "true" : "false"); });
     grid.classList.toggle("lens", !!curLens);
     grid.querySelectorAll(".t").forEach(function (t) { var sk = (t.getAttribute("data-sk") || "").split(" "); t.classList.toggle("lit", !!curLens && sk.indexOf(curLens) > -1); });
-    $("lensOut").textContent = curLens ? LENS[curLens] + " Tap again to clear." : "Each skill lights up the tiles on this page that prove it.";
+    $("lensOut").textContent = curLens ? LENS[curLens] + " Tap again to clear." : LENS_OUT;
     drawLinks(true);
   }
-  function drawLinks(anim) {
-    var svg = $("links");
-    if (!curLens) { svg.innerHTML = ""; return; }
-    var g = grid.getBoundingClientRect(), btn = $("lensBtns").querySelector('[aria-pressed="true"]'); if (!btn) return;
-    var b = btn.getBoundingClientRect(), sx = b.left + b.width / 2 - g.left, sy = b.top + b.height / 2 - g.top, h = "", i = 0;
-    svg.setAttribute("viewBox", "0 0 " + g.width.toFixed(0) + " " + g.height.toFixed(0));
-    grid.querySelectorAll(".t.lit").forEach(function (t) {
-      var r = t.getBoundingClientRect(), tx = r.left + r.width / 2 - g.left, above = r.top + r.height / 2 < b.top + b.height / 2, ty = (above ? r.bottom - 4 : r.top + 4) - g.top;
-      var my = (sy + ty) / 2, d = "M" + sx.toFixed(1) + " " + sy.toFixed(1) + " C" + sx.toFixed(1) + " " + my.toFixed(1) + " " + tx.toFixed(1) + " " + my.toFixed(1) + " " + tx.toFixed(1) + " " + ty.toFixed(1);
-      var delay = anim && !RM ? (i * .09).toFixed(2) : "0", st = anim && !RM ? "" : "animation:none;stroke-dashoffset:0";
-      h += '<path pathLength="1" d="' + d + '" style="animation-delay:' + delay + 's;' + st + '"/><circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) + '" r="5" style="animation-delay:' + (anim && !RM ? (i * .09 + .7).toFixed(2) : 0) + 's"/>';
-      i++;
-    });
-    h += '<circle class="src" cx="' + sx.toFixed(1) + '" cy="' + sy.toFixed(1) + '" r="7"/>';
-    svg.innerHTML = h;
+  /* Claws: arms that reach from a source to the tiles it points at, grip them, and pulse */
+  var SVGNS = "http://www.w3.org/2000/svg", linksSvg = $("links"), mainSet = null, feelSet = null, demoSet = null, LENS_OUT = "Each skill lights up the tiles on this page that prove it.";
+  function f1(n) { return n.toFixed(1); }
+  function sizeLinks() { var g = grid.getBoundingClientRect(); linksSvg.setAttribute("viewBox", "0 0 " + g.width.toFixed(0) + " " + g.height.toFixed(0)); return g; }
+  function curve(sx, sy, r, g) {
+    var cx = r.left + r.width / 2 - g.left, cy = r.top + r.height / 2 - g.top, tx, ty, a, d;
+    if (Math.abs(cy - sy) < r.height / 2 && Math.abs(cx - sx) > 40) {
+      var right = cx > sx; tx = (right ? r.left + 4 : r.right - 4) - g.left; ty = cy; a = right ? 0 : 180;
+      var mx = (sx + tx) / 2; d = "M" + f1(sx) + " " + f1(sy) + " C" + f1(mx) + " " + f1(sy) + " " + f1(mx) + " " + f1(ty) + " " + f1(tx) + " " + f1(ty);
+    } else {
+      var above = cy < sy; tx = cx; ty = (above ? r.bottom - 4 : r.top + 4) - g.top; a = above ? -90 : 90;
+      var my = (sy + ty) / 2; d = "M" + f1(sx) + " " + f1(sy) + " C" + f1(sx) + " " + f1(my) + " " + f1(tx) + " " + f1(my) + " " + f1(tx) + " " + f1(ty);
+    }
+    return { d: d, tx: tx, ty: ty, a: a };
   }
+  function clawT(c) { return "translate(" + f1(c.tx) + " " + f1(c.ty) + ") rotate(" + c.a + ") translate(-13 0)"; }
+  function srcPoint(el, g) { var b = el.getBoundingClientRect(); return { x: b.left + b.width / 2 - g.left, y: b.top + b.height / 2 - g.top }; }
+  function buildClaws(srcEl, tiles, anim) {
+    var g = sizeLinks(), s0 = srcPoint(srcEl, g), h = "", list = [], go = anim && !RM;
+    tiles.forEach(function (t, i) {
+      var c = curve(s0.x, s0.y, t.getBoundingClientRect(), g), dl = go ? i * .09 : 0;
+      var st = go ? 'style="animation-delay:' + dl.toFixed(2) + 's"' : 'style="animation:none;stroke-dashoffset:0"';
+      list.push({ t: t, dl: dl });
+      h += '<g class="arm" data-dl="' + dl.toFixed(2) + '"><path class="glow" pathLength="1" d="' + c.d + '" ' + st + '/><path class="ln" pathLength="1" d="' + c.d + '" ' + st + '/>' +
+        '<g class="clw" transform="' + clawT(c) + '"><g class="cl" style="animation-delay:' + (go ? (dl + .62).toFixed(2) : "0") + 's' + (go ? "" : ";animation:none") + '"><circle class="kn" r="3.4"/><path class="cp c0" d="M0 0 L13 0"/><path class="cp c1" d="M0 0 C5 -1 8 -7 13 -6"/><path class="cp c2" d="M0 0 C5 1 8 7 13 6"/></g></g>' +
+        '<circle class="pulse" r="3" cx="-99" cy="-99"/></g>';
+    });
+    h += '<circle class="src" cx="' + f1(s0.x) + '" cy="' + f1(s0.y) + '" r="7"/>';
+    return { h: h, list: list, src: srcEl };
+  }
+  function newSet(html, cls) { var el = document.createElementNS(SVGNS, "g"); if (cls) el.setAttribute("class", cls); el.innerHTML = html; linksSvg.appendChild(el); return el; }
+  function retract(set) { if (!set) return; if (RM) { set.remove(); return; } set.classList.add("ret"); setTimeout(function () { set.remove(); }, 480); }
+  function tugLater(r) {
+    if (RM) return;
+    r.list.forEach(function (it) {
+      setTimeout(function () {
+        var g = grid.getBoundingClientRect(), s0 = srcPoint(r.src, g), b = it.t.getBoundingClientRect();
+        var dx = s0.x - (b.left + b.width / 2 - g.left), dy = s0.y - (b.top + b.height / 2 - g.top), L = Math.sqrt(dx * dx + dy * dy) || 1;
+        it.t.style.setProperty("--tx", f1(dx / L * 8) + "px"); it.t.style.setProperty("--ty", f1(dy / L * 8) + "px");
+        it.t.classList.remove("tug"); void it.t.offsetWidth; it.t.classList.add("tug");
+      }, (it.dl + .9) * 1000);
+    });
+  }
+  var pulseRaf = 0;
+  function startPulses() { if (!RM && !pulseRaf) pulseRaf = requestAnimationFrame(pulse); }
+  function pulse(now) {
+    pulseRaf = 0;
+    var arms = linksSvg.querySelectorAll("g:not(.ret):not(.feel):not(.reel) > .arm"); if (!arms.length) return;
+    arms.forEach(function (a) {
+      var ln = a.querySelector(".ln"), p = a.querySelector(".pulse");
+      if (!a._t0) { a._L = ln.getTotalLength(); a._t0 = now + (parseFloat(a.getAttribute("data-dl")) || 0) * 1000 + 950; }
+      var e = now - a._t0; if (e < 0) return;
+      var u = (e / 1500) % 1, pt = ln.getPointAtLength(u * a._L);
+      p.setAttribute("cx", f1(pt.x)); p.setAttribute("cy", f1(pt.y)); p.style.opacity = Math.sin(u * Math.PI).toFixed(2);
+    });
+    pulseRaf = requestAnimationFrame(pulse);
+  }
+  function tilesFor(k) { return Array.prototype.slice.call(grid.querySelectorAll(".t")).filter(function (t) { return (t.getAttribute("data-sk") || "").split(" ").indexOf(k) > -1; }); }
+  function drawLinks(anim) {
+    if (feelSet) { retract(feelSet); feelSet = null; }
+    if (mainSet) { if (anim) retract(mainSet); else mainSet.remove(); mainSet = null; }
+    if (!curLens) return;
+    var btn = $("lensBtns").querySelector('[aria-pressed="true"]'); if (!btn) return;
+    var r = buildClaws(btn, Array.prototype.slice.call(grid.querySelectorAll(".t.lit")), anim);
+    mainSet = newSet(r.h); if (anim) tugLater(r); startPulses();
+  }
+  /* Hover a skill to see faint feelers before you commit */
+  $("lensBtns").addEventListener("pointerover", function (e) {
+    if (e.pointerType !== "mouse") return; var b = e.target.closest("button"); if (!b || b.getAttribute("data-k") === curLens || b._feel) return;
+    $("lensBtns").querySelectorAll("button").forEach(function (x) { x._feel = false; }); b._feel = true;
+    if (feelSet) retract(feelSet);
+    feelSet = newSet(buildClaws(b, tilesFor(b.getAttribute("data-k")), true).h, "feel");
+  });
+  $("lensBtns").addEventListener("pointerleave", function () { $("lensBtns").querySelectorAll("button").forEach(function (x) { x._feel = false; }); if (feelSet) { retract(feelSet); feelSet = null; } });
+  /* First time the Skills tile is in view, it demos itself once */
+  (function () {
+    if (RM || !("IntersectionObserver" in window)) return;
+    try { if (sessionStorage.getItem("lensDemo") === "1") return; } catch (e) {}
+    var src = document.querySelector(".lens-src"), timers = [], stopped = false, KS = ["unify", "build", "translate"];
+    function hide() { $("lensBtns").querySelectorAll("button").forEach(function (b) { b.classList.remove("demo"); }); if (demoSet) { retract(demoSet); demoSet = null; } }
+    function stop() { if (stopped) return; stopped = true; timers.forEach(clearTimeout); hide(); if (!curLens) $("lensOut").textContent = LENS_OUT; }
+    function show(k) {
+      hide(); var b = $("lensBtns").querySelector('[data-k="' + k + '"]'); b.classList.add("demo");
+      var r = buildClaws(b, tilesFor(k), true); demoSet = newSet(r.h, "demo"); tugLater(r); startPulses();
+    }
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting || curLens || stopped) return;
+        io.disconnect(); try { sessionStorage.setItem("lensDemo", "1"); } catch (x) {}
+        $("lensOut").textContent = "Watch the page reach for the proof. Then tap one yourself.";
+        KS.forEach(function (k, i) { timers.push(setTimeout(function () { if (!stopped) show(k); }, 300 + i * 2500)); });
+        timers.push(setTimeout(function () { if (!stopped) { hide(); stopped = true; $("lensOut").textContent = LENS_OUT; } }, 300 + KS.length * 2500));
+      });
+    }, { threshold: .6 });
+    io.observe(src);
+    $("lensBtns").addEventListener("pointerdown", stop, true);
+    $("lensBtns").addEventListener("click", stop, true);
+  })();
+  /* Convergence: "work as one" reaches out on load and reels the first tiles into place */
+  (function () {
+    var w = $("decWord"); if (RM || !w) return;
+    var tiles = Array.prototype.slice.call(grid.querySelectorAll(".t")).filter(function (t) { if (t.classList.contains("intro")) return false; var r = t.getBoundingClientRect(); return r.top < innerHeight * .92 && r.bottom > 0; });
+    if (!tiles.length) return;
+    var wr = w.getBoundingClientRect(), wx = wr.left + wr.width / 2, wy = wr.top + wr.height / 2, m = innerWidth < 700 ? 26 : 70;
+    tiles.forEach(function (t, i) {
+      var r = t.getBoundingClientRect(), dx = r.left + r.width / 2 - wx, dy = r.top + r.height / 2 - wy, L = Math.sqrt(dx * dx + dy * dy) || 1;
+      t.style.setProperty("--sx", f1(dx / L * m) + "px"); t.style.setProperty("--sy", f1(dy / L * m) + "px"); t.style.setProperty("--sr", ((i % 2 ? 1 : -1) * (1.2 + (i % 3) * .8)).toFixed(1) + "deg");
+      t.classList.add("scat");
+    });
+    setTimeout(function () {
+      var r = buildClaws(w, tiles, true), set = newSet(r.h, "reel"), arms = set.querySelectorAll(".arm"), t0 = performance.now();
+      r.list.forEach(function (it) { setTimeout(function () { it.t.classList.add("gather"); it.t.classList.remove("scat"); }, (it.dl + .75) * 1000); });
+      (function follow(now) {
+        var g = sizeLinks(), s0 = srcPoint(w, g);
+        r.list.forEach(function (it, i) {
+          var c = curve(s0.x, s0.y, it.t.getBoundingClientRect(), g), a = arms[i];
+          a.querySelector(".ln").setAttribute("d", c.d); a.querySelector(".glow").setAttribute("d", c.d); a.querySelector(".clw").setAttribute("transform", clawT(c));
+        });
+        var sc = set.querySelector(".src"); sc.setAttribute("cx", f1(s0.x)); sc.setAttribute("cy", f1(s0.y));
+        if (now - t0 < 2100) requestAnimationFrame(follow);
+        else { retract(set); setTimeout(function () { tiles.forEach(function (t) { t.classList.remove("gather"); }); }, 400); }
+      })(t0);
+    }, 500);
+  })();
   if ("ResizeObserver" in window) { var lt; new ResizeObserver(function () { clearTimeout(lt); lt = setTimeout(function () { drawLinks(false); }, 120); }).observe(grid); }
   $("lensBtns").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setLens(b.getAttribute("data-k")); });
   addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("ov").hidden) closeOv(); else if (curLens) setLens(curLens); } });
@@ -1292,7 +1421,8 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
   (function () {
     if (RM || !("IntersectionObserver" in window)) return;
     var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); } }); }, { threshold: .12 });
-    grid.querySelectorAll(".t").forEach(function (t, i) { if (t.getBoundingClientRect().top > innerHeight * .9) { t.classList.add("pre"); t.style.transitionDelay = ((i % 2) * 80) + "ms"; requestAnimationFrame(function () { t.classList.add("rise"); }); io.observe(t); } });
+    var gc = grid.getBoundingClientRect();
+    grid.querySelectorAll(".t").forEach(function (t, i) { var tr = t.getBoundingClientRect(); if (tr.top > innerHeight * .9) { t.style.setProperty("--px", (tr.width > gc.width * .7 ? 0 : (tr.left + tr.width / 2 < gc.left + gc.width / 2 ? -34 : 34)) + "px"); t.classList.add("pre"); t.style.transitionDelay = ((i % 2) * 80) + "ms"; requestAnimationFrame(function () { t.classList.add("rise"); }); io.observe(t); } });
   })();
 
   /* Toolkit marquee */
