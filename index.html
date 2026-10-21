@@ -472,6 +472,46 @@ table.lb tr.crai td:nth-child(2) { color: var(--blue); font-weight: 700; }
 .era-card .big { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
 .era-card .meta2 { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 900px) { .evo-top, .evo-body { grid-template-columns: minmax(0, 1fr); } }
+/* Ridey + Carvenience */
+.case { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 18px; align-items: center; }
+.phone2 { width: 130px; aspect-ratio: 9 / 18; max-width: 100%; border-radius: 26px; background: var(--ink); padding: 7px; box-shadow: 0 18px 30px -18px rgba(0,0,0,.5); }
+.ph-scr { position: relative; height: 100%; border-radius: 20px; background: var(--tile2); overflow: hidden; }
+.ph-notch { position: absolute; top: 6px; left: 50%; width: 40%; height: 9px; transform: translateX(-50%); border-radius: 6px; background: var(--ink); }
+.ph-scr svg { position: absolute; inset: 14px 6px 46px; width: calc(100% - 12px); height: calc(100% - 60px); }
+.ph-road { fill: none; stroke: var(--line); stroke-width: 7; stroke-linecap: round; }
+.ph-route { fill: none; stroke: var(--acc); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: phR 3.2s cubic-bezier(.5,0,.3,1) infinite; }
+@keyframes phR { 60%, 100% { stroke-dashoffset: 0; } }
+.ph-a { fill: var(--ink); } .ph-b { fill: var(--acc); }
+.ph-card { position: absolute; left: 6px; right: 6px; bottom: 6px; border-radius: 12px; background: var(--tile); border: 1px solid var(--line); padding: 6px 8px; display: grid; }
+.ph-card b { font-size: .78rem; } .ph-card span { font-family: var(--mono); font-size: .52rem; color: var(--muted); }
+.facts { margin: 10px 0 0; display: grid; gap: 8px; }
+.facts div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.facts dt { font-family: var(--mono); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.facts dd { margin: 0; font-size: .9rem; }
+.mkt { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); gap: 8px; align-items: stretch; margin-top: 4px; }
+.side2 { padding: 12px; border-radius: 14px; background: var(--tile2); border: 1px solid var(--line); display: grid; gap: 8px; align-content: start; min-width: 0; }
+.svc { display: flex; flex-wrap: wrap; gap: 5px; }
+.svc button { font-size: .74rem; font-weight: 600; padding: 6px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); cursor: pointer; }
+.svc button:hover { border-color: var(--ink); }
+.svc button[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+.cv-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: .8rem; }
+.cv-steps li { display: flex; gap: 6px; align-items: center; color: var(--muted); animation: fadeIn .3s ease; }
+.cv-steps li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line); flex: none; }
+.cv-steps li.on { color: var(--ink); } .cv-steps li.on::before { background: var(--ok); }
+.wire { position: relative; }
+.wire::before { content: ""; position: absolute; top: 50%; left: 0; right: 0; border-top: 2px dashed var(--line); }
+.wire i { position: absolute; top: calc(50% - 6px); left: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--acc); opacity: 0; }
+.wire i.go { animation: wireGo .7s cubic-bezier(.5,0,.3,1) forwards; }
+.wire i.back { animation: wireBack .7s cubic-bezier(.5,0,.3,1) forwards; }
+@keyframes wireGo { 0% { left: 0; opacity: 1; } 100% { left: calc(100% - 12px); opacity: 1; } }
+@keyframes wireBack { 0% { left: calc(100% - 12px); opacity: 1; } 100% { left: 0; opacity: 1; } }
+.cv-job { font-size: .82rem; display: grid; gap: 6px; }
+.cv-job .dim2 { color: var(--muted); font-size: .8rem; }
+.cv-job .jb { padding: 9px 10px; border-radius: 10px; background: var(--tile); border: 1px solid var(--acc); animation: noteIn .35s cubic-bezier(.2,1.4,.4,1); display: grid; gap: 6px; }
+.cv-job .jb b { font-size: .86rem; }
+.cv-job .jb small { font-family: var(--mono); font-size: .6rem; color: var(--muted); }
+.cv-job .earn { font-family: var(--mono); font-size: .72rem; color: var(--ok); }
+@media (max-width: 680px) { .case { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; } .phone2 { width: 96px; } .mkt { grid-template-columns: minmax(0, 1fr); } .wire { height: 26px; } .wire::before { top: 0; bottom: 0; left: 50%; right: auto; border-top: 0; border-left: 2px dashed var(--line); } .wire i { left: calc(50% - 6px) !important; top: 0; } @keyframes wireGo { 0% { top: 0; opacity: 1; } 100% { top: 14px; opacity: 1; } } @keyframes wireBack { 0% { top: 14px; opacity: 1; } 100% { top: 0; opacity: 1; } } }
 .mini-art { height: 86px; border-radius: 14px; background: var(--tile2); display: grid; place-items: center; overflow: hidden; }
 .mini-art svg { width: 70%; height: 100%; }
 .mini-art .rt { fill: none; stroke: var(--acc); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 5 6; animation: flow 1.6s linear infinite; }
@@ -997,20 +1037,33 @@ button.gcard:hover { border-color: var(--ink); }
       <div class="btns term-sug" id="termSug"><button type="button">help</button><button type="button">whoami</button><button type="button">skills</button><button type="button">builds</button><button type="button">unify</button><button type="button">sudo hire omar</button></div>
     </section>
 
-    <section class="t" id="t-ridey" data-sk="build" aria-label="Ridey">
+    <section class="t w2" id="t-ridey" data-sk="build" aria-label="Ridey">
       <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Build · iOS</span><span class="lbl">Co-founder</span></div>
-      <div class="mini-art" aria-hidden="true"><svg viewBox="0 0 120 86"><rect class="ph" x="42" y="6" width="36" height="74" rx="8"/><rect class="scr" x="45" y="12" width="30" height="62" rx="4"/><path class="rt" d="M50 66 C 54 48, 68 54, 64 38 S 68 22, 70 18"/></svg></div>
-      <h2>Ridey</h2>
-      <p style="font-size:.9rem">A native iOS app, co-founded and shipped.</p>
+      <div class="t-h"><span class="lbl">Startup · native iOS</span><span class="lbl">Co-founder · shipped</span></div>
+      <div class="case">
+        <div class="phone2" aria-hidden="true"><div class="ph-scr"><div class="ph-notch"></div><svg viewBox="0 0 100 150"><path class="ph-road" d="M14 140 C 30 112, 72 118, 60 88 S 34 54, 66 32 S 84 14, 86 10"/><path class="ph-route" pathLength="1" d="M14 140 C 30 112, 72 118, 60 88 S 34 54, 66 32 S 84 14, 86 10"/><circle class="ph-a" cx="14" cy="140" r="4"/><circle class="ph-b" cx="86" cy="10" r="4"/></svg><div class="ph-card"><b>Ridey</b><span>Version 1.0 · iPhone</span></div></div></div>
+        <div class="case-body">
+          <h2>Ridey</h2>
+          <dl class="facts">
+            <div><dt>What</dt><dd>A native iOS app, taken from idea to the App Store</dd></div>
+            <div><dt>My role</dt><dd>Co-founder</dd></div>
+            <div><dt>Status</dt><dd>Shipped</dd></div>
+            <div><dt>Why it matters</dt><dd>My first product with real users, after the bootcamp projects</dd></div>
+          </dl>
+        </div>
+      </div>
     </section>
 
-    <section class="t" data-sk="build" aria-label="Carvenience">
+    <section class="t w2" id="t-carv" data-sk="build" aria-label="Carvenience">
       <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Build · marketplace</span><span class="lbl">Founder</span></div>
-      <div class="mini-art" aria-hidden="true"><svg viewBox="0 0 120 86"><path class="ar1" d="M32 36 C 50 18, 70 18, 88 36"/><path class="ar2" d="M88 50 C 70 68, 50 68, 32 50"/><circle class="c1" cx="24" cy="43" r="14"/><circle class="c2" cx="96" cy="43" r="14"/><text x="24" y="45" text-anchor="middle">CUST</text><text x="96" y="45" text-anchor="middle">PROV</text></svg></div>
+      <div class="t-h"><span class="lbl">Startup · marketplace</span><span class="hint">Book a service</span></div>
       <h2>Carvenience</h2>
-      <p style="font-size:.9rem">A two-sided marketplace for mobile auto services.</p>
+      <p style="font-size:.92rem">Car care that comes to you. A two-sided marketplace: customers request a service, local providers pick it up and do it wherever the car is parked. I founded it. Try both sides:</p>
+      <div class="mkt">
+        <div class="side2"><span class="lbl">Customer app</span><div class="svc" id="cvSvc"><button type="button" data-s="Oil change">Oil change</button><button type="button" data-s="Car wash">Car wash</button><button type="button" data-s="Battery jump">Battery jump</button><button type="button" data-s="Tire swap">Tire swap</button></div><ol class="cv-steps" id="cvCust"><li>Pick a service</li></ol></div>
+        <div class="wire" aria-hidden="true"><i id="cvDot"></i></div>
+        <div class="side2"><span class="lbl">Provider app</span><div class="cv-job" id="cvJob"><p class="dim2">Waiting for requests nearby</p></div></div>
+      </div>
     </section>
 
     <section class="t w2" data-sk="translate" aria-label="Writing">
@@ -1250,7 +1303,7 @@ button.gcard:hover { border-color: var(--ink); }
       { v: "v0.3", d: "Sep 2020", n: "Basketball client manager", t: ["Ruby on Rails", "Nested forms"], k: "bcm", l: "Built for basketball trainers. One form creates a client, a location, and an appointment at once. Separation of concerns is a championship roster: every model has one job." },
       { v: "v0.4", d: "Jul 2021", n: "OmarsNotes", t: ["JavaScript", "Single-page app", "Rails API"], k: "notes", l: "Four classes and two promises between clicking New Note and seeing it on screen. No password, just a name, so notes could be shared later." },
       { v: "v1.0", d: "Startup", n: "Ridey", t: ["Native iOS", "Co-founder"], k: "ridey", go: "t-ridey", l: "The jump from class projects to an app people download: co-founded and shipped to the App Store." },
-      { v: "v1.5", d: "Startup", n: "Carvenience", t: ["Two-sided marketplace", "Founder"], k: "carv", go: "t-ridey", l: "Two kinds of users, customers and providers, on one platform for mobile auto services." },
+      { v: "v1.5", d: "Startup", n: "Carvenience", t: ["Two-sided marketplace", "Founder"], k: "carv", go: "t-carv", l: "Two kinds of users, customers and providers, on one platform for mobile auto services." },
       { v: "v2.0", d: "Now", n: "CR-AI", t: ["Mistral-7B", "QLoRA", "Fine-tuning"], k: "crai", go: "t-builds", l: "A fine-tuned model that reads world news from six sources and forecasts what happens next. You can play against it." },
       { v: "v3.0", d: "2026", n: "This site", t: ["Cloudflare Workers", "Durable Objects", "WebSockets"], k: "site", go: "top", l: "Live cursors, chat, a real leaderboard, and everything you're clicking. From a Lakers roster in a terminal to this, in six years." }
     ];
@@ -1326,6 +1379,29 @@ button.gcard:hover { border-color: var(--ink); }
     }
     rail.addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) { show(+b.getAttribute("data-i")); window.__act && window.__act("opened " + V[+b.getAttribute("data-i")].n); } });
     show(0);
+  })();
+
+  /* Carvenience: both sides of the marketplace */
+  (function () {
+    var svc = $("cvSvc"), cust = $("cvCust"), job = $("cvJob"), dot = $("cvDot"), T = [], P = { "Oil change": 59, "Car wash": 35, "Battery jump": 45, "Tire swap": 79 };
+    function steps(arr) { cust.innerHTML = arr.map(function (x) { return '<li class="' + (x[1] ? "on" : "") + '">' + esc(x[0]) + "</li>"; }).join(""); }
+    function shot(cls) { dot.className = ""; void dot.offsetWidth; dot.className = cls; }
+    svc.addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return; T.forEach(clearTimeout); T = [];
+      var nm = b.getAttribute("data-s"), price = P[nm];
+      svc.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      steps([["Requested: " + nm + " at your car", 1], ["Finding a provider nearby", 0]]); shot("go");
+      job.innerHTML = '<p class="dim2">Waiting for requests nearby</p>';
+      T.push(setTimeout(function () {
+        job.innerHTML = '<div class="jb"><small>New request · 1.2 mi away</small><b>' + esc(nm) + '</b><span class="earn">You earn $' + price + '</span><button type="button" class="btn sm" id="cvAcc">Accept job</button></div>';
+        $("cvAcc").onclick = function () {
+          shot("back"); steps([["Requested: " + nm, 1], ["Provider accepted", 1], ["On the way, about 18 min", 0]]);
+          job.innerHTML = '<div class="jb"><small>Accepted</small><b>' + esc(nm) + '</b><span class="earn">Heading to the customer</span></div>';
+          T.push(setTimeout(function () { steps([["Requested: " + nm, 1], ["Provider accepted", 1], ["Arrived, working on it", 1], ["Done. Paid $" + price + ". Rate your provider", 0]]); job.innerHTML = '<div class="jb"><small>Completed</small><b>' + esc(nm) + '</b><span class="earn">+$' + price + " earned</span></div>"; }, RM ? 0 : 1400));
+          T.push(setTimeout(function () { steps([["Requested: " + nm, 1], ["Provider accepted", 1], ["Arrived, working on it", 1], ["Done. Paid $" + price, 1]]); window.__act && window.__act("booked a " + nm.toLowerCase() + " on Carvenience"); }, RM ? 0 : 2600));
+        };
+      }, RM ? 0 : 750));
+    });
   })();
 
   /* Receipt printer */
@@ -2063,7 +2139,7 @@ button.gcard:hover { border-color: var(--ink); }
   })();
 
   /* =========== v12: x-ray mode =========== */
-  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-evo": "Four bootcamp apps rebuilt in vanilla JS · localStorage", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "Animated SVG stroke-dashoffset", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
+  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-evo": "Four bootcamp apps rebuilt in vanilla JS · localStorage", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "CSS phone · animated route", "t-carv": "Two-sided request flow · both apps in one tile", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
   grid.querySelectorAll(".t").forEach(function (t) {
     var id = t.id || (t.classList.contains("intro") ? "intro" : ""), lab = XR[id];
     if (!lab) { var a = t.getAttribute("aria-label") || "Tile"; lab = a === "Skills" ? "Live SVG paths between DOM rects" : a === "Journey" ? "Range input · stepped timeline" : a === "Things you wouldn't guess" ? "Pointer events · swipe physics" : a === "Toolkit" ? "CSS marquee · pause on hover" : a === "Local time and contact" ? "Intl time zone clock" : a + " · HTML + CSS"; }
