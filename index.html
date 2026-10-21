@@ -653,6 +653,7 @@ body { overflow-x: clip; }
 .t.scat { translate: var(--sx, 0px) var(--sy, 0px); rotate: var(--sr, 0deg); }
 .t.gather { transition: translate 1s cubic-bezier(.2,.9,.25,1.12), rotate 1s cubic-bezier(.2,.9,.25,1.12), opacity .35s, filter .35s, transform .35s, border-color .25s, box-shadow .35s; }
 .t.tug { animation: tug .7s cubic-bezier(.3,1.6,.5,1); }
+.grid.lens .t.pulled { opacity: 1; filter: none; }
 @keyframes tug { 35% { translate: var(--tx, 0px) var(--ty, 0px); } 100% { translate: 0 0; } }
 .t.rise { transition: transform .8s cubic-bezier(.2,.8,.2,1), opacity .35s, filter .35s, border-color .25s, box-shadow .35s; }
 .intro h1 { min-height: 1.96em; }
@@ -1539,8 +1540,41 @@ button.gcard:hover { border-color: var(--ink); }
     grid.classList.toggle("lens", !!curLens);
     grid.querySelectorAll(".t").forEach(function (t) { var sk = (t.getAttribute("data-sk") || "").split(" "); t.classList.toggle("lit", !!curLens && sk.indexOf(curLens) > -1); });
     $("lensOut").textContent = curLens ? LENS[curLens] + " Tap again to clear." : LENS_OUT;
+    if (PULL.tiles.length) PULL.release();
+    if (curLens && oneCol() && !RM) { PULL.pull(Array.prototype.slice.call(grid.querySelectorAll(".t.lit"))); var nm = curLens.charAt(0).toUpperCase() + curLens.slice(1); $("lensOut").textContent = "Pulled up " + PULL.tiles.length + " tiles that prove " + nm + ". They're right below. Tap " + nm + " again to put them back."; }
     drawLinks(true);
   }
+  /* On phones, the tentacles pull the proof tiles up under the Skills tile instead of reaching down the page */
+  var PULL = (function () {
+    var me = { tiles: [], ph: [] }, src = document.querySelector(".lens-src");
+    me.pull = function (tiles) {
+      var first = tiles.map(function (t) { return t.getBoundingClientRect().top; });
+      me.ph = tiles.map(function (t) { var ph = document.createComment("lens"); t.parentNode.insertBefore(ph, t); return ph; });
+      var anchor = src; tiles.forEach(function (t) { anchor.parentNode.insertBefore(t, anchor.nextSibling); anchor = t; t.classList.remove("pre"); t.classList.add("pulled"); });
+      tiles.forEach(function (t, i) {
+        var dy = first[i] - t.getBoundingClientRect().top; dy = Math.max(-innerHeight, Math.min(innerHeight * 1.05, dy));
+        t.style.transition = "none"; t.style.transform = "translateY(" + dy.toFixed(0) + "px)";
+      });
+      void grid.offsetHeight;
+      tiles.forEach(function (t, i) {
+        t.style.transition = "transform .8s cubic-bezier(.2,.9,.25,1.06) " + (i * 90 + 260) + "ms"; t.style.transform = "";
+        setTimeout(function () { t.style.transition = ""; }, 1300 + i * 90);
+      });
+      me.tiles = tiles;
+    };
+    me.release = function () {
+      var tiles = me.tiles, ph = me.ph; me.tiles = []; me.ph = [];
+      tiles.forEach(function (t, i) {
+        t.classList.remove("pulled");
+        if (ph[i] && ph[i].parentNode) { ph[i].parentNode.insertBefore(t, ph[i]); ph[i].parentNode.removeChild(ph[i]); }
+        t.style.transition = "none"; t.style.transform = "scale(.96)"; t.style.opacity = "0";
+        void t.offsetHeight; t.style.transition = "opacity .4s ease, transform .5s cubic-bezier(.2,.9,.25,1.1)"; t.style.transform = ""; t.style.opacity = "";
+        setTimeout(function () { t.style.transition = ""; }, 600);
+      });
+    };
+    addEventListener("resize", function () { if (me.tiles.length && !oneCol()) { me.release(); drawLinks(false); } });
+    return me;
+  })();
   /* Claws: arms that reach from a source to the tiles it points at, grip them, and pulse */
   var SVGNS = "http://www.w3.org/2000/svg", linksSvg = $("links"), mainSet = null, feelSet = null, demoSet = null, LENS_OUT = "Each skill lights up the tiles on this page that prove it.";
   function f1(n) { return n.toFixed(1); }
@@ -1553,11 +1587,11 @@ button.gcard:hover { border-color: var(--ink); }
     var fan = n > 1 ? Math.max(-1, Math.min(1, ((i || 0) - (n - 1) / 2) / Math.max(1, (n - 1) / 2))) : 0;
     var cx = r.left + r.width / 2 - g.left, cy = r.top + r.height / 2 - g.top, tx, ty, segs;
     if (oneCol() && r.width > g.width * .8) {
-      var right = (i || 0) % 2 === 1, lane = (Math.floor((i || 0) / 2) % 3 - 1) * 3.2, gx = (right ? r.right - g.left + 8 : r.left - g.left - 8) + lane, down = cy > sy, k = down ? 1 : -1;
-      ty = down ? (r.top - g.top) + Math.min(64, r.height / 2) : (r.bottom - g.top) - Math.min(64, r.height / 2);
+      var right = (i || 0) % 2 === 1, down = cy > sy, k = down ? 1 : -1;
       tx = right ? r.right - g.left - 2 : r.left - g.left + 2;
-      var y1 = sy + k * 46, y2 = ty - k * 30; if ((y2 - y1) * k < 0) y2 = y1;
-      segs = [C(sx, sy, sx + (gx - sx) * .2, sy + k * 34, gx, sy + k * 10, gx, y1), Ln(gx, y1, gx, y2), C(gx, y2, gx, ty - k * 6, gx + (tx - gx) * .2, ty, tx, ty)];
+      ty = down ? (r.top - g.top) + Math.min(56, r.height / 2) : (r.bottom - g.top) - Math.min(56, r.height / 2);
+      var ox = right ? 26 : -26;
+      segs = [C(sx, sy, sx + (tx - sx) * .25 + fan * 40, sy + k * Math.min(120, Math.abs(ty - sy) * .45), tx + ox, ty - k * Math.min(90, Math.abs(ty - sy) * .35), tx, ty)];
       return { segs: segs, tx: tx, ty: ty };
     }
     if (Math.abs(cy - sy) < r.height / 2 && Math.abs(cx - sx) > 40) {
@@ -1671,7 +1705,9 @@ button.gcard:hover { border-color: var(--ink); }
     if (mainSet) { if (anim) retract(mainSet); else if (mainSet._set) drop(mainSet._set); mainSet = null; }
     if (!curLens) return;
     var btn = $("lensBtns").querySelector('[aria-pressed="true"]'); if (!btn) return;
-    var r = buildClaws(btn, Array.prototype.slice.call(grid.querySelectorAll(".t.lit")), anim);
+    var lit = Array.prototype.slice.call(grid.querySelectorAll(".t.lit"));
+    if (oneCol()) lit = lit.slice(0, 2);
+    var r = buildClaws(btn, lit, anim);
     mainSet = newSet(r.h); if (anim) tugLater(r); startPulses();
   }
   /* Hover a skill to see faint feelers before you commit */
@@ -1684,7 +1720,7 @@ button.gcard:hover { border-color: var(--ink); }
   $("lensBtns").addEventListener("pointerleave", function () { $("lensBtns").querySelectorAll("button").forEach(function (x) { x._feel = false; }); if (feelSet) { retract(feelSet); feelSet = null; } });
   /* First time the Skills tile is in view, it demos itself once */
   (function () {
-    if (RM || !("IntersectionObserver" in window)) return;
+    if (RM || !("IntersectionObserver" in window) || oneCol()) return;
     try { if (sessionStorage.getItem("lensDemo") === "1") return; } catch (e) {}
     var src = document.querySelector(".lens-src"), timers = [], stopped = false, KS = ["unify", "build", "translate"];
     function hide() { $("lensBtns").querySelectorAll("button").forEach(function (b) { b.classList.remove("demo"); }); if (demoSet) { retract(demoSet); demoSet = null; } }
@@ -1731,7 +1767,9 @@ button.gcard:hover { border-color: var(--ink); }
     function tilesOf(ch) { var out = [], el = ch.nextElementSibling; while (el && !el.classList.contains("chap")) { if (el.classList.contains("t")) out.push(el); el = el.nextElementSibling; } return out; }
     function handoff(ch) {
       var id = ch.getAttribute("data-ch"); if (RM || clawed[id] || curLens) return; clawed[id] = true;
-      var r = buildClaws(ch.querySelector(".chap-n"), tilesOf(ch), true), set = newSet(r.h, "chapclaw reel");
+      var tl = tilesOf(ch); if (oneCol()) tl = tl.filter(function (t) { return t.getBoundingClientRect().top < innerHeight * 1.02; }).slice(0, 2);
+      if (!tl.length) { clawed[id] = false; return; }
+      var r = buildClaws(ch.querySelector(".chap-n"), tl, true), set = newSet(r.h, "chapclaw reel");
       tugLater(r); setTimeout(function () { retract(set); }, 2300);
     }
     function moveInd(a, np) {
@@ -1770,7 +1808,7 @@ button.gcard:hover { border-color: var(--ink); }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(req);
     tick();
   })();
-  if ("ResizeObserver" in window) { var lt; new ResizeObserver(function () { clearTimeout(lt); lt = setTimeout(function () { drawLinks(false); }, 120); }).observe(grid); }
+  /* Arms are recomputed every frame, so layout changes need no redraw. */
   $("lensBtns").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setLens(b.getAttribute("data-k")); });
   addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("ov").hidden) closeOv(); else if (curLens) setLens(curLens); } });
 
