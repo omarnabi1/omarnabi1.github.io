@@ -536,18 +536,19 @@ function forecastOf(st, h) {
   return null;
 }
 
+// Crisis consequences as structured chips: { label, value, good }.
 function fxHint(camp, fx) {
-  const parts = [];
-  for (const [hid, d] of Object.entries(fx.tension || {})) parts.push(`${(hsDef(camp, hid) || {}).name || hid} ${d > 0 ? "🔥+" + d : "💧" + d}`);
+  const out = [];
+  for (const [hid, d] of Object.entries(fx.tension || {})) out.push({ label: (hsDef(camp, hid) || {}).name || hid, value: `tension ${d > 0 ? "+" : ""}${d}`, good: d < 0 });
   for (const [key, d] of Object.entries(fx.mood || {})) {
     const [hid, pid] = key.split(".");
     const H = hsDef(camp, hid);
     const p = H && partyDef(H, pid);
-    parts.push(`${p ? p.short : pid} ${d > 0 ? "🙂" : "😠"}`);
+    out.push({ label: p ? p.short : pid, value: d > 0 ? "warmer" : "colder", good: d > 0 });
   }
-  if (fx.global) parts.push(`World ${fx.global > 0 ? "🔥+" + fx.global : "💧" + fx.global}`);
-  if (fx.envoys) parts.push(`${fx.envoys} envoy`);
-  return parts.join(" · ");
+  if (fx.global) out.push({ label: "World", value: `${fx.global > 0 ? "+" : ""}${fx.global}`, good: fx.global < 0 });
+  if (fx.envoys) out.push({ label: "Envoys", value: String(fx.envoys), good: false });
+  return out;
 }
 
 export function catalog() {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Envoy · Omar Nabi</title>
 <meta name="description" content="Envoy: a world-map strategy game built on CR-AI. Stop conflicts from spreading, broker deals, and compare your peace to history. Play now, past, future, or any conflict you name.">
-<meta name="theme-color" content="#0B0D11">
+<meta name="theme-color" content="#EEF0F3">
 <link rel="canonical" href="https://omarnabi.com/envoy">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -15,6 +15,7 @@
 <meta property="og:description" content="A world-map strategy game built on CR-AI. Six fires, three deals, twelve months. Or name any conflict in history and try to end it.">
 <meta property="og:image" content="https://omarnabi.com/og.png">
 <meta name="twitter:card" content="summary_large_image">
+<script>try { var th = JSON.parse(localStorage.getItem("on-theme")); if (th === "light" || th === "dark") document.documentElement.setAttribute("data-theme", th); } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -24,374 +25,424 @@
 <script src="/js/vendor/d3-geo.min.js" defer></script>
 <script src="/js/vendor/topojson-client.min.js" defer></script>
 <style>
-/* Envoy runs in a "situation room" palette in both themes: the map is the board. */
+/* Envoy uses omarnabi.com's own design system: dotted canvas, white tiles, heavy black type,
+   black pill buttons, orange for conflict and blue for peace, line icons instead of emoji. */
 :root {
-  --bg: #0A0D12; --panel: #121722; --panel2: #1A2030; --ink: #EEF1F6; --muted: #8E97A8; --line: #252C3B;
-  --sea: #0D1420; --land: #1C2433; --border: #2A3345;
-  --acc: #FF6B33; --acc-soft: rgba(255,107,51,.15); --blue: #7C95FF; --ok: #3DDC97; --ok-soft: rgba(61,220,151,.14);
-  --warn: #F5B544; --bad: #FF5A5F; --bad-soft: rgba(255,90,95,.16);
+  --bg: #EEF0F3; --tile: #FFFFFF; --tile2: #F5F6F8; --ink: #0E1116; --muted: #5C6370; --line: #DDE1E7;
+  --acc: #F2541B; --acc-ink: #FFFFFF; --acc-soft: rgba(242, 84, 27, .1);
+  --blue: #2F5BFF; --blue-soft: rgba(47, 91, 255, .1);
+  --ok: #13804A; --warn: #B45309; --dot: rgba(14, 17, 22, .09);
+  --sea: #F5F6F8; --land: #FFFFFF; --border: #D5DAE1;
   --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
   --serif: "Instrument Serif", Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  color-scheme: dark;
+  --r: 22px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0D11; --tile: #14171D; --tile2: #1B1F27; --ink: #ECEEF2; --muted: #9AA1AD; --line: #272C35;
+    --acc: #FF6B33; --acc-ink: #0B0D11; --acc-soft: rgba(255, 107, 51, .14); --blue: #7C95FF; --blue-soft: rgba(124, 149, 255, .14);
+    --ok: #4CD39A; --warn: #F3A64A; --dot: rgba(236, 238, 242, .07); --sea: #10131A; --land: #1A1E26; --border: #2B313C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0D11; --tile: #14171D; --tile2: #1B1F27; --ink: #ECEEF2; --muted: #9AA1AD; --line: #272C35;
+  --acc: #FF6B33; --acc-ink: #0B0D11; --acc-soft: rgba(255, 107, 51, .14); --blue: #7C95FF; --blue-soft: rgba(124, 149, 255, .14);
+  --ok: #4CD39A; --warn: #F3A64A; --dot: rgba(236, 238, 242, .07); --sea: #10131A; --land: #1A1E26; --border: #2B313C; color-scheme: dark;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; }
-body { background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.45; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+html, body { margin: 0; }
+body { background: var(--bg); background-image: radial-gradient(var(--dot) 1.2px, transparent 1.3px); background-size: 22px 22px; color: var(--ink); font-family: var(--sans); line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 h1, h2, h3, p { margin: 0; }
 a { color: inherit; }
 button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
-:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 8px; }
-.lbl { font-family: var(--mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.btn { font-weight: 800; padding: 12px 20px; border-radius: 999px; border: 0; background: var(--acc); color: #0A0D12; letter-spacing: -.01em; transition: transform .12s, filter .2s; }
-.btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
-.btn:active:not(:disabled) { transform: translateY(1px); }
-.btn:disabled { opacity: .35; cursor: not-allowed; }
-.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-.btn.sm { padding: 8px 14px; font-size: .86rem; }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; border-radius: 8px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.lbl { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hint { font-family: var(--mono); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; background: var(--acc-soft); color: var(--acc); white-space: nowrap; }
+.hint.blue { background: var(--blue-soft); color: var(--blue); }
+.t { position: relative; background: var(--tile); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.t-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.btn { font-size: .86rem; font-weight: 700; padding: 11px 17px; border-radius: 999px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; gap: 7px; text-decoration: none; transition: background .2s, border-color .2s, transform .15s; }
+.btn:hover:not(:disabled) { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover:not(:disabled) { border-color: var(--ink); background: transparent; color: var(--ink); }
+.btn.sm { font-size: .8rem; padding: 8px 13px; }
+.pill { font-size: .82rem; font-weight: 600; padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.pill:hover { border-color: var(--ink); }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.chip { font-family: var(--mono); font-size: .66rem; padding: 4px 9px; border-radius: 999px; background: var(--tile2); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
+.chip.good { color: var(--blue); border-color: color-mix(in srgb, var(--blue) 40%, var(--line)); background: var(--blue-soft); }
+.chip.bad { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 40%, var(--line)); background: var(--acc-soft); }
 
-/* ---------- Intro ---------- */
-#intro { max-width: 1180px; margin: 0 auto; padding: 0 16px 80px; }
-.top { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
-.brand { display: flex; gap: 10px; align-items: center; text-decoration: none; font-weight: 800; }
-.brand i { width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-style: normal; font-size: .78rem; }
-.hero { display: grid; gap: 14px; padding: clamp(20px, 5vw, 56px) 0 28px; }
-.hero h1 { font-size: clamp(3.4rem, 11vw, 7.5rem); font-weight: 800; letter-spacing: -.06em; line-height: .85; }
-.hero h1 em { font-family: var(--serif); font-weight: 400; font-style: italic; color: var(--acc); letter-spacing: -.02em; }
-.hero p { color: var(--muted); font-size: clamp(1rem, 1.6vw, 1.2rem); max-width: 640px; }
-.steps3 { display: flex; flex-wrap: wrap; gap: 8px; }
-.steps3 span { padding: 7px 12px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-size: .86rem; }
-.camps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.camp { position: relative; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 20px; padding: 16px; display: grid; gap: 8px; align-content: start; min-height: 190px; overflow: hidden; transition: border-color .2s, transform .2s; }
-.camp:hover { border-color: var(--muted); transform: translateY(-2px); }
-.camp[aria-pressed="true"] { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
-.camp h3 { font-size: 1.45rem; letter-spacing: -.03em; line-height: 1.05; }
-.camp p { font-size: .86rem; color: var(--muted); }
-.camp .dots { position: absolute; right: -10px; bottom: -14px; font-size: 4.2rem; opacity: .14; pointer-events: none; }
-.era { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; padding: 3px 8px; border-radius: 999px; justify-self: start; }
-.era.now { background: var(--bad-soft); color: var(--bad); }
-.era.past { background: rgba(124,149,255,.15); color: var(--blue); }
-.era.future { background: var(--ok-soft); color: var(--ok); }
-.build { margin-top: 14px; padding: 18px; border-radius: 20px; background: linear-gradient(135deg, rgba(255,107,51,.12), rgba(124,149,255,.10)); border: 1px solid var(--line); display: grid; gap: 10px; }
-.build h3 { font-size: 1.2rem; letter-spacing: -.02em; }
+/* ---------- header (matches the main site) ---------- */
+.top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(12px); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
+.brand i { width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-style: normal; font-size: .8rem; font-weight: 800; }
+.top nav { display: flex; gap: 2px; }
+.top nav a { font-size: .86rem; font-weight: 600; text-decoration: none; padding: 7px 11px; border-radius: 999px; color: var(--muted); }
+.top nav a:hover, .top nav a.on { color: var(--ink); background: var(--tile); }
+.top .act { display: flex; gap: 6px; }
+
+/* ---------- intro ---------- */
+.hero { display: grid; gap: 16px; padding: clamp(26px, 6vw, 70px) 4px 30px; max-width: 900px; }
+.hero h1 { font-size: clamp(3.2rem, 10vw, 7rem); font-weight: 800; letter-spacing: -.055em; line-height: .9; }
+.hero h1 .sc { position: relative; white-space: nowrap; }
+.hero h1 .sc svg { position: absolute; left: -2%; bottom: -.12em; width: 104%; height: .32em; overflow: visible; }
+.hero h1 .sc path { fill: none; stroke: var(--acc); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.1s .3s cubic-bezier(.5,0,.3,1) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.hero p { color: var(--muted); font-size: clamp(1.02rem, 1.6vw, 1.22rem); max-width: 640px; }
+.how3 { display: flex; flex-wrap: wrap; gap: 6px; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.camp { text-align: left; cursor: pointer; transition: border-color .2s, transform .2s, box-shadow .2s; }
+.camp:hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); transform: translateY(-2px); }
+.camp[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.camp h3 { font-size: 1.55rem; font-weight: 800; letter-spacing: -.035em; line-height: 1.02; }
+.camp p { font-size: .88rem; color: var(--muted); }
+.mini { width: 100%; height: 74px; border-radius: 14px; background: var(--tile2); }
+.mini circle.h { fill: var(--acc); }
+.mini circle.r { fill: none; stroke: var(--acc); stroke-opacity: .35; }
+.mini path { stroke: var(--blue); stroke-width: 1.2; stroke-dasharray: 3 3; fill: none; }
+.build { margin-top: 14px; }
+.build h3 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.035em; }
 .buildrow { display: flex; gap: 8px; flex-wrap: wrap; }
-.buildrow input { flex: 1 1 260px; padding: 12px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); }
+.buildrow input { flex: 1 1 260px; padding: 12px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile2); }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { font-size: .8rem; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
-.chip:hover { border-color: var(--muted); }
-.setup { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; padding: 16px; border-radius: 20px; background: var(--panel); border: 1px solid var(--line); }
-.setup .twists { display: grid; gap: 6px; }
-.twist { text-align: left; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: grid; gap: 2px; }
-.twist[aria-pressed="true"] { border-color: var(--acc); }
-.twist small { color: var(--muted); }
-.namefield { display: grid; gap: 6px; }
-.namefield input { padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); width: 220px; }
+.chip.ex { cursor: pointer; font-size: .7rem; }
+.chip.ex:hover { border-color: var(--ink); }
+.setup { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; }
+.opts2 { display: grid; gap: 6px; }
+.opt { text-align: left; padding: 11px 13px; border-radius: 14px; border: 1px solid var(--line); background: var(--tile2); display: grid; gap: 2px; }
+.opt:hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); }
+.opt[aria-pressed="true"] { background: var(--tile); border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opt b { font-size: .95rem; }
+.opt small { color: var(--muted); font-size: .8rem; line-height: 1.4; }
+.diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.opt .m { font-family: var(--mono); font-size: .62rem; color: var(--acc); }
+.field { display: grid; gap: 6px; }
+.field input { padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile2); width: 100%; }
+.under { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; margin: 14px 0 60px; }
+.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.rules li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; color: var(--muted); font-size: .92rem; }
+.rules li b { color: var(--ink); }
+.rules .n { width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font: 700 .72rem var(--mono); }
 .lb { width: 100%; border-collapse: collapse; font-size: .9rem; }
-.lb td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.lb td { padding: 7px 4px; border-bottom: 1px solid var(--line); }
 .lb .r { text-align: right; font-family: var(--mono); }
-.under { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 12px; margin-top: 14px; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: grid; gap: 10px; align-content: start; }
-.card p, .card li { color: var(--muted); font-size: .9rem; }
-.card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
-.card b { color: var(--ink); }
+.foot { color: var(--muted); font-size: .78rem; padding-bottom: 40px; }
 
-/* ---------- Game ---------- */
-#game { position: fixed; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
-.hud { display: flex; align-items: center; gap: 10px 18px; padding: 10px max(14px, env(safe-area-inset-left)) 10px max(14px, env(safe-area-inset-right)); background: rgba(10,13,18,.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); z-index: 5; flex-wrap: wrap; }
-.hud .t { display: grid; }
-.hud .t b { font-size: 1rem; letter-spacing: -.02em; white-space: nowrap; }
+/* ---------- game shell ---------- */
+#game { position: fixed; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--bg); background-image: radial-gradient(var(--dot) 1.2px, transparent 1.3px); background-size: 22px 22px; }
+.hud { display: flex; align-items: center; gap: 10px 20px; padding: 10px max(16px, env(safe-area-inset-left)) 10px max(16px, env(safe-area-inset-right)); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); z-index: 5; flex-wrap: wrap; }
+.hud .ttl { display: grid; line-height: 1.1; }
+.hud .ttl b { font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
 .hud .grow { flex: 1; }
-.stat { display: grid; gap: 3px; }
+.stat { display: grid; gap: 4px; }
 .pips { display: flex; gap: 3px; }
-.pips i { width: 8px; height: 8px; border-radius: 2px; background: var(--line); }
-.pips i.on { background: var(--muted); }
+.pips i { width: 9px; height: 9px; border-radius: 3px; background: var(--line); }
+.pips i.on { background: color-mix(in srgb, var(--ink) 35%, var(--line)); }
 .pips i.now { background: var(--ink); }
-.envoys { display: flex; gap: 2px; font-size: 1.05rem; line-height: 1; }
-.envoys span { transition: opacity .25s, transform .25s; }
-.envoys span.used { opacity: .18; transform: scale(.85); }
-.world { width: 150px; }
-.bar { position: relative; height: 8px; border-radius: 5px; background: var(--panel2); overflow: hidden; }
-.bar b { position: absolute; inset: 0 auto 0 0; border-radius: 5px; transition: width .6s cubic-bezier(.3,1.3,.5,1), background .4s; }
-.world .bar { height: 10px; }
-.world .bar b { background: linear-gradient(90deg, var(--warn), var(--bad)); }
-.deals { display: flex; gap: 4px; font-size: 1.05rem; }
-.deals span { filter: grayscale(1) opacity(.35); }
-.deals span.on { filter: none; }
-#endBtn { white-space: nowrap; }
-.stage { position: relative; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 400px; }
-.mapwrap { position: relative; min-height: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #111a29, var(--sea) 70%); }
+.envoys { display: flex; gap: 4px; }
+.envoys i { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .25s, opacity .25s; }
+.envoys i.used { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); }
+.meter { position: relative; height: 8px; border-radius: 5px; background: var(--tile2); border: 1px solid var(--line); overflow: hidden; }
+.meter b { position: absolute; inset: 0 auto 0 0; border-radius: 5px; transition: width .6s cubic-bezier(.3,1.3,.5,1); background: var(--acc); }
+.meter b.peace { background: var(--blue); }
+.world { width: 140px; }
+.deals { display: flex; gap: 4px; }
+.deals i { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line); display: grid; place-items: center; }
+.deals i.on { background: var(--blue); box-shadow: none; }
+.deals i.on::after { content: ""; width: 7px; height: 4px; border: 2px solid var(--tile); border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+.goal { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.goal b { color: var(--ink); }
+.iconbtn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--tile); display: grid; place-items: center; padding: 0; color: var(--ink); }
+.iconbtn:hover { border-color: var(--ink); }
+.iconbtn .ico { width: 18px; height: 18px; }
+.stage { position: relative; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 410px; }
+.mapwrap { position: relative; min-height: 0; overflow: hidden; }
 #map { width: 100%; height: 100%; display: block; }
-#map .land { fill: var(--land); stroke: var(--border); stroke-width: .6; }
-#map .link { fill: none; stroke: rgba(255,255,255,.18); stroke-width: 1.5; stroke-dasharray: 4 5; }
-#map .link.hot { stroke: var(--bad); stroke-width: 2.5; stroke-dasharray: 6 4; animation: dash 0.6s linear infinite; }
-@keyframes dash { to { stroke-dashoffset: -20; } }
+#map .land { fill: var(--land); stroke: var(--border); stroke-width: .7; }
+#map .borders { fill: none; stroke: var(--border); stroke-width: .5; }
+#map .link { fill: none; stroke: var(--blue); stroke-opacity: .55; stroke-width: 1.6; stroke-dasharray: 4 6; animation: flow 1.4s linear infinite; }
+#map .link.hot { stroke: var(--acc); stroke-opacity: 1; stroke-width: 2.4; animation-duration: .6s; }
+@keyframes flow { to { stroke-dashoffset: -20; } }
 .hs { cursor: pointer; }
 .hs .ring { fill: none; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: pulse 2s ease-out infinite; }
-@keyframes pulse { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(2.6); opacity: 0; } }
-.hs .core { stroke: rgba(0,0,0,.4); stroke-width: 2; }
-.hs.sel .core { stroke: #fff; stroke-width: 3; }
-.hs text { font: 700 13px var(--sans); fill: var(--ink); paint-order: stroke; stroke: rgba(10,13,18,.9); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
-.hs text.n { font: 600 11px var(--mono); }
+@keyframes pulse { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
+.hs .core { stroke: var(--tile); stroke-width: 3; }
+.hs.sel .core { stroke: var(--ink); stroke-width: 3; }
+.hs text { font: 800 13px var(--sans); fill: var(--ink); letter-spacing: -.01em; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.hs text.n { font: 700 11px var(--mono); fill: #fff; stroke-width: 0; }
+.hs text.fc { font: 700 10px var(--mono); letter-spacing: .06em; }
 .hs.done .ring { display: none; }
-.ticker { position: absolute; left: 12px; bottom: 12px; right: 12px; display: grid; gap: 4px; pointer-events: none; }
-.ticker div { justify-self: start; max-width: 520px; font-size: .8rem; padding: 6px 10px; border-radius: 10px; background: rgba(18,23,34,.88); border: 1px solid var(--line); animation: tin .35s ease-out; }
+.hs.hlmap .core { stroke: var(--ink); stroke-width: 4; }
+.ticker { position: absolute; left: 14px; bottom: 14px; right: 14px; display: grid; gap: 6px; }
+.ticker div { justify-self: start; max-width: 540px; font-size: .82rem; padding: 7px 11px; border-radius: 12px; background: var(--tile); border: 1px solid var(--line); cursor: pointer; animation: tin .35s ease-out; display: flex; gap: 8px; align-items: baseline; }
+.ticker div .lbl { font-size: .58rem; }
 @keyframes tin { from { opacity: 0; transform: translateY(6px); } }
-.tip { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 4; width: max-content; max-width: min(460px, calc(100% - 24px)); background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 14px; font-size: .88rem; font-weight: 600; display: flex; gap: 10px; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
-.tip button { background: none; border: 0; color: var(--bg); opacity: .6; font-size: .8rem; padding: 0; text-decoration: underline; }
-.legend { position: absolute; top: 12px; right: 12px; display: flex; gap: 10px; font-size: .72rem; color: var(--muted); background: rgba(18,23,34,.8); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); }
-.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.tip { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 4; width: max-content; max-width: min(470px, calc(100% - 28px)); background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 16px; font-size: .9rem; font-weight: 600; display: flex; gap: 12px; align-items: center; box-shadow: 0 20px 50px -20px rgba(0,0,0,.5); }
+.tip .n { font: 700 .66rem var(--mono); background: var(--acc); color: var(--acc-ink); border-radius: 999px; padding: 3px 7px; }
+.tip button { background: none; border: 0; color: var(--bg); opacity: .6; font-size: .78rem; padding: 0; text-decoration: underline; }
+.legend { position: absolute; top: 14px; right: 14px; display: flex; gap: 12px; font-size: .74rem; color: var(--muted); background: var(--tile); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
 
 /* side panel */
-.panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; display: grid; align-content: start; gap: 14px; padding: 16px; min-height: 0; }
-.panel .empty { color: var(--muted); text-align: center; padding: 40px 10px; display: grid; gap: 10px; }
-.panel .empty b { font-size: 2.6rem; }
-.ph { display: grid; gap: 6px; }
-.ph h2 { font-size: 1.5rem; letter-spacing: -.03em; display: flex; align-items: center; gap: 8px; }
-.ph p { color: var(--muted); font-size: .86rem; }
-.ph .x { margin-left: auto; background: none; border: 0; color: var(--muted); font-size: 1.3rem; display: none; }
-.meters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.meters .bar b.t { background: linear-gradient(90deg, var(--warn), var(--bad)); }
-.meters .bar b.p { background: linear-gradient(90deg, var(--blue), var(--ok)); }
-.mrow { display: flex; justify-content: space-between; font-size: .74rem; color: var(--muted); margin-bottom: 4px; }
-.mrow b { color: var(--ink); font-family: var(--mono); }
+.panel { background: var(--tile); border-left: 1px solid var(--line); overflow-y: auto; display: grid; align-content: start; gap: 14px; padding: 18px; min-height: 0; }
+.panel .empty { text-align: center; padding: 50px 14px; display: grid; gap: 10px; justify-items: center; color: var(--muted); }
+.panel .empty b { font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+.ph { display: grid; gap: 4px; }
+.ph h2 { font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; line-height: 1.05; display: flex; align-items: center; gap: 8px; }
+.ph p { color: var(--muted); font-size: .88rem; }
+.ph .x { margin-left: auto; display: none; }
+.meters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mrow { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.mrow b { font: 700 .8rem var(--mono); }
 .badges { display: flex; gap: 6px; flex-wrap: wrap; }
-.badge { font-family: var(--mono); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
-.badge.ok { color: var(--ok); border-color: var(--ok); }
-.badge.bad { color: var(--bad); border-color: var(--bad); }
 .tokens { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.tok { position: relative; display: grid; justify-items: center; gap: 4px; padding: 10px 4px 8px; border-radius: 16px; border: 1px solid transparent; background: var(--panel2); transition: border-color .2s, transform .2s; }
-.tok:hover { transform: translateY(-2px); }
-.tok.sel { border-color: var(--acc); background: var(--acc-soft); }
-.tok .av { position: relative; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 1.6rem; background: conic-gradient(var(--mc) calc(var(--m) * 1%), rgba(255,255,255,.07) 0); }
-.tok .av::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--panel); }
-.tok .av span { position: relative; }
-.tok .face { position: absolute; right: -8px; top: -6px; font-size: 1.1rem; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
-.tok .nm { font-size: .74rem; font-weight: 700; text-align: center; line-height: 1.15; }
-.tok .vt { position: absolute; top: 4px; left: 4px; font-family: var(--mono); font-size: .52rem; color: var(--acc); border: 1px solid var(--acc); border-radius: 999px; padding: 1px 4px; }
-.tok .td { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; }
-.td.documented { background: var(--ok); } .td.partial { background: var(--warn); } .td.thin { background: var(--bad); }
-.tok.gone { opacity: .45; }
-.tok .gone-l { position: absolute; top: 40%; font-size: .6rem; font-family: var(--mono); background: var(--bad); color: #fff; padding: 2px 5px; border-radius: 6px; }
-.tok .sent { position: absolute; top: 24px; right: 2px; font-size: .7rem; }
-.tok.vote-yes { border-color: var(--ok); background: var(--ok-soft); }
-.tok.vote-no { border-color: var(--bad); background: var(--bad-soft); }
-.tok .vmark { position: absolute; top: -8px; font-size: 1.2rem; animation: pop .35s cubic-bezier(.3,1.6,.5,1); }
+.tok { position: relative; display: grid; justify-items: center; gap: 5px; padding: 12px 4px 9px; border-radius: 16px; border: 1px solid var(--line); background: var(--tile2); transition: border-color .2s, transform .2s, background .2s; }
+.tok:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); }
+.tok.sel { border-color: var(--ink); background: var(--tile); box-shadow: 0 0 0 1px var(--ink); }
+.tok .av { position: relative; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 1.45rem; background: conic-gradient(var(--mc) calc(var(--m) * 1%), var(--line) 0); }
+.tok .av::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--tile); }
+.tok .av > span { position: relative; }
+.tok .face { position: absolute; right: -9px; bottom: -5px; width: 24px; height: 24px; }
+.tok .nm { font-size: .8rem; font-weight: 800; letter-spacing: -.01em; text-align: center; line-height: 1.15; }
+.tok .md { font: 600 .58rem var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tok .vt { position: absolute; top: 5px; left: 5px; font: 700 .52rem var(--mono); color: var(--acc-ink); background: var(--acc); border-radius: 999px; padding: 2px 5px; }
+.tok .td { position: absolute; top: 4px; right: 6px; font: 700 .72rem var(--mono); }
+.td.documented { color: var(--ok); } .td.partial { color: var(--warn); } .td.thin { color: var(--acc); }
+.tok.gone { opacity: .5; }
+.tok .out { position: absolute; top: 38%; font: 700 .6rem var(--mono); background: var(--ink); color: var(--bg); padding: 2px 6px; border-radius: 6px; }
+.tok .sent { position: absolute; top: 26px; right: 4px; color: var(--blue); }
+.tok .sent .ico { width: 14px; height: 14px; }
+.tok.vote-yes { border-color: var(--blue); background: var(--blue-soft); }
+.tok.vote-no { border-color: var(--acc); background: var(--acc-soft); }
+.tok .vmark { position: absolute; top: -10px; font: 800 .66rem var(--mono); padding: 3px 7px; border-radius: 999px; color: #fff; animation: pop .35s cubic-bezier(.3,1.6,.5,1); }
+.vmark.y { background: var(--blue); } .vmark.n { background: var(--acc); }
 @keyframes pop { from { transform: scale(0); } }
-.hand { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.hc { border-radius: 12px; padding: 8px; font-size: .78rem; background: var(--panel2); min-height: 74px; display: grid; gap: 4px; align-content: start; border: 1px solid transparent; animation: flip .4s ease-out; }
-@keyframes flip { from { transform: rotateY(90deg); opacity: .2; } }
-.hc .k { font-family: var(--mono); font-size: .56rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.hc.recon { border: 1px dashed var(--warn); background: transparent; }
-.hc.recon .k { color: var(--warn); }
-.hc.unknown { color: var(--muted); display: grid; place-items: center; font-size: 1.6rem; }
-.hc.wrong { border: 1px solid var(--bad); }
-.hc .was { color: var(--muted); text-decoration: line-through; font-size: .72rem; }
 .pname { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.pname b { font-size: .92rem; }
-.pname small { color: var(--muted); font-size: .72rem; text-align: right; }
+.pname b { font-size: .98rem; font-weight: 800; letter-spacing: -.01em; }
+.hand { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.hc { border-radius: 14px; padding: 9px; font-size: .84rem; line-height: 1.35; background: var(--tile2); border: 1px solid var(--line); min-height: 80px; display: grid; gap: 4px; align-content: start; animation: flip .4s ease-out; }
+@keyframes flip { from { transform: rotateY(90deg); opacity: .2; } }
+.hc .k { font: 600 .58rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hc.recon { border-style: dashed; border-color: var(--warn); background: transparent; }
+.hc.recon .k { color: var(--warn); }
+.hc.unknown { display: grid; place-items: center; color: var(--muted); font: 800 1.4rem var(--sans); }
+.hc.wrong { border-color: var(--acc); }
+.hc .was { color: var(--muted); text-decoration: line-through; font-size: .76rem; }
 .dock { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.ab { position: relative; display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel2); font-size: .78rem; font-weight: 700; transition: transform .12s, border-color .2s; }
-.ab .ic { font-size: 1.35rem; line-height: 1.1; }
-.ab .cost { font-size: .58rem; font-weight: 400; letter-spacing: -1px; }
-.ab:hover:not(:disabled) { border-color: var(--muted); transform: translateY(-2px); }
-.ab[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); }
-.ab:disabled { opacity: .32; cursor: not-allowed; }
-.why { font-size: .78rem; color: var(--muted); text-align: center; }
+.ab { display: grid; justify-items: center; gap: 4px; padding: 11px 4px 9px; border-radius: 16px; border: 1px solid var(--line); background: var(--tile2); font-size: .8rem; font-weight: 700; transition: transform .12s, border-color .2s, background .2s; }
+.ab .ico { width: 22px; height: 22px; }
+.ab .cost { display: flex; gap: 3px; }
+.ab .cost i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
+.ab:hover:not(.off) { border-color: var(--ink); background: var(--tile); transform: translateY(-2px); }
+.ab[aria-pressed="true"], .ab[aria-pressed="true"]:hover:not(.off) { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.ab[aria-pressed="true"] .cost i { background: var(--bg); }
+.ab.off { opacity: .38; }
+.why { font-size: .8rem; color: var(--muted); text-align: center; }
 .why:empty { display: none; }
-.sub { display: grid; gap: 10px; padding: 12px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); animation: tin .25s ease-out; }
+.sub { display: grid; gap: 10px; padding: 14px; border-radius: 16px; background: var(--tile2); border: 1px solid var(--line); animation: tin .25s ease-out; }
 .offers { display: flex; flex-wrap: wrap; gap: 6px; }
-.offer { padding: 8px 11px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); font-size: .82rem; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; text-align: left; }
-.offer:hover { border-color: var(--muted); }
-.offer[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); }
+.offer { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); font-size: .84rem; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; text-align: left; }
+.offer:hover:not(:disabled) { border-color: var(--ink); }
+.offer[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .offer:disabled { opacity: .4; cursor: not-allowed; }
-.sub textarea { width: 100%; min-height: 64px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); resize: vertical; }
-.preview { display: flex; gap: 6px; flex-wrap: wrap; font-size: .8rem; }
-.preview span { padding: 4px 8px; border-radius: 999px; background: var(--panel2); }
-.histbox { padding: 10px 12px; border-radius: 12px; border-left: 3px solid var(--ok); background: var(--panel2); font-size: .84rem; color: var(--muted); }
+.lean { font: 700 .62rem var(--mono); padding: 2px 6px; border-radius: 999px; }
+.lean.y { color: var(--blue); background: var(--blue-soft); } .lean.n { color: var(--acc); background: var(--acc-soft); } .lean.r { color: #fff; background: var(--acc); }
+.sub textarea { width: 100%; min-height: 66px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); resize: vertical; }
+.preview { display: flex; gap: 6px; flex-wrap: wrap; }
+.histbox { padding: 12px 14px; border-radius: 14px; border-left: 3px solid var(--blue); background: var(--blue-soft); font-size: .86rem; }
 
-/* overlays */
-.ov { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(5,7,10,.72); backdrop-filter: blur(4px); animation: fade .25s; }
+/* overlays (same sheet style as the site's) */
+.ov { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter: blur(6px); animation: fade .2s; }
 @keyframes fade { from { opacity: 0; } }
-.crisis { width: min(440px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 22px; display: grid; gap: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.6); animation: deal .45s cubic-bezier(.3,1.4,.5,1); }
-@keyframes deal { from { transform: translateY(40px) rotate(-4deg) scale(.9); opacity: 0; } }
-.crisis h2 { font-size: 1.6rem; letter-spacing: -.03em; line-height: 1.1; }
-.choice { text-align: left; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel2); display: grid; gap: 4px; transition: transform .12s, border-color .2s; }
-.choice:hover { border-color: var(--acc); transform: translateY(-2px); }
-.choice b { font-size: 1rem; }
-.choice small { color: var(--muted); font-size: .8rem; }
-.banner { position: fixed; left: 0; right: 0; top: 40%; z-index: 30; text-align: center; pointer-events: none; font-size: clamp(2.4rem, 8vw, 5rem); font-weight: 800; letter-spacing: -.05em; text-shadow: 0 6px 40px rgba(0,0,0,.8); animation: ban 1.4s ease-out forwards; padding: 0 16px; }
-.banner small { display: block; font-size: .3em; letter-spacing: .1em; font-family: var(--mono); color: var(--muted); }
-@keyframes ban { 0% { opacity: 0; transform: scale(.7); } 18% { opacity: 1; transform: scale(1.04); } 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); } }
-.flash { position: fixed; inset: 0; z-index: 25; pointer-events: none; background: radial-gradient(circle, transparent 40%, rgba(255,60,60,.45)); animation: fl .8s ease-out forwards; }
+.sheet { width: min(560px, 100%); max-height: calc(100svh - 32px); overflow-y: auto; background: var(--tile); border: 1px solid var(--line); border-radius: var(--r); padding: 24px; display: grid; gap: 14px; box-shadow: 0 40px 100px -30px rgba(0,0,0,.45); animation: sheetIn .35s cubic-bezier(.2,1.2,.4,1); }
+@keyframes sheetIn { from { transform: translateY(24px) scale(.97); opacity: 0; } }
+.sheet h2 { font-size: clamp(1.6rem, 5vw, 2.1rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.02; }
+.sheet .rowx { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--tile2); }
+.seg button { border: 0; background: none; padding: 7px 12px; font-size: .82rem; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.mission { display: grid; gap: 10px; }
+.mission div { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; color: var(--muted); }
+.mission div b { color: var(--ink); }
+.mission .ic { width: 34px; height: 34px; border-radius: 10px; background: var(--tile2); border: 1px solid var(--line); display: grid; place-items: center; }
+.choice { text-align: left; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--tile2); display: grid; gap: 8px; transition: transform .12s, border-color .2s, background .2s; }
+.choice:hover { border-color: var(--ink); background: var(--tile); transform: translateY(-2px); }
+.choice b { font-size: 1.02rem; font-weight: 800; letter-spacing: -.01em; }
+.banner { position: fixed; left: 0; right: 0; top: 38%; z-index: 35; text-align: center; pointer-events: none; animation: ban 1.4s ease-out forwards; padding: 0 16px; }
+.banner b { display: inline-block; font-size: clamp(2.2rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -.055em; line-height: 1; padding: .1em .35em .18em; background: var(--tile); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.4); }
+.banner b.hot { background: var(--acc); color: var(--acc-ink); border-color: var(--acc); }
+.banner b.good { background: var(--blue); color: #fff; border-color: var(--blue); }
+.banner small { display: block; margin-top: 10px; }
+@keyframes ban { 0% { opacity: 0; transform: translateY(14px) scale(.92); } 18% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+.flash { position: fixed; inset: 0; z-index: 25; pointer-events: none; box-shadow: inset 0 0 0 6px var(--acc), inset 0 0 120px color-mix(in srgb, var(--acc) 40%, transparent); animation: fl .8s ease-out forwards; }
 @keyframes fl { to { opacity: 0; } }
 .shake { animation: shake .45s; }
-@keyframes shake { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
-.float { position: fixed; z-index: 30; pointer-events: none; font-weight: 800; font-family: var(--mono); font-size: 1rem; animation: up 1.2s ease-out forwards; text-shadow: 0 2px 8px rgba(0,0,0,.8); }
-@keyframes up { to { transform: translateY(-46px); opacity: 0; } }
-.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 35; width: max-content; max-width: min(460px, calc(100vw - 24px)); padding: 12px 16px; border-radius: 14px; background: var(--ink); color: var(--bg); font-size: .9rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
-.end { width: min(640px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 24px; display: grid; gap: 16px; animation: deal .5s cubic-bezier(.3,1.4,.5,1); }
-.end .ko { font-size: clamp(2.6rem, 9vw, 4.6rem); font-weight: 800; letter-spacing: -.06em; line-height: .9; }
-.ko.w { color: var(--ok); } .ko.l { color: var(--bad); }
-.kpis { display: flex; gap: 24px; flex-wrap: wrap; }
-.kpis b { display: block; font-size: 1.8rem; letter-spacing: -.03em; }
-.kpis span { color: var(--muted); font-size: .78rem; }
+@keyframes shake { 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+.float { position: fixed; z-index: 36; pointer-events: none; font: 700 .78rem var(--mono); padding: 3px 8px; border-radius: 999px; color: #fff; animation: up 1.2s ease-out forwards; }
+.float.good { background: var(--blue); } .float.bad { background: var(--acc); } .float.n { background: var(--ink); color: var(--bg); }
+@keyframes up { to { transform: translateY(-44px); opacity: 0; } }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 40; width: max-content; max-width: min(480px, calc(100vw - 24px)); padding: 12px 16px; border-radius: 16px; background: var(--ink); color: var(--bg); font-size: .9rem; font-weight: 600; box-shadow: 0 20px 50px -20px rgba(0,0,0,.5); }
+.toast .who { display: block; font: 600 .62rem var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .65; margin-bottom: 2px; }
+.ko { font-size: clamp(2.6rem, 9vw, 4.4rem); font-weight: 800; letter-spacing: -.06em; line-height: .92; }
+.ko .sc { position: relative; white-space: nowrap; }
+.ko .sc svg { position: absolute; left: -2%; bottom: -.1em; width: 104%; height: .3em; overflow: visible; }
+.ko .sc path { fill: none; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .9s .2s cubic-bezier(.5,0,.3,1) forwards; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.kpis div { padding: 12px; border-radius: 14px; background: var(--tile2); border: 1px solid var(--line); }
+.kpis b { display: block; font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; line-height: 1.05; }
+.kpis span { color: var(--muted); font-size: .74rem; }
 .cmp { display: grid; gap: 8px; }
-.cmp .row { padding: 12px; border-radius: 14px; background: var(--panel2); display: grid; gap: 6px; font-size: .86rem; }
+.cmp .row { padding: 14px; border-radius: 14px; background: var(--tile2); border: 1px solid var(--line); display: grid; gap: 6px; font-size: .88rem; }
 .cmp .row p { color: var(--muted); }
-.cmp .match { font-family: var(--mono); font-size: .7rem; color: var(--blue); }
-.reveals { display: grid; gap: 6px; font-size: .84rem; }
-.reveals div { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--bad); }
+.reveals { display: grid; gap: 6px; font-size: .86rem; }
+.reveals div { padding: 9px 11px; border-radius: 12px; border: 1px dashed var(--acc); }
 .reveals s { color: var(--muted); }
-.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(0,0,0,.25); border-top-color: currentColor; animation: spin .8s linear infinite; display: inline-block; vertical-align: -3px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* readability + accessibility */
-.lbl { font-size: .68rem; }
-.tok .nm { font-size: .8rem; }
-.hc { font-size: .84rem; }
-.hc .k { font-size: .6rem; }
-.td { position: absolute; top: 4px; right: 5px; width: auto !important; height: auto !important; background: none !important; font: 700 .68rem var(--mono); }
-.td.documented { color: var(--ok); } .td.partial { color: var(--warn); } .td.thin { color: var(--bad); }
-.ab.off { opacity: .34; }
-.hl { position: relative; z-index: 3; animation: hl 1.3s ease-in-out infinite !important; box-shadow: 0 0 0 3px var(--acc), 0 0 22px rgba(255,107,51,.6) !important; border-radius: 16px; }
-@keyframes hl { 50% { box-shadow: 0 0 0 6px rgba(255,107,51,.35), 0 0 30px rgba(255,107,51,.75); } }
-.hs.hlmap .core { stroke: var(--acc); stroke-width: 5; }
-.hs .fc { font: 700 11px var(--mono); }
-.diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.dif { text-align: left; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: grid; gap: 3px; }
-.dif[aria-pressed="true"] { border-color: var(--acc); box-shadow: 0 0 0 2px var(--acc-soft); }
-.dif b { font-size: .95rem; }
-.dif small { color: var(--muted); font-size: .78rem; line-height: 1.35; }
-.dif .m { font-family: var(--mono); font-size: .62rem; color: var(--acc); }
-.goal { font-size: .78rem; color: var(--muted); white-space: nowrap; }
-.goal b { color: var(--ink); }
-.iconbtn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-size: 1rem; display: grid; place-items: center; padding: 0; }
-.iconbtn:hover { border-color: var(--muted); }
-.sheet { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 22px; display: grid; gap: 14px; animation: deal .4s cubic-bezier(.3,1.4,.5,1); }
-.sheet h2 { font-size: 1.6rem; letter-spacing: -.03em; }
-.sheet ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--muted); }
-.sheet li b { color: var(--ink); }
-.sheet .rowx { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
-.seg button { border: 0; background: none; padding: 7px 12px; font-size: .84rem; }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
-.mission { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: start; }
-.mission span:nth-child(odd) { font-size: 1.4rem; line-height: 1.2; }
-.mission span:nth-child(even) { color: var(--muted); }
-.mission b { color: var(--ink); }
 .logl { display: grid; gap: 6px; font-size: .88rem; }
-.logl div { padding: 8px 10px; border-radius: 10px; background: var(--panel2); }
-.logl small { color: var(--muted); font-family: var(--mono); font-size: .64rem; margin-right: 6px; }
-.ticker div { pointer-events: auto; cursor: pointer; }
+.logl div { padding: 8px 11px; border-radius: 12px; background: var(--tile2); border: 1px solid var(--line); display: flex; gap: 8px; align-items: baseline; }
+.spinner { width: 15px; height: 15px; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin .8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.hl { position: relative; z-index: 3; animation: hl 1.3s ease-in-out infinite !important; box-shadow: 0 0 0 2px var(--acc), 0 0 0 6px var(--acc-soft) !important; }
+@keyframes hl { 50% { box-shadow: 0 0 0 2px var(--acc), 0 0 0 10px var(--acc-soft); } }
 body.rm *, body.rm *::before, body.rm *::after { animation: none !important; transition: none !important; }
+body.rm .hero h1 .sc path, body.rm .ko .sc path { stroke-dashoffset: 0; }
 
-@media (max-width: 1020px) {
+@media (max-width: 1060px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .under, .setup { grid-template-columns: minmax(0, 1fr); }
   .diffs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .camps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .under { grid-template-columns: minmax(0, 1fr); }
+  .top nav { display: none; }
 }
-@media (max-width: 760px) {
+@media (max-width: 780px) {
   .stage { grid-template-columns: minmax(0, 1fr); }
-  .panel { position: fixed; left: 0; right: 0; bottom: 0; max-height: 70vh; border-left: 0; border-top: 1px solid var(--line); border-radius: 22px 22px 0 0; z-index: 10; padding-bottom: max(16px, env(safe-area-inset-bottom)); box-shadow: 0 -20px 50px rgba(0,0,0,.5); transition: transform .3s cubic-bezier(.3,1.1,.5,1); }
+  .panel { position: fixed; left: 0; right: 0; bottom: 0; max-height: 72svh; border-left: 0; border-top: 1px solid var(--line); border-radius: 24px 24px 0 0; z-index: 10; padding-bottom: max(18px, env(safe-area-inset-bottom)); box-shadow: 0 -30px 60px -30px rgba(0,0,0,.4); transition: transform .3s cubic-bezier(.3,1.1,.5,1); }
   .panel.closed { transform: translateY(105%); }
-  .ph .x { display: block; }
+  .ph .x { display: grid; }
   .world { width: 90px; }
-  .hud { gap: 8px 12px; padding-top: 8px; padding-bottom: 8px; }
-  .legend { display: none; }
-  .setup { grid-template-columns: minmax(0, 1fr); }
-  .setup > div:last-child { justify-items: stretch !important; }
-  .namefield input { width: 100%; }
+  .hud { gap: 8px 14px; }
+  .goal, .legend { display: none; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 520px) {
-  .camps { grid-template-columns: minmax(0, 1fr); }
-  .camp { min-height: 0; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
   .tokens { gap: 5px; }
-  .tok .av { width: 44px; height: 44px; font-size: 1.3rem; }
-  .hud .t { display: none; }
-  .goal { display: none; }
+  .tok .av { width: 44px; height: 44px; font-size: 1.2rem; }
+  .hud .ttl { display: none; }
   .iconbtn { width: 34px; height: 34px; }
+  #quitBtn, #logBtn, .hud .theme-btn, .hud .brand { display: none; }
+  .hud { gap: 6px 12px; padding-top: 8px; padding-bottom: 8px; }
+  .world { width: 70px; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .hero h1 .sc path, .ko .sc path { stroke-dashoffset: 0; } }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-listen" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.2 8.2a5.4 5.4 0 0 0 0 7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6M5.3 5.3a9.5 9.5 0 0 0 0 13.4M18.7 5.3a9.5 9.5 0 0 1 0 13.4"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7.5l8.5 6 8.5-6"/></symbol>
+  <symbol id="i-aid" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="2.5"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M12 10.5v6M9 13.5h6"/></symbol>
+  <symbol id="i-keepers" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.6-3 8-7 9.5-4-1.5-7-4.9-7-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-summit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="3.6" r="1.6"/><circle cx="12" cy="20.4" r="1.6"/><circle cx="3.6" cy="12" r="1.6"/><circle cx="20.4" cy="12" r="1.6"/></symbol>
+  <symbol id="i-deal" viewBox="0 0 24 24"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4M9.5 14l2 2 4-4.5"/></symbol>
+  <symbol id="i-end" viewBox="0 0 24 24"><path d="M5 5l8 7-8 7M16 5v14"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.8-2.5 2.3-2.5 4M12 17.3v.2"/></symbol>
+  <symbol id="i-set" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r=".8"/><circle cx="4" cy="12" r=".8"/><circle cx="4" cy="18" r=".8"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.3 1.2-3.7 2.4-4.8.3 1.6 1 2.4 1.8 2.8C11 8.7 11.2 5.6 12 3z"/></symbol>
+  <symbol id="i-envoy" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.3"/><path d="M5.5 20.5c.6-4 3.2-6.2 6.5-6.2s5.9 2.2 6.5 6.2"/></symbol>
+  <symbol id="i-calm" viewBox="0 0 24 24"><path d="M4 12c2.5-3 5.5-3 8 0s5.5 3 8 0M4 17c2.5-3 5.5-3 8 0s5.5 3 8 0"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></symbol>
+</svg>
 
 <!-- ================= INTRO ================= -->
 <div id="intro">
   <header class="top">
-    <a class="brand" href="/"><i>ON</i><span>omarnabi.com</span></a>
-    <span class="lbl">Built on CR-AI</span>
+    <div class="wrap">
+      <a href="/" class="brand"><i>ON</i><span>Omar Nabi</span></a>
+      <nav aria-label="Site"><a href="/#ch-work">Work</a><a href="/#ch-builds">Builds</a><a href="/#ch-play" class="on">Play</a><a href="/#ch-about">About</a><a href="/#ch-contact">Contact</a></nav>
+      <div class="act"><button type="button" class="pill theme-btn" aria-label="Switch light or dark"><svg class="ico" style="width:16px;height:16px"><use href="#i-theme"/></svg></button><a class="pill" href="/#t-builds">About CR-AI</a></div>
+    </div>
   </header>
-  <section class="hero">
-    <span class="lbl">A strategy game</span>
-    <h1>Envoy. <em>Keep the world from burning.</em></h1>
-    <p>Conflicts flare and spread across the map. You have a handful of envoys and not enough time. Win people over, open talks, and get deals signed before the world tips into war.</p>
-    <div class="steps3"><span>🗺️ Pick a hotspot</span><span>🕴️ Spend envoys</span><span>🙂 Win over parties</span><span>📜 Sign deals</span><span>⏭️ End the month</span></div>
-  </section>
-
-  <div class="camps" id="camps" role="group" aria-label="Choose a world"></div>
-
-  <section class="build">
-    <h3>Or name any conflict. CR-AI builds it.</h3>
-    <div class="buildrow"><input id="bq" maxlength="120" placeholder="e.g. Partition of India 1947, Sudan civil war, Taiwan Strait 2030" aria-label="Any conflict"><button class="btn" id="bgo" type="button">Build it</button></div>
-    <div class="chips" id="bex"></div>
-    <p class="lbl" id="bnote"></p>
-    <div id="built"></div>
-  </section>
-
-  <section class="setup" id="setup" hidden>
-    <div style="display:grid;gap:12px">
-      <div class="twists" id="twists"></div>
-      <div style="display:grid;gap:6px"><span class="lbl">Difficulty · change it anytime</span><div class="diffs" id="diffs"></div></div>
-    </div>
-    <div style="display:grid;gap:10px;justify-items:end">
-      <div class="namefield"><label class="lbl" for="name">Name for the leaderboard (optional)</label><input id="name" maxlength="20" placeholder="your name" autocomplete="nickname"></div>
-      <button class="btn" id="go" type="button">Play ▸</button>
-    </div>
-  </section>
-
-  <div class="under">
-    <section class="card">
-      <span class="lbl">How to win</span>
-      <ul>
-        <li><b>Hotspots heat up every month.</b> At 100 they flare up and spread to linked conflicts. If world tension hits 100, it's over.</li>
-        <li><b>Parties have a mood.</b> Message them with offers they want 😀. Offer something on their red line and they turn on you 😡.</li>
-        <li><b>Listen</b> to reveal hidden cards. Dashed cards are CR-AI's guesses from thin sources, and some are wrong.</li>
-        <li><b>Open talks</b> when enough parties are happy, then <b>propose a deal</b>. Veto parties must sign.</li>
-        <li>Sign the target number of deals before time runs out.</li>
-      </ul>
+  <div class="wrap">
+    <section class="hero">
+      <span class="lbl">Play · a strategy game built on CR-AI</span>
+      <h1>Envoy. Keep the world from <span class="sc">burning.<svg viewBox="0 0 300 20" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M4 13 C 60 4, 120 18, 180 9 S 270 6, 296 12"/></svg></span></h1>
+      <p>Conflicts flare and spread across the map. You have a few envoys and not enough time. Win parties over, open talks, and get deals signed before the world tips into war.</p>
+      <div class="how3"><span class="chip">1 · Pick a hotspot</span><span class="chip">2 · Spend envoys</span><span class="chip">3 · Win parties over</span><span class="chip">4 · Sign deals</span><span class="chip">5 · End the month</span></div>
     </section>
-    <section class="card">
-      <span class="lbl">Leaderboard</span>
-      <div id="lbName" style="font-weight:700">Pick a world to see its board</div>
-      <div id="lb"></div>
+
+    <div class="grid" id="camps" role="group" aria-label="Choose a world"></div>
+
+    <section class="t build">
+      <div class="t-h"><span class="lbl">Any conflict</span><span class="hint blue" id="bnote">Built by CR-AI</span></div>
+      <h3>Name any conflict. CR-AI builds it.</h3>
+      <div class="buildrow"><input id="bq" maxlength="120" placeholder="Partition of India 1947, Sudan civil war, Taiwan Strait 2030…" aria-label="Any conflict"><button class="btn" id="bgo" type="button">Build it</button></div>
+      <div class="chips" id="bex"></div>
+      <div id="built"></div>
     </section>
+
+    <section class="t setup" id="setup" hidden>
+      <div style="display:grid;gap:14px">
+        <div class="t-h"><span class="lbl" id="setupLbl"></span><span class="hint">Set up your game</span></div>
+        <div class="opts2" id="twists"></div>
+        <div style="display:grid;gap:6px"><span class="lbl">Difficulty · change it anytime</span><div class="diffs" id="diffs"></div></div>
+      </div>
+      <div style="display:grid;gap:12px;align-content:end">
+        <div class="field"><label class="lbl" for="name">Name for the leaderboard (optional)</label><input id="name" maxlength="20" placeholder="your name" autocomplete="nickname"></div>
+        <button class="btn" id="go" type="button">Play</button>
+      </div>
+    </section>
+
+    <div class="under">
+      <section class="t">
+        <div class="t-h"><span class="lbl">How to win</span><span class="hint">60-second read</span></div>
+        <ol class="rules">
+          <li><span class="n">1</span><span><b>Hotspots heat up every month.</b> At 100 they flare and spread to linked conflicts. If world tension hits 100, it's over.</span></li>
+          <li><span class="n">2</span><span><b>Parties have moods.</b> Offer them terms they want and they warm up. Offer something on their red line and they turn on you.</span></li>
+          <li><span class="n">3</span><span><b>Listen</b> to reveal hidden cards. Dashed cards are CR-AI's guesses from thin sources, and some are wrong.</span></li>
+          <li><span class="n">4</span><span><b>Open talks</b> once enough parties are warm, then <b>propose a deal</b>. Veto parties must sign.</span></li>
+        </ol>
+      </section>
+      <section class="t">
+        <div class="t-h"><span class="lbl">Leaderboard</span><span class="hint blue" id="lbName">Pick a world</span></div>
+        <div id="lb"><p style="color:var(--muted);font-size:.9rem">Pick a world to see who's on top.</p></div>
+      </section>
+    </div>
+    <p class="foot">Parties are institutions, simplified for play. Their lines are simulated, not real statements. Live-built scenarios run on Cloudflare Workers AI and can be wrong.</p>
   </div>
-  <p class="lbl" style="margin-top:18px;line-height:1.6">Parties are institutions, simplified for play. Their lines are simulated, not real statements. Live-built scenarios run on Cloudflare Workers AI and can be wrong.</p>
 </div>
 
 <!-- ================= GAME ================= -->
 <div id="game" hidden>
   <div class="hud">
-    <div class="t"><span class="lbl" id="hEra"></span><b id="hTitle"></b></div>
+    <a href="/" class="brand" aria-label="omarnabi.com"><i>ON</i></a>
+    <div class="ttl"><span class="lbl" id="hEra"></span><b id="hTitle"></b></div>
     <div class="stat"><span class="lbl" id="hUnit">Month</span><div class="pips" id="hPips"></div></div>
     <div class="stat"><span class="lbl">Envoys</span><div class="envoys" id="hEnv"></div></div>
-    <div class="stat world"><span class="lbl">World <b id="hGlobalN"></b></span><div class="bar"><b id="hGlobal"></b></div></div>
+    <div class="stat world"><span class="lbl">World <b id="hGlobalN" style="color:var(--ink)"></b></span><div class="meter"><b id="hGlobal"></b></div></div>
     <div class="stat"><span class="lbl">Deals</span><div class="deals" id="hDeals"></div></div>
     <span class="goal" id="hGoal"></span>
     <span class="grow"></span>
-    <button class="iconbtn" id="logBtn" type="button" aria-label="Dispatch log" title="Dispatch log">📜</button>
-    <button class="iconbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
-    <button class="iconbtn" id="setBtn" type="button" aria-label="Settings" title="Settings">⚙</button>
+    <button class="iconbtn" id="logBtn" type="button" aria-label="Dispatch log" title="Dispatch log"><svg class="ico"><use href="#i-log"/></svg></button>
+    <button class="iconbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play"><svg class="ico"><use href="#i-help"/></svg></button>
+    <button class="iconbtn" id="setBtn" type="button" aria-label="Settings" title="Settings"><svg class="ico"><use href="#i-set"/></svg></button>
+    <button class="iconbtn theme-btn" type="button" aria-label="Switch light or dark" title="Light or dark"><svg class="ico"><use href="#i-theme"/></svg></button>
     <button class="btn ghost sm" id="quitBtn" type="button">Quit</button>
-    <button class="btn sm" id="endBtn" type="button">End month ⏭</button>
+    <button class="btn sm" id="endBtn" type="button">End month <svg class="ico" style="width:16px;height:16px"><use href="#i-end"/></svg></button>
   </div>
   <div class="stage">
     <div class="mapwrap" id="mapwrap">
       <svg id="map" role="img" aria-label="World map of hotspots"></svg>
-      <div class="legend"><span><i style="background:var(--ok)"></i>calm</span><span><i style="background:var(--warn)"></i>tense</span><span><i style="background:var(--bad)"></i>about to flare</span></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>calm</span><span><i style="background:var(--warn)"></i>tense</span><span><i style="background:var(--acc)"></i>about to flare</span></div>
       <div class="tip" id="tip" hidden></div>
       <div class="ticker" id="ticker"></div>
     </div>
@@ -407,6 +458,7 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var ico = function (n, sz) { return '<svg class="ico"' + (sz ? ' style="width:' + sz + "px;height:" + sz + 'px"' : "") + '><use href="#i-' + n + '"/></svg>'; };
   var store = {
     get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
@@ -417,20 +469,18 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     var o = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {};
     return fetch(path, o).then(function (r) { return r.json().catch(function () { return { error: "Server error (" + r.status + ")" }; }); }).catch(function () { return { error: "Network error." }; });
   }
-  function toast(msg, ms) { var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, ms || 3200); }
-  function banner(big, small) { var b = document.createElement("div"); b.className = "banner"; b.style.animationDuration = (1.4 * SP()) + "s"; b.innerHTML = esc(big) + (small ? "<small>" + esc(small) + "</small>" : ""); document.body.appendChild(b); setTimeout(function () { b.remove(); }, 1500 * SP()); }
-  function floatAt(x, y, text, color) { var f = document.createElement("div"); f.className = "float"; f.textContent = text; f.style.left = x + "px"; f.style.top = y + "px"; f.style.color = color || "var(--ink)"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 1250); }
-  function flash() { var f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 850); var g = $("game"); g.classList.remove("shake"); void g.offsetWidth; g.classList.add("shake"); }
 
-  var ERA = { now: "NOW", past: "PAST", future: "FUTURE" };
-  var ERAICON = { now: "🔥", past: "📜", future: "🛰️" };
-  var EXAMPLES = ["Partition of India, 1947", "Sudan civil war", "Taiwan Strait, 2030", "Camp David, 1978", "Arctic shipping war, 2040", "Kosovo, 1999"];
+  /* ---------- theme: shared with the main site ---------- */
+  var root = document.documentElement;
+  function isDark() { return root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; }
+  [].forEach.call(document.querySelectorAll(".theme-btn"), function (b) { b.addEventListener("click", function () { var n = isDark() ? "light" : "dark"; root.setAttribute("data-theme", n); store.set("on-theme", n); if (G) drawMap(); }); });
+
+  /* ---------- settings ---------- */
   var SET = Object.assign({ speed: "normal", sound: false, motion: true }, store.get("envoy-settings") || {});
   var DIFF = store.get("envoy-diff") || "standard";
   var SP = function () { return SET.speed === "fast" ? 0.5 : 1; };
   function applySettings() { document.body.classList.toggle("rm", !SET.motion); store.set("envoy-settings", SET); }
   applySettings();
-  /* Optional sound, off by default; nothing important is conveyed by sound alone. */
   var AC = null;
   function sfx(kind) {
     if (!SET.sound) return;
@@ -438,55 +488,86 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
       AC = AC || new (window.AudioContext || window.webkitAudioContext)();
       var notes = { tap: [[520, .05]], good: [[523, .08], [659, .08], [784, .12]], bad: [[220, .12], [180, .18]], flare: [[110, .35]], deal: [[523, .1], [659, .1], [784, .1], [1046, .25]], month: [[392, .08], [523, .12]] }[kind] || [[440, .05]];
       var t = AC.currentTime;
-      notes.forEach(function (n) { var o = AC.createOscillator(), g = AC.createGain(); o.type = kind === "flare" ? "sawtooth" : "triangle"; o.frequency.value = n[0]; g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.0001, t + n[1]); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + n[1]); t += n[1] * .8; });
+      notes.forEach(function (n) { var o = AC.createOscillator(), g = AC.createGain(); o.type = kind === "flare" ? "sawtooth" : "triangle"; o.frequency.value = n[0]; g.gain.setValueAtTime(.07, t); g.gain.exponentialRampToValueAtTime(.0001, t + n[1]); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + n[1]); t += n[1] * .8; });
     } catch (e) {}
   }
+
+  /* ---------- feedback ---------- */
+  function toast(msg, ms, who) { var t = $("toast"); t.innerHTML = (who ? '<span class="who">' + esc(who) + "</span>" : "") + esc(msg); t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, ms || 3200); }
+  function banner(big, small, tone) { var b = document.createElement("div"); b.className = "banner"; b.style.animationDuration = (1.4 * SP()) + "s"; b.innerHTML = '<b class="' + (tone || "") + '">' + esc(big) + "</b>" + (small ? '<small class="lbl">' + esc(small) + "</small>" : ""); document.body.appendChild(b); setTimeout(function () { b.remove(); }, 1500 * SP()); }
+  function floatAt(x, y, text, tone) { var f = document.createElement("div"); f.className = "float " + (tone || "n"); f.textContent = text; f.style.left = x + "px"; f.style.top = y + "px"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 1250); }
+  function flash() { var f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 850); var g = $("game"); g.classList.remove("shake"); void g.offsetWidth; g.classList.add("shake"); }
+  // Drawn face, not emoji: the mouth curves with mood.
+  function faceSvg(m, walked) {
+    var curve = walked ? 0 : Math.round((m - 45) / 9), col = m >= 50 ? "var(--blue)" : m >= 30 ? "var(--warn)" : "var(--acc)";
+    var brow = m < 25 && !walked ? '<path d="M8.6 9.2l2 1M15.4 9.2l-2 1" stroke="' + col + '" stroke-width="1.6" stroke-linecap="round"/>' : "";
+    return '<svg class="face" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="var(--tile)" stroke="' + col + '" stroke-width="1.8"/><circle cx="9.3" cy="11" r="1.2" fill="' + col + '"/><circle cx="14.7" cy="11" r="1.2" fill="' + col + '"/>' + brow + '<path d="M8.5 15.5 Q12 ' + (15.5 + curve) + " 15.5 15.5" + '" fill="none" stroke="' + col + '" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  }
+  var moodWord = function (m, walked) { return walked ? "Walked out" : m >= 70 ? "Friendly" : m >= 50 ? "Warm" : m >= 35 ? "Wary" : m >= 20 ? "Cold" : "Hostile"; };
+  var moodCol = function (m) { return m >= 50 ? "var(--blue)" : m >= 30 ? "var(--warn)" : "var(--acc)"; };
+  function tCol(t, done) {
+    var css = getComputedStyle(root);
+    if (done) return css.getPropertyValue("--blue").trim();
+    return t >= 85 ? css.getPropertyValue("--acc").trim() : t >= 55 ? css.getPropertyValue("--warn").trim() : css.getPropertyValue("--blue").trim();
+  }
+  var scribble = function (col) { return '<svg viewBox="0 0 300 20" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" style="stroke:' + col + '" d="M4 13 C 60 4, 120 18, 180 9 S 270 6, 296 12"/></svg>'; };
+
+  var ERA = { now: "Now", past: "Past", future: "Future" };
+  var EXAMPLES = ["Partition of India, 1947", "Sudan civil war", "Taiwan Strait, 2030", "Camp David, 1978", "Arctic shipping, 2040", "Kosovo, 1999"];
   var CAT = null, PICK = null, TWIST = "asis", ID = null, G = null, SEL = null, PARTY = null, MODE = null, OFFER = null, TERMS = [], BUSY = false, TIP = 0;
-  var face = function (m, walked) { return walked ? "🚪" : m >= 70 ? "😀" : m >= 50 ? "🙂" : m >= 35 ? "😐" : m >= 20 ? "😠" : "😡"; };
-  var moodCol = function (m) { return m >= 50 ? "var(--ok)" : m >= 35 ? "var(--warn)" : "var(--bad)"; };
-  var tCol = function (t, done) { return done ? "#3DDC97" : t >= 85 ? "#FF5A5F" : t >= 65 ? "#FF8A3D" : t >= 45 ? "#F5B544" : "#3DDC97"; };
 
   /* ================= INTRO ================= */
+  function miniMap(c) {
+    var pts = c.hotspots.map(function (h) { return [(h.lon + 180) / 360, (90 - h.lat) / 180]; });
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var minx = Math.min.apply(0, xs), maxx = Math.max.apply(0, xs), miny = Math.min.apply(0, ys), maxy = Math.max.apply(0, ys);
+    var sx = function (x) { return maxx - minx < 1e-3 ? 150 : 30 + (x - minx) / (maxx - minx) * 240; }, sy = function (y) { return maxy - miny < 1e-3 ? 37 : 16 + (y - miny) / (maxy - miny) * 42; };
+    var s = "";
+    for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length && j < i + 2; j++) s += '<path d="M' + sx(pts[i][0]) + "," + sy(pts[i][1]) + " L" + sx(pts[j][0]) + "," + sy(pts[j][1]) + '"/>';
+    pts.forEach(function (p) { s += '<circle class="r" cx="' + sx(p[0]) + '" cy="' + sy(p[1]) + '" r="10"/><circle class="h" cx="' + sx(p[0]) + '" cy="' + sy(p[1]) + '" r="5"/>'; });
+    return '<svg class="mini" viewBox="0 0 300 74" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' + s + "</svg>";
+  }
   function renderCamps() {
     $("camps").innerHTML = CAT.campaigns.map(function (c) {
-      return '<button type="button" class="camp" data-c="' + c.id + '" aria-pressed="' + !!(PICK && PICK.id === c.id) + '"><span class="era ' + c.era + '">' + ERA[c.era] + " · " + c.year + "</span><h3>" + esc(c.title) + "</h3><p>" + esc(c.tagline) + '</p><p class="lbl">' + c.hotspots.length + " hotspot" + (c.hotspots.length > 1 ? "s" : "") + " · " + c.goal + " deal" + (c.goal > 1 ? "s" : "") + " to win · " + c.months + " " + c.unit.toLowerCase() + "s</p><span class=\"dots\">" + ERAICON[c.era] + "</span></button>";
+      return '<button type="button" class="t camp" data-c="' + c.id + '" aria-pressed="' + !!(PICK && PICK.id === c.id) + '"><div class="t-h"><span class="lbl">' + ERA[c.era] + " · " + c.year + '</span><span class="hint' + (c.era === "now" ? "" : " blue") + '">' + c.hotspots.length + " hotspot" + (c.hotspots.length > 1 ? "s" : "") + "</span></div>" + miniMap(c) + "<h3>" + esc(c.title) + "</h3><p>" + esc(c.tagline) + '</p><span class="lbl">' + c.goal + " deal" + (c.goal > 1 ? "s" : "") + " to win · " + c.months + " " + c.unit.toLowerCase() + "s</span></button>";
     }).join("");
   }
   function renderBuilt() {
     var b = CAT.built || [];
-    $("built").innerHTML = b.length ? '<p class="lbl" style="margin:6px 0">Built by players</p><div class="chips">' + b.map(function (c) { return '<button type="button" class="chip" data-built="' + c.id + '">' + ERAICON[c.era] + " " + esc(c.title) + (c.plays ? ' <span class="lbl">' + c.plays + "▶</span>" : "") + "</button>"; }).join("") + "</div>" : "";
-    $("bnote").textContent = CAT.ai ? (CAT.buildsLeft > 0 ? CAT.buildsLeft + " new builds left today. Scenarios already built are free to replay." : "New builds are used up for today. Replay one below or come back tomorrow.") : "Live building is offline right now.";
+    $("built").innerHTML = b.length ? '<span class="lbl" style="display:block;margin:4px 0 6px">Built by players</span><div class="chips">' + b.map(function (c) { return '<button type="button" class="chip ex" data-built="' + c.id + '">' + esc(c.title) + " · " + esc(c.year) + (c.plays ? " · " + c.plays + " plays" : "") + "</button>"; }).join("") + "</div>" : "";
+    $("bnote").textContent = CAT.ai ? (CAT.buildsLeft > 0 ? CAT.buildsLeft + " builds left today" : "Builds used up today") : "Offline right now";
+  }
+  function renderDiffs() {
+    $("diffs").innerHTML = (CAT.diffs || []).map(function (d) { return '<button type="button" class="opt" data-d="' + d.id + '" aria-pressed="' + (d.id === DIFF) + '"><b>' + esc(d.name) + "</b><small>" + esc(d.text) + '</small><span class="m">Score ×' + d.mult + "</span></button>"; }).join("");
   }
   function choose(c) {
     PICK = c; TWIST = "asis";
-    renderCamps();
+    renderCamps(); renderDiffs();
     var tw = c.twists && c.twists.length ? c.twists : [];
-    $("twists").innerHTML = '<span class="lbl">' + ERAICON[c.era] + " " + esc(c.title) + " · " + esc(c.year) + (tw.length ? " · pick a starting point" : "") + "</span>" + (tw.length ? tw.map(function (t) { return '<button type="button" class="twist" data-t="' + t.id + '" aria-pressed="' + (t.id === TWIST) + '"><b>' + esc(t.name) + "</b><small>" + esc(t.text) + "</small></button>"; }).join("") : '<p style="color:var(--muted)">' + esc(c.tagline) + "</p>");
-    renderDiffs();
+    $("setupLbl").textContent = c.title + " · " + c.year;
+    $("twists").innerHTML = tw.length ? tw.map(function (t) { return '<button type="button" class="opt" data-t="' + t.id + '" aria-pressed="' + (t.id === TWIST) + '"><b>' + esc(t.name) + "</b><small>" + esc(t.text) + "</small></button>"; }).join("") : '<p style="color:var(--muted)">' + esc(c.tagline) + "</p>";
     $("setup").hidden = false;
     $("setup").scrollIntoView({ behavior: "smooth", block: "center" });
     loadBoard(c.id, c.title);
   }
-  function renderDiffs() {
-    $("diffs").innerHTML = (CAT.diffs || []).map(function (d) { return '<button type="button" class="dif" data-d="' + d.id + '" aria-pressed="' + (d.id === DIFF) + '"><b>' + esc(d.name) + "</b><small>" + esc(d.text) + '</small><span class="m">Score ×' + d.mult + "</span></button>"; }).join("");
-  }
+  $("camps").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) choose(CAT.campaigns.find(function (c) { return c.id === b.getAttribute("data-c"); })); });
+  $("built").addEventListener("click", function (e) { var b = e.target.closest("[data-built]"); if (b) choose(CAT.built.find(function (c) { return c.id === b.getAttribute("data-built"); })); });
+  $("twists").addEventListener("click", function (e) { var b = e.target.closest("[data-t]"); if (!b) return; TWIST = b.getAttribute("data-t"); [].forEach.call($("twists").querySelectorAll(".opt"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); });
   $("diffs").addEventListener("click", function (e) { var b = e.target.closest("[data-d]"); if (!b) return; DIFF = b.getAttribute("data-d"); store.set("envoy-diff", DIFF); renderDiffs(); });
-  $("camps").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (!b) return; choose(CAT.campaigns.find(function (c) { return c.id === b.getAttribute("data-c"); })); });
-  $("built").addEventListener("click", function (e) { var b = e.target.closest("[data-built]"); if (!b) return; choose(CAT.built.find(function (c) { return c.id === b.getAttribute("data-built"); })); });
-  $("twists").addEventListener("click", function (e) { var b = e.target.closest("[data-t]"); if (!b) return; TWIST = b.getAttribute("data-t"); [].forEach.call($("twists").querySelectorAll(".twist"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); });
-  $("bex").innerHTML = EXAMPLES.map(function (x) { return '<button type="button" class="chip" data-ex="' + esc(x) + '">' + esc(x) + "</button>"; }).join("");
+  $("bex").innerHTML = EXAMPLES.map(function (x) { return '<button type="button" class="chip ex" data-ex="' + esc(x) + '">' + esc(x) + "</button>"; }).join("");
   $("bex").addEventListener("click", function (e) { var b = e.target.closest("[data-ex]"); if (b) { $("bq").value = b.getAttribute("data-ex"); $("bq").focus(); } });
   $("bq").addEventListener("keydown", function (e) { if (e.key === "Enter") buildIt(); });
   $("bgo").addEventListener("click", buildIt);
   function buildIt() {
     var q = $("bq").value.trim(); if (!q) { $("bq").focus(); return; }
-    var btn = $("bgo"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Building, about a minute'; toast("CR-AI is mapping the parties, red lines and history. Usually 30 to 60 seconds.", 6000);
+    var btn = $("bgo"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Building, about a minute';
+    toast("CR-AI is mapping the parties, red lines and history. Usually 30 to 60 seconds.", 6000);
     track("build", { prompt: q });
     api("/api/envoy/build", { prompt: q }).then(function (r) {
       btn.disabled = false; btn.textContent = "Build it";
       if (r.error) { toast(r.error, 4500); return; }
       var c = r.campaign; CAT.built = [c].concat((CAT.built || []).filter(function (x) { return x.id !== c.id; })); renderBuilt(); choose(c);
-      if (!r.cached) toast("Built: " + c.title + ". Pick a starting point and play.");
+      if (!r.cached) toast("Built: " + c.title + ". Pick your setup and play.");
     });
   }
   $("go").addEventListener("click", function () {
@@ -496,7 +577,7 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     api("/api/envoy/new", { c: PICK.id, twist: TWIST, name: nm, diff: DIFF }).then(function (r) {
       $("go").disabled = false;
       if (r.error) { toast(r.error); return; }
-      ID = r.id; store.set("envoy-g2", ID); track("start", { c: PICK.id, twist: TWIST });
+      ID = r.id; store.set("envoy-g2", ID); track("start", { c: PICK.id, twist: TWIST, diff: DIFF });
       startGame(r.view, true);
     });
   });
@@ -505,7 +586,7 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     if (!inline) $("lbName").textContent = title || "";
     api("/api/envoy/leaderboard?c=" + encodeURIComponent(c)).then(function (r) {
       if (!r || r.error || !r.rows) { el.innerHTML = ""; return; }
-      el.innerHTML = r.rows.length ? '<table class="lb">' + r.rows.map(function (x, i) { return "<tr><td>" + (i + 1) + "</td><td>" + esc(x.n) + "</td><td>" + (x.o === "win" ? "🕊️" : x.o === "war" ? "🔥" : "⏳") + '</td><td class="lbl">' + esc(({ relaxed: "Relaxed", standard: "Std", hard: "Hard", brutal: "Brutal" })[x.d] || "") + '</td><td class="r">' + x.s + "</td></tr>"; }).join("") + '</table><p class="lbl" style="margin-top:6px">' + r.games + " games · " + r.wins + " wins</p>" : '<p style="color:var(--muted);font-size:.9rem">No names yet. Be first.</p>';
+      el.innerHTML = r.rows.length ? '<table class="lb">' + r.rows.map(function (x, i) { return "<tr><td>" + (i + 1) + "</td><td><b>" + esc(x.n) + '</b></td><td><span class="chip ' + (x.o === "win" ? "good" : "bad") + '">' + (x.o === "win" ? "Peace" : x.o === "war" ? "War" : "No deal") + '</span></td><td class="lbl">' + esc(({ relaxed: "Relaxed", standard: "Standard", hard: "Hard", brutal: "Brutal" })[x.d] || "") + '</td><td class="r">' + x.s + "</td></tr>"; }).join("") + '</table><p class="lbl" style="margin-top:8px">' + r.games + " games · " + r.wins + " won</p>" : '<p style="color:var(--muted);font-size:.9rem">No names yet. Be first.</p>';
     });
   }
 
@@ -522,14 +603,11 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     if (!G || typeof d3 === "undefined" || !d3.geoNaturalEarth1) return;
     var wrap = $("mapwrap"), W = wrap.clientWidth, H = wrap.clientHeight;
     if (!W || !H) return;
-    var mobile = window.innerWidth <= 760;
     var circles = G.hotspots.map(function (h) { return d3.geoCircle().center([h.lon, h.lat]).radius(G.hotspots.length > 1 ? 6 : 11)(); });
-    var bottom = mobile ? H - 60 : H - 50;
-    proj = d3.geoNaturalEarth1().fitExtent([[40, 56], [W - 40, Math.max(140, bottom)]], { type: "GeometryCollection", geometries: circles });
+    proj = d3.geoNaturalEarth1().fitExtent([[50, 64], [W - 50, Math.max(150, H - 70)]], { type: "GeometryCollection", geometries: circles });
     var path = d3.geoPath(proj), s = "";
-    if (WORLD && WORLD.land) s += '<path class="land" d="' + path(WORLD.land) + '"/><path d="' + path(WORLD.borders) + '" fill="none" stroke="#2A3345" stroke-width=".5"/>';
+    if (WORLD && WORLD.land) s += '<path class="land" d="' + path(WORLD.land) + '"/><path class="borders" d="' + path(WORLD.borders) + '"/>';
     var P = {}; G.hotspots.forEach(function (h) { P[h.id] = proj([h.lon, h.lat]); });
-    // Nudge hotspots that sit on top of each other (e.g. Afghanistan and the Pakistan frontier).
     var ids = Object.keys(P), MIN = 100;
     for (var it = 0; it < 30; it++) for (var a = 0; a < ids.length; a++) for (var b = a + 1; b < ids.length; b++) {
       var A = P[ids[a]], B = P[ids[b]]; if (!A || !B) continue;
@@ -537,21 +615,23 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
       if (dd < MIN) { var k = (MIN - dd) / 2 / dd; if (dd < 1) { dx = 1; dy = 0.4; } A[0] -= dx * k; A[1] -= dy * k; B[0] += dx * k; B[1] += dy * k; }
     }
     (G.links || []).forEach(function (l) {
-      var a = P[l[0]], b = P[l[1]]; if (!a || !b) return;
-      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.18;
+      var p1 = P[l[0]], p2 = P[l[1]]; if (!p1 || !p2) return;
+      var mx = (p1[0] + p2[0]) / 2, my = (p1[1] + p2[1]) / 2 - Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * 0.18;
       var ha = G.hotspots.find(function (h) { return h.id === l[0]; }), hb = G.hotspots.find(function (h) { return h.id === l[1]; });
       var hot = (!ha.done && ha.tension >= 85) || (!hb.done && hb.tension >= 85);
-      s += '<path class="link' + (hot ? " hot" : "") + '" d="M' + a[0] + "," + a[1] + " Q" + mx + "," + my + " " + b[0] + "," + b[1] + '"/>';
+      s += '<path class="link' + (hot ? " hot" : "") + '" d="M' + p1[0] + "," + p1[1] + " Q" + mx + "," + my + " " + p2[0] + "," + p2[1] + '"/>';
     });
+    var acc = getComputedStyle(root).getPropertyValue("--acc").trim(), warn = getComputedStyle(root).getPropertyValue("--warn").trim();
     G.hotspots.forEach(function (h) {
       var p = P[h.id]; if (!p) return;
-      var c = tCol(h.tension, h.done), r = h.done ? 14 : 11 + h.tension / 10;
+      var c = tCol(h.tension, h.done), r = h.done ? 14 : 12 + h.tension / 10;
       s += '<g class="hs' + (SEL === h.id ? " sel" : "") + (h.done ? " done" : "") + '" data-hs="' + h.id + '" transform="translate(' + p[0].toFixed(1) + "," + p[1].toFixed(1) + ')" tabindex="0" role="button" aria-label="' + esc(h.name) + ", tension " + h.tension + '">' +
         '<circle class="ring" r="' + r + '" stroke="' + c + '" style="animation-duration:' + Math.max(0.6, 2.4 - h.tension / 55).toFixed(2) + 's"/>' +
         '<circle class="core" r="' + r + '" fill="' + c + '"/>' +
-        (h.done ? '<text text-anchor="middle" dy="5" style="font-size:14px;stroke-width:0">🕊️</text>' : '<text class="n" text-anchor="middle" dy="4" style="fill:#0A0D12;stroke-width:0">' + h.tension + "</text>") +
-        '<text text-anchor="middle" y="' + (r + 17) + '">' + esc(h.name) + (h.talks && !h.done ? " 🤝" : "") + (h.shield ? " 🪖" : "") + "</text>" +
-        (h.forecast ? '<text class="fc" text-anchor="middle" y="' + (r + 32) + '" style="fill:' + (h.forecast === "will" ? "#FF5A5F" : "#F5B544") + '">' + (h.forecast === "will" ? "🔥 FLARES NEXT TURN" : "⚠ MAY FLARE") + "</text>" : "") + "</g>";
+        (h.done ? '<path d="M-5 0 l3.5 3.5 6.5 -7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' : '<text class="n" text-anchor="middle" dy="4">' + h.tension + "</text>") +
+        '<text text-anchor="middle" y="' + (r + 18) + '">' + esc(h.name) + "</text>" +
+        (h.talks && !h.done ? '<text class="fc" text-anchor="middle" y="' + (r + 32) + '" style="fill:var(--blue)">TALKS OPEN</text>' : h.shield ? '<text class="fc" text-anchor="middle" y="' + (r + 32) + '" style="fill:var(--blue)">PEACEKEEPERS</text>' : "") +
+        (h.forecast ? '<text class="fc" text-anchor="middle" y="' + (r + (h.talks || h.shield ? 45 : 32)) + '" style="fill:' + (h.forecast === "will" ? acc : warn) + '">' + (h.forecast === "will" ? "FLARES NEXT TURN" : "MAY FLARE") + "</text>" : "") + "</g>";
     });
     $("map").setAttribute("viewBox", "0 0 " + W + " " + H);
     $("map").innerHTML = s;
@@ -561,18 +641,19 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
   $("map").addEventListener("click", function (e) { var g = e.target.closest("[data-hs]"); if (g) selectHs(g.getAttribute("data-hs")); });
   $("map").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { var g = e.target.closest("[data-hs]"); if (g) { e.preventDefault(); selectHs(g.getAttribute("data-hs")); } } });
   window.addEventListener("resize", function () { if (G) drawMap(); });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { if (G) drawMap(); });
 
   /* ================= GAME ================= */
   function startGame(v, fresh) {
     $("intro").hidden = true; $("game").hidden = false; document.body.style.overflow = "hidden";
     SEL = null; PARTY = null; MODE = null; G = v;
-    if (window.innerWidth > 760 && v.hotspots.length === 1) SEL = v.hotspots[0].id;
-    $("panel").classList.toggle("closed", window.innerWidth <= 760 || !SEL && window.innerWidth <= 760);
-    if (window.innerWidth > 760) $("panel").classList.remove("closed");
+    var mobile = window.innerWidth <= 780;
+    if (!mobile && v.hotspots.length === 1) SEL = v.hotspots[0].id;
+    $("panel").classList.toggle("closed", mobile);
     whenMapReady(function () { loadWorld().then(drawMap); });
     renderAll();
     if (fresh) showBriefing(); else banner(v.title, ERA[v.era] + " · " + v.year);
-    if (G.crisis) setTimeout(showCrisis, 900);
+    if (!fresh && G.crisis) setTimeout(showCrisis, 900);
     if (G.ended) setTimeout(showEnd, 600);
   }
   function whenMapReady(fn) { if (typeof d3 !== "undefined" && d3.geoNaturalEarth1 && typeof topojson !== "undefined") fn(); else setTimeout(function () { whenMapReady(fn); }, 60); }
@@ -582,27 +663,28 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     $("hTitle").textContent = G.title;
     $("hUnit").textContent = G.unit + " " + Math.min(G.month, G.months) + "/" + G.months;
     var p = ""; for (var i = 1; i <= G.months; i++) p += '<i class="' + (i < G.month ? "on" : i === G.month ? "now" : "") + '"></i>'; $("hPips").innerHTML = p;
-    var e = ""; for (var j = 0; j < Math.max(G.maxEnvoys, G.envoys); j++) e += '<span class="' + (j < G.envoys ? "" : "used") + '">🕴️</span>'; $("hEnv").innerHTML = e;
+    var e = ""; for (var j = 0; j < Math.max(G.maxEnvoys, G.envoys); j++) e += '<i class="' + (j < G.envoys ? "" : "used") + '"></i>'; $("hEnv").innerHTML = e;
     $("hGlobal").style.width = G.global + "%"; $("hGlobalN").textContent = G.global;
-    var d = ""; for (var k = 0; k < G.goal; k++) d += '<span class="' + (k < G.deals.length ? "on" : "") + '">🕊️</span>'; $("hDeals").innerHTML = d;
+    var d = ""; for (var k = 0; k < G.goal; k++) d += '<i class="' + (k < G.deals.length ? "on" : "") + '"></i>'; $("hDeals").innerHTML = d;
     $("endBtn").disabled = G.ended || !!G.crisis;
+    if (!$("endBtn").dataset.sure) $("endBtn").innerHTML = "End " + G.unit.toLowerCase() + " " + ico("end", 16);
     $("hGoal").innerHTML = "Goal: <b>" + G.goal + " deal" + (G.goal > 1 ? "s" : "") + "</b> by " + G.unit.toLowerCase() + " " + G.months + (G.noWar ? "" : " · keep World under 100");
   }
-  var ICON = { flare: "🔥 ", deal: "🕊️ ", walk: "🚪 ", intel: "👂 ", msg: "✉️ ", crisis: "⚡ ", vote: "🗳️ ", back: "↩️ ", act: "• ", start: "🌍 ", end: "🏁 " };
-  function renderTicker() { $("ticker").innerHTML = G.log.slice(-3).map(function (l) { return "<div>" + (ICON[l.kind] || "") + esc(l.text) + "</div>"; }).join(""); }
+  var KIND = { flare: "Flare", deal: "Deal", walk: "Walkout", intel: "Intel", msg: "Reply", crisis: "Crisis", vote: "Vote", back: "Return", act: "Move", start: "Brief", end: "End" };
+  function renderTicker() { $("ticker").innerHTML = G.log.slice(-3).map(function (l) { return '<div><span class="lbl">' + (KIND[l.kind] || "") + "</span>" + esc(l.text) + "</div>"; }).join(""); }
   function hs() { return G && G.hotspots.find(function (h) { return h.id === SEL; }); }
   function selectHs(id) {
     if (G.ended) return;
     SEL = id; PARTY = null; MODE = null; OFFER = null; TERMS = [];
     $("panel").classList.remove("closed");
-    drawMap(); renderPanel(); $("panel").scrollTop = 0;
+    drawMap(); renderPanel(); $("panel").scrollTop = 0; sfx("tap");
     if (TIP === 1) coach(2);
   }
   $("panel").addEventListener("click", function (e) {
     var t;
     if (e.target.closest(".x")) { $("panel").classList.add("closed"); SEL = null; drawMap(); return; }
-    if ((t = e.target.closest("[data-p]"))) { PARTY = t.getAttribute("data-p"); if (MODE === "deal") MODE = null; OFFER = null; renderPanel(); if (TIP === 2) coach(3); return; }
-    if ((t = e.target.closest("[data-a]"))) { if (t.getAttribute("data-why")) { toast("🔒 " + t.getAttribute("data-why")); sfx("bad"); return; } sfx("tap"); pickAction(t.getAttribute("data-a")); return; }
+    if ((t = e.target.closest("[data-p]"))) { PARTY = t.getAttribute("data-p"); if (MODE === "deal") MODE = null; OFFER = null; renderPanel(); sfx("tap"); if (TIP === 2) coach(3); return; }
+    if ((t = e.target.closest("[data-a]"))) { if (t.getAttribute("data-why")) { toast(t.getAttribute("data-why"), 2600, "Not yet"); sfx("bad"); return; } sfx("tap"); pickAction(t.getAttribute("data-a")); return; }
     if ((t = e.target.closest("[data-o]")) && !t.disabled) { OFFER = OFFER === t.getAttribute("data-o") ? null : t.getAttribute("data-o"); renderPanel(); return; }
     if ((t = e.target.closest("[data-term]")) && !t.disabled) { var id = t.getAttribute("data-term"), i = TERMS.indexOf(id); if (i >= 0) TERMS.splice(i, 1); else if (TERMS.length < 3) TERMS.push(id); renderPanel(); return; }
     if (e.target.closest("#send")) return send();
@@ -611,26 +693,26 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
   });
 
   var ACTS = [
-    { a: "listen", ic: "👂", n: "Listen", c: 1, party: true, d: "Reveal a hidden card" },
-    { a: "message", ic: "✉️", n: "Message", c: 1, party: true, d: "Make an offer" },
-    { a: "aid", ic: "🎁", n: "Aid", c: 1, d: "Tension −10" },
-    { a: "keepers", ic: "🪖", n: "Peacekeepers", c: 2, d: "Tension −18, freezes 2 turns" },
-    { a: "summit", ic: "🤝", n: "Talks", c: 2, d: "Unlocks deals" },
-    { a: "deal", ic: "📜", n: "Deal", c: 2, d: "Put terms to a vote" }
+    { a: "listen", n: "Listen", c: 1, party: true, d: "Reveal a hidden card" },
+    { a: "message", n: "Message", c: 1, party: true, d: "Make an offer" },
+    { a: "aid", n: "Aid", c: 1, d: "Tension −10" },
+    { a: "keepers", n: "Peacekeepers", c: 2, d: "Tension −18, freezes 2 turns" },
+    { a: "summit", n: "Talks", c: 2, d: "Unlocks deals" },
+    { a: "deal", n: "Deal", c: 2, d: "Put terms to a vote" }
   ];
   function whyNot(a, h) {
     if (G.crisis) return "Resolve the crisis first";
     if (h.done) return "Deal signed";
-    if (G.envoys < a.c) return "Not enough envoys";
+    if (G.envoys < a.c) return "Not enough envoys this " + G.unit.toLowerCase();
     if (a.party && !PARTY) return "Tap a party first";
     var P = PARTY && h.parties.find(function (p) { return p.id === PARTY; });
     if (a.a === "message" && P && P.walked) return P.short + " walked out";
-    if (a.a === "message" && P && h.offered.indexOf(P.id) >= 0) return "Already messaged this " + G.unit.toLowerCase();
-    if (a.a === "listen" && P && ["red", "goal", "flex"].every(function (k) { return P.cards[k].s === "known"; })) return "Nothing left to learn";
-    if (a.a === "summit" && h.talks) return "Talks are open";
-    if (a.a === "summit") { var ok = h.parties.filter(function (p) { return !p.walked && p.mood >= 50; }).length; if (ok < h.need) return "Need " + h.need + " parties at 🙂 (" + ok + " now)"; }
+    if (a.a === "message" && P && h.offered.indexOf(P.id) >= 0) return "Already messaged " + P.short + " this " + G.unit.toLowerCase();
+    if (a.a === "listen" && P && ["red", "goal", "flex"].every(function (k) { return P.cards[k].s === "known"; })) return "You know " + P.short + "'s whole hand";
+    if (a.a === "summit" && h.talks) return "Talks are already open";
+    if (a.a === "summit") { var ok = h.parties.filter(function (p) { return !p.walked && p.mood >= 50; }).length; if (ok < h.need) return "Needs " + h.need + " parties at Warm (" + ok + " now)"; }
     if (a.a === "deal" && !h.talks) return "Open talks first";
-    if (a.a === "keepers" && h.shield) return "Already deployed";
+    if (a.a === "keepers" && h.shield) return "Peacekeepers already there";
     return "";
   }
   function pickAction(a) {
@@ -648,63 +730,63 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
 
   function renderPanel() {
     var el = $("panel"), h = hs();
-    if (!h) { el.innerHTML = '<div class="empty"><b>🗺️</b><div>Tap a glowing hotspot on the map.</div><div class="lbl">' + esc(G ? G.tagline : "") + "</div></div>"; return; }
+    if (!h) { el.innerHTML = '<div class="empty">' + ico("target", 36) + "<b>Pick a hotspot</b><span>Tap a circle on the map. The number is its tension; at 100 it flares.</span></div>"; return; }
     var P = PARTY && h.parties.find(function (p) { return p.id === PARTY; });
-    var html = '<div class="ph"><h2>' + esc(h.name) + (h.done ? " 🕊️" : "") + '<button class="x" type="button" aria-label="Close">✕</button></h2><p>' + esc(h.flavor || "") + "</p></div>";
-    html += '<div class="meters"><div><div class="mrow"><span>🔥 Tension</span><b>' + h.tension + '</b></div><div class="bar"><b class="t" style="width:' + h.tension + '%"></b></div></div><div><div class="mrow"><span>🕊️ Peace</span><b>' + h.peace + '</b></div><div class="bar"><b class="p" style="width:' + h.peace + '%"></b></div></div></div>';
-    html += '<div class="badges">' + (h.done ? '<span class="badge ok">Deal signed</span>' : h.talks ? '<span class="badge ok">Talks open</span>' : '<span class="badge">No talks yet</span>') + (h.shield ? '<span class="badge ok">Peacekeepers · ' + h.shield + "</span>" : "") + (h.tension >= 85 && !h.done ? '<span class="badge bad">About to flare</span>' : "") + "</div>";
+    var html = '<div class="ph"><div class="t-h"><span class="lbl">Hotspot</span>' + (h.done ? '<span class="hint blue">Deal signed</span>' : h.forecast ? '<span class="hint">' + (h.forecast === "will" ? "Flares next turn" : "May flare") + "</span>" : h.talks ? '<span class="hint blue">Talks open</span>' : "") + '</div><h2>' + esc(h.name) + '<button class="iconbtn x" type="button" aria-label="Close">' + ico("close", 16) + "</button></h2><p>" + esc(h.flavor || "") + "</p></div>";
+    html += '<div class="meters"><div><div class="mrow"><span class="lbl">Tension</span><b>' + h.tension + '</b></div><div class="meter"><b style="width:' + h.tension + '%"></b></div></div><div><div class="mrow"><span class="lbl">Peace</span><b>' + h.peace + '</b></div><div class="meter"><b class="peace" style="width:' + h.peace + '%"></b></div></div></div>';
+    if (h.shield) html += '<div class="badges"><span class="chip good">Peacekeepers · ' + h.shield + " more turn" + (h.shield > 1 ? "s" : "") + "</span></div>";
     html += '<div class="tokens">' + h.parties.map(function (p) { return tokenHtml(p, h); }).join("") + "</div>";
     if (P) html += handHtml(P);
     else if (!h.done) html += '<p class="why">Tap a party to see their cards.</p>';
-    if (h.done) html += '<p class="histbox">Signed: ' + (h.signed || []).map(function (id) { var c = h.clauses.find(function (x) { return x.id === id; }); return esc(c ? c.name : id); }).join(" · ") + "</p>";
+    if (h.done) html += '<p class="histbox"><span class="lbl" style="display:block;margin-bottom:4px">Signed</span>' + (h.signed || []).map(function (id) { var c = h.clauses.find(function (x) { return x.id === id; }); return esc(c ? c.name : id); }).join(" · ") + "</p>";
     else {
-      html += '<div class="dock">' + ACTS.map(function (a) { var w = whyNot(a, h); return '<button type="button" class="ab' + (w ? " off" : "") + '" data-a="' + a.a + '"' + (w ? ' aria-disabled="true" data-why="' + esc(w) + '"' : "") + ' aria-pressed="' + (MODE === a.a) + '" title="' + esc(w || a.d) + '"><span class="ic">' + a.ic + "</span>" + a.n + '<span class="cost">' + new Array(a.c + 1).join("🕴️") + "</span></button>"; }).join("") + "</div>";
-      var hints = ACTS.map(function (a) { return whyNot(a, h); });
-      var why = hints[4] && hints[4].indexOf("Need") === 0 && !h.talks ? "🤝 Talks: " + hints[4] : "";
-      html += '<p class="why">' + esc(why) + "</p>";
+      html += '<div class="dock">' + ACTS.map(function (a) { var w = whyNot(a, h), cost = ""; for (var i = 0; i < a.c; i++) cost += "<i></i>"; return '<button type="button" class="ab' + (w ? " off" : "") + '" data-a="' + a.a + '"' + (w ? ' aria-disabled="true" data-why="' + esc(w) + '"' : "") + ' aria-pressed="' + (MODE === a.a) + '" title="' + esc(w || a.d) + '">' + ico(a.a) + a.n + '<span class="cost" aria-label="' + a.c + ' envoy">' + cost + "</span></button>"; }).join("") + "</div>";
+      var tw = whyNot(ACTS[4], h);
+      html += '<p class="why">' + (tw && tw.indexOf("Needs") === 0 ? "Talks: " + esc(tw) : "") + "</p>";
       if (MODE === "message" && P) html += messageHtml(h, P);
       if (MODE === "deal") html += dealHtml(h);
     }
     el.innerHTML = html;
     applyHL();
   }
+  var TIERSYM = { documented: "✓", partial: "◐", thin: "?" }, TIERTXT = { documented: "Well documented", partial: "Partly documented", thin: "Thin sources" };
   function tokenHtml(p, h) {
     var sent = h.offered.indexOf(p.id) >= 0;
-    return '<button type="button" class="tok' + (PARTY === p.id ? " sel" : "") + (p.walked ? " gone" : "") + '" data-p="' + p.id + '" aria-label="' + esc(p.name) + ", mood " + p.mood + '">' +
-      (p.veto ? '<span class="vt">VETO</span>' : "") + '<span class="td ' + p.tier + '" title="' + ({ documented: "Well documented", partial: "Partly documented", thin: "Thin sources: cards are CR-AI guesses" })[p.tier] + '">' + ({ documented: "✓", partial: "◐", thin: "?" })[p.tier] + "</span>" +
-      '<span class="av" style="--m:' + p.mood + ";--mc:" + moodCol(p.mood) + '"><span>' + esc(p.icon || "🏳️") + '</span><span class="face">' + face(p.mood, p.walked) + "</span></span>" +
-      '<span class="nm">' + esc(p.short) + "</span>" + (sent ? '<span class="sent" title="Messaged this turn">✉️</span>' : "") + (p.walked ? '<span class="gone-l">OUT ' + p.walked + "</span>" : "") + "</button>";
+    return '<button type="button" class="tok' + (PARTY === p.id ? " sel" : "") + (p.walked ? " gone" : "") + '" data-p="' + p.id + '" aria-label="' + esc(p.name) + ", " + moodWord(p.mood, p.walked) + '">' +
+      (p.veto ? '<span class="vt">VETO</span>' : "") + '<span class="td ' + p.tier + '" title="' + TIERTXT[p.tier] + '">' + TIERSYM[p.tier] + "</span>" +
+      '<span class="av" style="--m:' + p.mood + ";--mc:" + moodCol(p.mood) + '"><span>' + esc(p.icon || "") + "</span>" + faceSvg(p.mood, p.walked) + "</span>" +
+      '<span class="nm">' + esc(p.short) + '</span><span class="md">' + moodWord(p.mood, p.walked) + "</span>" + (sent ? '<span class="sent" title="Messaged this turn">' + ico("message") + "</span>" : "") + (p.walked ? '<span class="out">OUT ' + p.walked + "</span>" : "") + "</button>";
   }
   function handHtml(p) {
-    var tierTxt = { documented: "Well documented", partial: "Partly documented", thin: "Thin sources" }[p.tier] + (p.docs != null ? " · " + p.docs + " docs" : "");
     var K = { goal: "Wants", flex: "Will bend", red: "Red line" };
-    return '<div class="pname"><b>' + esc(p.name) + "</b><small>Mood " + p.mood + " · " + tierTxt + '</small></div><div class="hand">' + ["goal", "flex", "red"].map(function (k) {
+    return '<div class="pname"><b>' + esc(p.name) + '</b><span class="lbl">' + TIERSYM[p.tier] + " " + TIERTXT[p.tier] + (p.docs != null ? " · " + p.docs + " docs" : "") + '</span></div><div class="hand">' + ["goal", "flex", "red"].map(function (k) {
       var c = p.cards[k];
       if (c.s === "unknown") return '<div class="hc unknown" title="Listen to reveal">?</div>';
       return '<div class="hc' + (c.s === "recon" ? " recon" : "") + (c.wrong ? " wrong" : "") + '"><span class="k">' + K[k] + (c.s === "recon" ? " · CR-AI guess" : "") + "</span>" + esc(c.t) + (c.wrong ? '<span class="was">Guess was: ' + esc(c.wrong) + "</span>" : "") + "</div>";
     }).join("") + "</div>";
   }
-  function leanIcon(p, cid) {
-    if (p.redOn && p.redOn.indexOf(cid) >= 0) return "⛔";
+  function leanTag(p, cid) {
+    if (p.redOn && p.redOn.indexOf(cid) >= 0) return '<span class="lean r">RED LINE</span>';
     if (!p.lean) return "";
-    return p.lean[cid] > 0 ? "👍" : p.lean[cid] < 0 ? "👎" : "";
+    return p.lean[cid] > 0 ? '<span class="lean y">WANTS</span>' : p.lean[cid] < 0 ? '<span class="lean n">DISLIKES</span>' : "";
   }
   function messageHtml(h, p) {
-    return '<div class="sub"><span class="lbl">Offer ' + esc(p.short) + ' something' + (p.lean ? "" : " · listen to learn what they want") + '</span><div class="offers">' + h.clauses.map(function (c) {
-      return '<button type="button" class="offer" data-o="' + c.id + '" aria-pressed="' + (OFFER === c.id) + '">' + esc(c.name) + " " + leanIcon(p, c.id) + "</button>";
-    }).join("") + '</div><span class="lbl">' + (CAT && CAT.ai ? "…or write your own message (CR-AI reads it)" : "…or write your own message") + '</span><textarea id="msgText" maxlength="400" placeholder="Make it concrete. What do they get, and when?"></textarea><div style="display:flex;gap:8px"><button class="btn sm" id="send" type="button">Send ✉️</button><button class="btn ghost sm" id="cancel" type="button">Cancel</button></div></div>';
+    return '<div class="sub"><span class="lbl">Offer ' + esc(p.short) + " something" + (p.lean ? "" : " · Listen first to see what they want") + '</span><div class="offers">' + h.clauses.map(function (c) {
+      return '<button type="button" class="offer" data-o="' + c.id + '" aria-pressed="' + (OFFER === c.id) + '">' + esc(c.name) + " " + leanTag(p, c.id) + "</button>";
+    }).join("") + '</div><span class="lbl">' + (CAT && CAT.ai ? "Or write your own message (CR-AI reads it)" : "Or write your own message") + '</span><textarea id="msgText" maxlength="400" placeholder="Be concrete. What do they get, and when?"></textarea><div style="display:flex;gap:8px"><button class="btn sm" id="send" type="button">' + ico("message", 16) + ' Send</button><button class="btn ghost sm" id="cancel" type="button">Cancel</button></div></div>';
   }
   function dealHtml(h) {
     var prev = h.parties.map(function (p) {
-      if (p.walked) return "<span>" + esc(p.short) + " 🚪</span>";
+      if (p.walked) return '<span class="chip">' + esc(p.short) + " · out</span>";
       var red = TERMS.some(function (t) { return p.redOn && p.redOn.indexOf(t) >= 0; });
       var s = p.lean ? TERMS.reduce(function (a, t) { return a + (p.lean[t] || 0); }, 0) : null;
-      var ic = red ? "⛔" : !TERMS.length ? "…" : s === null ? "❔" : s > 0 && p.mood >= 35 ? "👍" : s > 0 ? "🤔" : "👎";
-      return "<span>" + (p.veto ? "★ " : "") + esc(p.short) + " " + ic + "</span>";
+      var lab = red ? "red line" : !TERMS.length ? "…" : s === null ? "unknown" : s > 0 && p.mood >= 35 ? "likely yes" : s > 0 ? "maybe" : "likely no";
+      var cls = red || lab === "likely no" ? "bad" : lab === "likely yes" ? "good" : "";
+      return '<span class="chip ' + cls + '">' + (p.veto ? "★ " : "") + esc(p.short) + " · " + lab + "</span>";
     }).join("");
     return '<div class="sub"><span class="lbl">Pick up to 3 terms (' + TERMS.length + '/3)</span><div class="offers">' + h.clauses.map(function (c) {
       var on = TERMS.indexOf(c.id) >= 0; return '<button type="button" class="offer" data-term="' + c.id + '" aria-pressed="' + on + '"' + (!on && TERMS.length >= 3 ? " disabled" : "") + ">" + esc(c.name) + "</button>";
-    }).join("") + '</div><span class="lbl">Your read of the room · ★ veto · ❔ goal unknown</span><div class="preview">' + prev + '</div><div style="display:flex;gap:8px"><button class="btn sm" id="vote" type="button"' + (TERMS.length ? "" : " disabled") + '>Put it to a vote 🗳️</button><button class="btn ghost sm" id="cancel" type="button">Cancel</button></div></div>';
+    }).join("") + '</div><span class="lbl">Your read of the room · ★ veto</span><div class="preview">' + prev + '</div><div style="display:flex;gap:8px"><button class="btn sm" id="vote" type="button"' + (TERMS.length ? "" : " disabled") + ">" + ico("deal", 16) + ' Put it to a vote</button><button class="btn ghost sm" id="cancel" type="button">Cancel</button></div></div>';
   }
 
   /* ================= MOVES ================= */
@@ -724,20 +806,20 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
       if (G.ended) setTimeout(showEnd, 900);
     });
   }
-  function tokXY(pid) { var t = $("panel").querySelector('[data-p="' + pid + '"]'); if (!t) return null; var r = t.getBoundingClientRect(); return [r.left + r.width / 2 - 14, r.top]; }
+  function tokXY(pid) { var t = $("panel").querySelector('[data-p="' + pid + '"]'); if (!t) return null; var r = t.getBoundingClientRect(); return [r.left + r.width / 2 - 20, r.top - 4]; }
   function react(body, res) {
     sfx(res.verdict === "red" || (res.walkouts && res.walkouts.length) ? "bad" : res.verdict === "love" || res.reveal ? "good" : "tap");
-    if (res.reveal) { toast(res.reveal.wrong ? "👂 CR-AI's guess was wrong! Good thing you checked." : "👂 Card revealed."); if (TIP === 3) coach(4); }
+    if (res.reveal) { toast(res.reveal.wrong ? "CR-AI's guess was wrong. Good thing you checked." : "A hidden card is now face up.", 3000, "Intel"); if (TIP === 3) coach(4); }
     if (body.a === "message") {
       var d = (res.fx[0] || {}).d || 0, xy = tokXY(body.party);
-      if (xy) floatAt(xy[0], xy[1], (d >= 0 ? "+" : "") + d + " " + (res.verdict === "red" ? "😡" : res.verdict === "love" ? "😀" : res.verdict === "hate" ? "😠" : "😐"), d >= 0 ? "var(--ok)" : "var(--bad)");
+      if (xy) floatAt(xy[0], xy[1], (d >= 0 ? "+" : "") + d + " mood", d > 0 ? "good" : d < 0 ? "bad" : "n");
       var p = G.hotspots.find(function (h) { return h.id === body.hs; }).parties.find(function (x) { return x.id === body.party; });
-      toast(p.short + ": “" + res.reply + "”", 3800);
+      toast("“" + res.reply + "”", 3800, p.short + " · " + ({ love: "received well", hate: "received badly", red: "red line", neutral: "noted" })[res.verdict || "neutral"]);
       if (TIP === 3) coach(4);
     }
-    if (body.a === "aid" || body.a === "keepers") { var hxy = hsXY(body.hs); floatAt(hxy[0] - 14, hxy[1], (res.fx[0] || {}).d + "🔥", "var(--ok)"); }
-    if (body.a === "summit") { banner("Talks open 🤝"); coach(5); }
-    if (res.walkouts && res.walkouts.length) { flash(); toast("🚪 Walkout! A red line was crossed."); }
+    if (body.a === "aid" || body.a === "keepers") { var hxy = hsXY(body.hs); floatAt(hxy[0] - 22, hxy[1], (res.fx[0] || {}).d + " tension", "good"); }
+    if (body.a === "summit") { banner("Talks open", "Now propose a deal", "good"); coach(5); }
+    if (res.walkouts && res.walkouts.length) { flash(); toast("A red line was crossed and a party left the table.", 3600, "Walkout"); }
   }
   function playVote(r, res) {
     var h = hs(); MODE = null;
@@ -748,25 +830,25 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
         clearInterval(tick);
         setTimeout(function () {
           G = r.view; TERMS = [];
-          if (res.passed) { banner("Deal signed! 🕊️", h.name); confetti(); coach(0); sfx("deal"); }
-          else sfx("bad"), toast("🗳️ Vote failed: " + votes.filter(function (v) { return v.yes; }).length + " of " + votes.length + " said yes. You need " + res.need + ", including every veto.", 4600);
+          if (res.passed) { banner("Deal signed", h.name, "good"); confetti(); coach(0); sfx("deal"); }
+          else { sfx("bad"); toast(votes.filter(function (v) { return v.yes; }).length + " of " + votes.length + " said yes. You need " + res.need + ", including every veto.", 4600, "Vote failed"); }
           if (res.walkouts && res.walkouts.length) flash();
           renderAll();
           if (G.ended) setTimeout(showEnd, 1300);
-        }, 650);
+        }, 650 * SP());
         return;
       }
       var v = votes[i++], t = $("panel").querySelector('[data-p="' + v.party + '"]');
-      if (t) { t.classList.add(v.yes ? "vote-yes" : "vote-no"); var m = document.createElement("span"); m.className = "vmark"; m.textContent = v.yes ? "✅" : v.why === "red" ? "⛔" : v.why === "absent" ? "🚪" : "❌"; t.appendChild(m); }
+      if (t) { t.classList.add(v.yes ? "vote-yes" : "vote-no"); var m = document.createElement("span"); m.className = "vmark " + (v.yes ? "y" : "n"); m.textContent = v.yes ? "YES" : v.why === "red" ? "RED LINE" : v.why === "absent" ? "ABSENT" : "NO"; t.appendChild(m); }
     }, 420 * SP());
   }
   function confetti() {
-    var cols = ["#FF6B33", "#3DDC97", "#7C95FF", "#F5B544", "#EEF1F6"];
-    for (var i = 0; i < 70; i++) {
-      var p = document.createElement("i"); p.style.cssText = "position:fixed;z-index:40;left:50%;top:40%;width:8px;height:12px;border-radius:2px;pointer-events:none;background:" + cols[i % 5];
+    var css = getComputedStyle(root), cols = [css.getPropertyValue("--acc"), css.getPropertyValue("--blue"), css.getPropertyValue("--ink"), css.getPropertyValue("--warn")];
+    for (var i = 0; i < 60; i++) {
+      var p = document.createElement("i"); p.style.cssText = "position:fixed;z-index:40;left:50%;top:40%;width:7px;height:" + (i % 2 ? 7 : 12) + "px;border-radius:" + (i % 3 ? 2 : 6) + "px;pointer-events:none;background:" + cols[i % 4];
       document.body.appendChild(p);
-      if (!p.animate) { p.remove(); continue; }
-      var a = Math.random() * Math.PI * 2, v = 160 + Math.random() * 260;
+      if (!p.animate || !SET.motion) { p.remove(); continue; }
+      var a = Math.random() * Math.PI * 2, v = 140 + Math.random() * 260;
       (function (el) { el.animate([{ transform: "translate(0,0) rotate(0)", opacity: 1 }, { transform: "translate(" + Math.cos(a) * v + "px," + (Math.sin(a) * v + 260) + "px) rotate(" + (Math.random() * 720) + "deg)", opacity: 0 }], { duration: 1400 + Math.random() * 600, easing: "cubic-bezier(.2,.7,.4,1)" }).onfinish = function () { el.remove(); }; })(p);
     }
   }
@@ -778,11 +860,11 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     var risky = G.hotspots.filter(function (h) { return h.forecast; });
     if ((G.envoys > 0 || risky.length) && !b.dataset.sure) {
       b.dataset.sure = "1";
-      b.textContent = (risky.length ? "⚠ " + risky.length + " may flare" : G.envoys + " envoy" + (G.envoys > 1 ? "s" : "") + " left") + ". End?";
-      if (risky.length) toast("⚠ " + risky.map(function (h) { return h.name; }).join(", ") + (risky.length > 1 ? " are" : " is") + " close to flaring. Aid or peacekeepers can cool " + (risky.length > 1 ? "them" : "it") + ". Tap End again to continue.", 4500);
-      setTimeout(function () { delete b.dataset.sure; b.textContent = "End month ⏭"; }, 3500); return;
+      b.innerHTML = (risky.length ? risky.length + " may flare" : G.envoys + " envoy" + (G.envoys > 1 ? "s" : "") + " left") + " · end?";
+      if (risky.length) toast(risky.map(function (h) { return h.name; }).join(", ") + (risky.length > 1 ? " are" : " is") + " close to flaring. Aid or peacekeepers can cool " + (risky.length > 1 ? "them" : "it") + ". Tap again to end the " + G.unit.toLowerCase() + ".", 4500, "Warning");
+      setTimeout(function () { delete b.dataset.sure; b.innerHTML = "End " + G.unit.toLowerCase() + " " + ico("end", 16); }, 3500); return;
     }
-    delete b.dataset.sure; b.textContent = "End month ⏭";
+    delete b.dataset.sure; b.innerHTML = "End " + G.unit.toLowerCase() + " " + ico("end", 16);
     BUSY = true;
     api("/api/envoy/move", { id: ID, a: "end" }).then(function (r) {
       BUSY = false;
@@ -790,9 +872,9 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
       G = r.view; var out = r.res || {};
       MODE = null; PARTY = null;
       renderAll();
-      Object.keys(out.drift || {}).forEach(function (id, i) { setTimeout(function () { var xy = hsXY(id), d = out.drift[id]; if (d) floatAt(xy[0] - 12, xy[1] - 6, "+" + d + "🔥", "var(--warn)"); }, i * 120); });
+      Object.keys(out.drift || {}).forEach(function (id, i) { setTimeout(function () { var xy = hsXY(id), d = out.drift[id]; if (d) floatAt(xy[0] - 14, xy[1] - 6, "+" + d, "bad"); }, i * 120); });
       (out.flares || []).forEach(function (id, i) {
-        setTimeout(function () { flash(); sfx("flare"); var h = G.hotspots.find(function (x) { return x.id === id; }); banner(h.name + " flares up! 🔥", "Spreading along the links"); }, (700 + i * 1300) * SP());
+        setTimeout(function () { flash(); sfx("flare"); var h = G.hotspots.find(function (x) { return x.id === id; }); banner(h.name + " flares up", "Spreading along the links", "hot"); }, (700 + i * 1300) * SP());
       });
       if (TIP === 4 || TIP === 5) coach(0);
       setTimeout(function () {
@@ -803,18 +885,19 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     });
   });
 
+  function chipsFor(list) { return '<div class="chips">' + (list || []).map(function (c) { return '<span class="chip ' + (c.good ? "good" : "bad") + '">' + esc(c.label) + " · " + esc(c.value) + "</span>"; }).join("") + (list && list.length ? "" : '<span class="chip">No obvious effect</span>') + "</div>"; }
   function showCrisis() {
     if (!G || !G.crisis || G.ended) return;
     var c = G.crisis, h = c.hs && G.hotspots.find(function (x) { return x.id === c.hs; });
     var ov = $("overlay");
-    ov.innerHTML = '<div class="ov"><div class="crisis" role="dialog" aria-label="Crisis"><span class="lbl">⚡ Crisis · ' + esc(h ? h.name : "The world") + "</span><h2>" + esc(c.title) + "</h2>" + c.choices.map(function (ch, i) { return '<button type="button" class="choice" data-ch="' + i + '"><b>' + esc(ch.label) + "</b><small>" + esc(ch.hint || "No obvious effect") + "</small></button>"; }).join("") + "</div></div>";
-    ov.querySelector(".crisis").addEventListener("click", function (e) {
-      var b = e.target.closest("[data-ch]"); if (!b || BUSY) return; BUSY = true;
+    ov.innerHTML = '<div class="ov"><div class="sheet" role="dialog" aria-label="Crisis"><div class="t-h"><span class="lbl">Crisis · ' + esc(h ? h.name : "The world") + '</span><span class="hint">Choose one</span></div><h2>' + esc(c.title) + "</h2>" + c.choices.map(function (ch, i) { return '<button type="button" class="choice" data-ch="' + i + '"><b>' + esc(ch.label) + "</b>" + chipsFor(ch.hint) + "</button>"; }).join("") + "</div></div>";
+    ov.querySelector(".sheet").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-ch]"); if (!b || BUSY) return; BUSY = true; sfx("tap");
       api("/api/envoy/move", { id: ID, a: "crisis", choice: +b.getAttribute("data-ch") }).then(function (r) {
         BUSY = false; ov.innerHTML = "";
         if (r.error) { toast(r.error); return; }
         G = r.view; renderAll();
-        ((r.res || {}).fx || []).forEach(function (f, i) { setTimeout(function () { if (f.k === "tension") { var xy = hsXY(f.hs); floatAt(xy[0] - 12, xy[1], (f.d > 0 ? "+" : "") + f.d + "🔥", f.d > 0 ? "var(--warn)" : "var(--ok)"); } }, i * 150); });
+        ((r.res || {}).fx || []).forEach(function (f, i) { setTimeout(function () { if (f.k === "tension") { var xy = hsXY(f.hs); floatAt(xy[0] - 14, xy[1], (f.d > 0 ? "+" : "") + f.d, f.d > 0 ? "bad" : "good"); } }, i * 150); });
         if (G.ended) setTimeout(showEnd, 800);
       });
     });
@@ -827,21 +910,22 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     G.hotspots.forEach(function (h) { h.parties.forEach(function (p) { ["goal", "flex", "red"].forEach(function (k) { if (p.cards[k].wrong) wrong.push({ p: p, k: k }); }); }); });
     var hist = G.hotspots.filter(function (h) { return h.history; });
     var K = { goal: "real goal", flex: "flexibility", red: "red line" };
-    var html = '<div class="ov"><div class="end" role="dialog" aria-label="Game over"><span class="lbl">' + esc(G.title) + " · " + ERA[G.era] + " " + G.year + '</span><p class="ko ' + (win ? "w" : "l") + '">' + (win ? "Peace holds. 🕊️" : G.outcome === "war" ? "The world burned. 🔥" : "Out of time. ⏳") + "</p>" +
+    var col = win ? "var(--blue)" : "var(--acc)";
+    var html = '<div class="ov"><div class="sheet" role="dialog" aria-label="Game over" style="width:min(660px,100%)"><div class="t-h"><span class="lbl">' + esc(G.title) + " · " + ERA[G.era] + " " + G.year + '</span><span class="hint' + (win ? " blue" : "") + '">' + (win ? "You won" : "Game over") + '</span></div><p class="ko">' + (win ? 'Peace <span class="sc">holds.' + scribble(col) + "</span>" : G.outcome === "war" ? 'The world <span class="sc">burned.' + scribble(col) + "</span>" : 'Out of <span class="sc">time.' + scribble(col) + "</span>") + "</p>" +
       '<div class="kpis"><div><b>' + G.score + '</b><span>Score</span></div><div><b>' + G.deals.length + "/" + G.goal + '</b><span>Deals</span></div><div><b>' + G.flareups + '</b><span>Flare-ups</span></div><div><b>' + G.global + "</b><span>World tension</span></div></div>";
     if (hist.length) html += '<span class="lbl">You vs history</span><div class="cmp">' + hist.map(function (h) {
       var mine = h.signed || [], real = h.history.clauses || [];
       var match = mine.filter(function (x) { return real.indexOf(x) >= 0; }).length;
       var name = function (id) { var c = h.clauses.find(function (x) { return x.id === id; }); return c ? c.name : id; };
-      return '<div class="row"><b>' + esc(h.name) + "</b><div><span class=\"lbl\">You</span> " + (mine.length ? esc(mine.map(name).join(" · ")) : "No deal") + '</div><div><span class="lbl">History</span> ' + (real.length ? esc(real.map(name).join(" · ")) : "No deal at the time") + "</div><p>" + esc(h.history.text) + "</p>" + (mine.length ? '<span class="match">You matched ' + match + " of " + real.length + " historical terms." + (match < mine.length ? " The rest is your what-if." : "") + "</span>" : "") + "</div>";
+      return '<div class="row"><b>' + esc(h.name) + '</b><div><span class="lbl">You · </span>' + (mine.length ? esc(mine.map(name).join(" · ")) : "No deal") + '</div><div><span class="lbl">History · </span>' + (real.length ? esc(real.map(name).join(" · ")) : "No deal at the time") + "</div><p>" + esc(h.history.text) + "</p>" + (mine.length ? '<span class="chip good" style="justify-self:start">Matched ' + match + " of " + real.length + " historical terms" + (match < mine.length ? " · the rest is your what-if" : "") + "</span>" : "") + "</div>";
     }).join("") + "</div>";
-    if (wrong.length) html += '<span class="lbl">Where CR-AI\'s guesses were wrong</span><div class="reveals">' + wrong.slice(0, 6).map(function (w) { return "<div><b>" + esc(w.p.short) + "</b>, " + K[w.k] + ": <s>" + esc(w.p.cards[w.k].wrong) + "</s> → " + esc(w.p.cards[w.k].t) + "</div>"; }).join("") + '</div><p style="color:var(--muted);font-size:.84rem">Thin sources produce wrong guesses. That\'s why CR-AI labels reconstructions and never treats them as evidence.</p>';
-    html += '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="again" type="button">Play again</button><button class="btn ghost" id="share" type="button">Share</button><a class="btn ghost" href="/" style="text-decoration:none">omarnabi.com</a></div><div><span class="lbl">Leaderboard</span><div id="endLb"></div></div></div></div>';
+    if (wrong.length) html += '<span class="lbl">Where CR-AI\'s guesses were wrong</span><div class="reveals">' + wrong.slice(0, 6).map(function (w) { return "<div><b>" + esc(w.p.short) + "</b>, " + K[w.k] + ": <s>" + esc(w.p.cards[w.k].wrong) + "</s> → " + esc(w.p.cards[w.k].t) + "</div>"; }).join("") + '</div><p style="color:var(--muted);font-size:.86rem">Thin sources produce wrong guesses. That\'s why CR-AI labels reconstructions and never treats them as evidence.</p>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="again" type="button">Play again</button><button class="btn ghost" id="share" type="button">Share</button><a class="btn ghost" href="/">omarnabi.com</a></div><div><span class="lbl">Leaderboard</span><div id="endLb"></div></div></div></div>';
     $("overlay").innerHTML = html;
     if (win) confetti();
     loadBoard(G.c, G.title, $("endLb"));
     store.del("envoy-g2");
-    track("end", { c: G.c, outcome: G.outcome, score: G.score });
+    track("end", { c: G.c, outcome: G.outcome, score: G.score, diff: G.diff });
     $("again").addEventListener("click", function () { $("overlay").innerHTML = ""; quit(); });
     $("share").addEventListener("click", function () {
       var t = (win ? "I kept the world from burning in Envoy (" + G.title + "), score " + G.score + "." : "Envoy beat me (" + G.title + "). Score " + G.score + ".") + " https://omarnabi.com/envoy";
@@ -858,20 +942,20 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     delete b.dataset.sure; b.textContent = "Quit"; store.del("envoy-g2"); quit();
   });
 
-  /* ================= COACH (teach by doing: each tip points at the thing to tap) ================= */
+  /* ================= COACH (teach by doing) ================= */
   var TIPS = {
-    1: "👆 Tap the glowing hotspot. Red ones are close to flaring up.",
-    2: "Tap a party. Their face is their mood; ✓ ◐ ? shows how well CR-AI knows them.",
-    3: "Tap ✉️ Message and offer them something they want (👍).",
-    4: "Win over enough parties to 🙂, open 🤝 Talks, then propose a 📜 Deal. When you're out of envoys, tap End month.",
-    5: "Talks are open. Tap 📜 Deal and pick up to 3 terms. Every VETO party must say yes."
+    1: "Tap the highlighted hotspot. The number is its tension.",
+    2: "Tap a party. Their face and ring show mood; ✓ ◐ ? shows how well CR-AI knows them.",
+    3: "Tap Message and offer something they want, or Listen to reveal a card.",
+    4: "Get enough parties to Warm, open Talks, then propose a Deal. Out of envoys? End the month.",
+    5: "Talks are open. Tap Deal and pick up to 3 terms. Every VETO party must say yes."
   };
   function coach(n) {
     var t = $("tip");
     if (n && store.get("envoy-coached")) { TIP = 0; t.hidden = true; applyHL(); return; }
     TIP = n;
     if (!n) { t.hidden = true; store.set("envoy-coached", 1); applyHL(); return; }
-    t.innerHTML = "<span>" + TIPS[n] + '</span><button type="button" id="tipX">skip</button>'; t.hidden = false;
+    t.innerHTML = '<span class="n">' + n + "/5</span><span>" + TIPS[n] + '</span><button type="button" id="tipX">skip</button>'; t.hidden = false;
     $("tipX").onclick = function () { store.set("envoy-coached", 1); TIP = 0; t.hidden = true; applyHL(); };
     applyHL();
   }
@@ -887,7 +971,7 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
     if (el) el.classList.add("hl");
   }
 
-  /* ================= SHEETS: briefing, help, settings, log ================= */
+  /* ================= SHEETS ================= */
   function sheet(html, onClick) {
     var ov = $("overlay");
     ov.innerHTML = '<div class="ov" data-close="1"><div class="sheet" role="dialog">' + html + "</div></div>";
@@ -895,47 +979,48 @@ body.rm *, body.rm *::before, body.rm *::after { animation: none !important; tra
   }
   function showBriefing() {
     var d = (CAT.diffs || []).find(function (x) { return x.id === G.diff; }) || {};
-    sheet('<span class="lbl">' + ERA[G.era] + " · " + G.year + " · " + esc(d.name || "") + "</span><h2>" + esc(G.title) + '</h2><p style="color:var(--muted)">' + esc(G.tagline) + "</p>" +
-      '<div class="mission"><span>🎯</span><span><b>Win:</b> sign ' + G.goal + " deal" + (G.goal > 1 ? "s" : "") + " before " + G.unit.toLowerCase() + " " + G.months + ".</span>" +
-      (G.noWar ? "<span>🌿</span><span><b>Relaxed:</b> the world can't tip into war. Take your time.</span>" : "<span>🔥</span><span><b>Lose:</b> if World tension hits 100. Hotspots that reach 100 flare up and spread.</span>") +
-      "<span>🕴️</span><span><b>Each " + G.unit.toLowerCase() + "</b> you get " + G.maxEnvoys + " envoys to spend on hotspots.</span>" +
-      '<span>🙂</span><span><b>Win parties over</b> with offers they want, open talks, then propose a deal.</span></div>' +
-      (G.note ? '<p class="lbl" style="line-height:1.5">' + esc(G.note) + "</p>" : "") +
-      '<button class="btn" type="button" data-x="1" id="briefGo">Start ▸</button>');
+    sheet('<div class="t-h"><span class="lbl">' + ERA[G.era] + " · " + G.year + '</span><span class="hint">' + esc(d.name || "") + "</span></div><h2>" + esc(G.title) + '</h2><p style="color:var(--muted)">' + esc(G.tagline) + "</p>" +
+      '<div class="mission"><div><span class="ic">' + ico("target", 18) + "</span><span><b>Win:</b> sign " + G.goal + " deal" + (G.goal > 1 ? "s" : "") + " before " + G.unit.toLowerCase() + " " + G.months + ".</span></div>" +
+      (G.noWar ? '<div><span class="ic">' + ico("calm", 18) + "</span><span><b>Relaxed:</b> the world can't tip into war. Take your time.</span></div>" : '<div><span class="ic">' + ico("fire", 18) + "</span><span><b>Lose:</b> if World tension hits 100. Hotspots at 100 flare up and spread.</span></div>") +
+      '<div><span class="ic">' + ico("envoy", 18) + "</span><span><b>Each " + G.unit.toLowerCase() + "</b> you get " + G.maxEnvoys + " envoys to spend.</span></div>" +
+      '<div><span class="ic">' + ico("message", 18) + "</span><span><b>Win parties over</b> with offers they want, open talks, then propose a deal.</span></div></div>" +
+      (G.note ? '<p class="lbl" style="line-height:1.6">' + esc(G.note) + "</p>" : "") +
+      '<button class="btn" type="button" data-x="1" id="briefGo">Start</button>');
     $("briefGo").addEventListener("click", function () { $("overlay").innerHTML = ""; banner(G.title, ERA[G.era] + " · " + G.year); coach(1); if (G.crisis) setTimeout(showCrisis, 900); });
   }
   $("helpBtn").addEventListener("click", function () {
-    sheet('<h2>How to play</h2><ul>' +
-      "<li><b>Goal:</b> sign " + G.goal + " deal" + (G.goal > 1 ? "s" : "") + " before " + G.unit.toLowerCase() + " " + G.months + "." + (G.noWar ? "" : " You lose if World tension hits 100.") + "</li>" +
-      "<li><b>Hotspots</b> heat up every turn. At 100 they flare: World tension jumps and linked hotspots heat up. ⚠ marks the ones at risk next turn.</li>" +
-      "<li><b>👂 Listen</b> reveals a hidden card. <b>✉️ Message</b> offers a term: 👍 they like it, 👎 they don't, ⛔ red line (they get angry).</li>" +
-      "<li><b>🎁 Aid</b> cools a hotspot by 10. <b>🪖 Peacekeepers</b> cool it by 18 and freeze it for 2 turns, but some parties refuse foreign troops.</li>" +
-      "<li><b>🤝 Talks</b> open when enough parties are at 🙂. Then <b>📜 Deal</b>: up to 3 terms; every VETO party plus all but one other must say yes.</li>" +
-      "<li><b>✓ ◐ ?</b> show how well CR-AI's sources cover a party. Dashed cards are CR-AI guesses, and some are wrong.</li>" +
-      '</ul><button class="btn" type="button" data-x="1">Got it</button>');
+    sheet('<div class="t-h"><span class="lbl">Help</span><span class="hint">Rules</span></div><h2>How to play</h2><ol class="rules">' +
+      '<li><span class="n">1</span><span><b>Goal:</b> sign ' + G.goal + " deal" + (G.goal > 1 ? "s" : "") + " before " + G.unit.toLowerCase() + " " + G.months + "." + (G.noWar ? "" : " You lose if World tension hits 100.") + "</span></li>" +
+      '<li><span class="n">2</span><span><b>Hotspots</b> heat up every turn. At 100 they flare: World tension jumps and linked hotspots heat up. "May flare" marks the ones at risk.</span></li>' +
+      '<li><span class="n">3</span><span><b>Listen</b> reveals a hidden card. <b>Message</b> offers a term: WANTS means they like it, DISLIKES means they don\'t, RED LINE makes them angry.</span></li>' +
+      '<li><span class="n">4</span><span><b>Aid</b> cools a hotspot by 10. <b>Peacekeepers</b> cool it by 18 and freeze it for 2 turns, but some parties refuse foreign troops.</span></li>' +
+      '<li><span class="n">5</span><span><b>Talks</b> open when enough parties are Warm. Then <b>Deal</b>: up to 3 terms; every VETO party plus all but one other must say yes.</span></li>' +
+      '<li><span class="n">6</span><span><b>✓ ◐ ?</b> show how well CR-AI\'s sources cover a party. Dashed cards are CR-AI guesses, and some are wrong.</span></li>' +
+      '</ol><button class="btn" type="button" data-x="1">Got it</button>');
   });
   $("setBtn").addEventListener("click", showSettings);
   function showSettings() {
     var seg = function (key, opts) { return '<span class="seg">' + opts.map(function (o) { return '<button type="button" data-k="' + key + '" data-v="' + o[0] + '" aria-pressed="' + (String(key === "diff" ? G.diff : SET[key]) === String(o[0])) + '">' + o[1] + "</button>"; }).join("") + "</span>"; };
-    sheet('<h2>Settings</h2>' +
-      '<div class="rowx"><span>Difficulty <span class="lbl">· score uses the easiest you played</span></span>' + seg("diff", (CAT.diffs || []).map(function (d) { return [d.id, d.name]; })) + "</div>" +
-      '<div class="rowx"><span>Animation speed</span>' + seg("speed", [["normal", "Normal"], ["fast", "Fast"]]) + "</div>" +
-      '<div class="rowx"><span>Motion and effects</span>' + seg("motion", [[true, "On"], [false, "Reduced"]]) + "</div>" +
-      '<div class="rowx"><span>Sound</span>' + seg("sound", [[false, "Off"], [true, "On"]]) + "</div>" +
+    sheet('<div class="t-h"><span class="lbl">Settings</span><span class="hint blue">Saved on this device</span></div><h2>Settings</h2>' +
+      '<div class="rowx"><span><b>Difficulty</b><br><span class="lbl">Score uses the easiest you played</span></span>' + seg("diff", (CAT.diffs || []).map(function (d) { return [d.id, d.name]; })) + "</div>" +
+      '<div class="rowx"><b>Animation speed</b>' + seg("speed", [["normal", "Normal"], ["fast", "Fast"]]) + "</div>" +
+      '<div class="rowx"><b>Motion and effects</b>' + seg("motion", [[true, "On"], [false, "Reduced"]]) + "</div>" +
+      '<div class="rowx"><b>Sound</b>' + seg("sound", [[false, "Off"], [true, "On"]]) + "</div>" +
+      '<div class="rowx"><b>Theme</b>' + '<span class="seg">' + [["light", "Light"], ["dark", "Dark"]].map(function (o) { return '<button type="button" data-k="theme" data-v="' + o[0] + '" aria-pressed="' + ((isDark() ? "dark" : "light") === o[0]) + '">' + o[1] + "</button>"; }).join("") + "</span></div>" +
       '<button class="btn" type="button" data-x="1">Done</button>', function (e) {
         var b = e.target.closest("[data-k]"); if (!b) return;
         var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+        if (k === "theme") { root.setAttribute("data-theme", v); store.set("on-theme", v); drawMap(); showSettings(); return; }
         if (k === "diff") {
           if (BUSY) return; BUSY = true;
-          api("/api/envoy/move", { id: ID, a: "diff", value: v }).then(function (r) { BUSY = false; if (r.error) { toast(r.error); return; } G = r.view; DIFF = v; store.set("envoy-diff", v); renderAll(); showSettings(); toast("Difficulty: " + ((CAT.diffs || []).find(function (d) { return d.id === v; }) || {}).name); });
+          api("/api/envoy/move", { id: ID, a: "diff", value: v }).then(function (r) { BUSY = false; if (r.error) { toast(r.error); return; } G = r.view; DIFF = v; store.set("envoy-diff", v); renderAll(); showSettings(); toast("Difficulty is now " + ((CAT.diffs || []).find(function (d) { return d.id === v; }) || {}).name + "."); });
           return;
         }
         SET[k] = v === "true" ? true : v === "false" ? false : v; applySettings(); if (k === "sound" && SET.sound) sfx("good"); showSettings();
       });
   }
   function showLog() {
-    var K = { flare: "🔥", deal: "🕊️", walk: "🚪", intel: "👂", msg: "✉️", crisis: "⚡", vote: "🗳️", back: "↩️", act: "•", start: "🌍", end: "🏁" };
-    sheet('<h2>Dispatches</h2><div class="logl">' + G.log.slice().reverse().map(function (l) { return "<div><small>" + esc(G.unit.slice(0, 1)) + l.m + "</small>" + (K[l.kind] || "") + " " + esc(l.text) + "</div>"; }).join("") + '</div><button class="btn" type="button" data-x="1">Close</button>');
+    sheet('<div class="t-h"><span class="lbl">Log</span><span class="hint blue">Newest first</span></div><h2>Dispatches</h2><div class="logl">' + G.log.slice().reverse().map(function (l) { return '<div><span class="lbl">' + esc(G.unit.slice(0, 1)) + l.m + " · " + (KIND[l.kind] || "") + "</span><span>" + esc(l.text) + "</span></div>"; }).join("") + '</div><button class="btn" type="button" data-x="1">Close</button>');
   }
   $("logBtn").addEventListener("click", showLog);
   $("ticker").addEventListener("click", showLog);
