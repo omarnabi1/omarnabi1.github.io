@@ -416,6 +416,62 @@ table.lb tr.crai td:nth-child(2) { color: var(--blue); font-weight: 700; }
 .toggles button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
 /* Small build tiles */
+/* Version history */
+.evo-top { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 8px 24px; align-items: end; }
+.evo-top h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); }
+.evo-rail { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 14px 2px 6px; position: relative; }
+.evo-rail button { flex: 1 0 116px; text-align: left; display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--tile2); cursor: pointer; position: relative; transition: border-color .2s, background .2s, transform .15s; }
+.evo-rail button:hover { border-color: var(--ink); transform: translateY(-2px); }
+.evo-rail button b { font-family: var(--mono); font-size: .66rem; color: var(--acc); letter-spacing: .06em; }
+.evo-rail button span { font-weight: 750; font-size: .9rem; line-height: 1.2; }
+.evo-rail button small { font-family: var(--mono); font-size: .6rem; color: var(--muted); }
+.evo-rail button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.evo-rail button[aria-selected="true"] small { color: var(--bg); opacity: .7; }
+.evo-rail button.done::after { content: ""; position: absolute; top: -5px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--acc); }
+.evo-body { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.evo-stage { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); min-height: 300px; animation: fadeIn .35s ease; }
+.evo-side { display: grid; gap: 10px; align-content: start; }
+.evo-side h3 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
+.evo-side .stack { display: flex; flex-wrap: wrap; gap: 6px; }
+.evo-side .lesson { padding: 12px 14px; border-radius: 14px; background: var(--acc-soft); color: var(--ink); font-size: .92rem; line-height: 1.45; }
+.evo-side .lesson b { display: block; font-family: var(--mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--acc); margin-bottom: 4px; }
+.evo-side .nav2 { display: flex; gap: 6px; flex-wrap: wrap; }
+/* era skins */
+.era-cli { background: #050805; color: #7CFF9A; font-family: var(--mono); font-size: .8rem; padding: 16px; display: grid; gap: 10px; text-shadow: 0 0 6px rgba(124,255,154,.45); }
+.era-cli pre { margin: 0; white-space: pre-wrap; line-height: 1.5; }
+.era-cli .go { justify-self: start; font: inherit; color: #050805; background: #7CFF9A; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; text-shadow: none; font-weight: 700; }
+.era-bs { background: #FFFFFF; color: #333; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; }
+.era-bs .nb { background: #337AB7; color: #fff; padding: 12px 16px; font-size: 17px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.era-bs .nb small { font-size: 12px; opacity: .85; }
+.era-bs .bd { padding: 14px 16px 16px; display: grid; gap: 12px; }
+.era-bs form { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; align-items: end; }
+.era-bs label { display: grid; gap: 3px; font-size: 12px; font-weight: 700; color: #555; }
+.era-bs input, .era-bs select { font: inherit; font-size: 14px; color: #333; background: #fff; border: 1px solid #CCC; border-radius: 4px; padding: 6px 8px; box-shadow: inset 0 1px 1px rgba(0,0,0,.075); min-width: 0; }
+.era-bs .b1 { font: inherit; font-size: 14px; color: #fff; background: #5CB85C; border: 1px solid #4CAE4C; border-radius: 4px; padding: 7px 12px; cursor: pointer; }
+.era-bs .b2 { font: inherit; font-size: 12px; color: #fff; background: #D9534F; border: 1px solid #D43F3A; border-radius: 3px; padding: 2px 8px; cursor: pointer; }
+.era-bs .b3 { font: inherit; font-size: 12px; color: #333; background: #fff; border: 1px solid #CCC; border-radius: 3px; padding: 2px 8px; cursor: pointer; }
+.era-bs table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.era-bs th, .era-bs td { text-align: left; padding: 7px 6px; border-top: 1px solid #DDD; }
+.era-bs th { border-top: 0; border-bottom: 2px solid #DDD; }
+.era-bs .tw { overflow-x: auto; }
+.era-bs .empty { color: #777; font-style: italic; }
+.era-bs .alert { background: #DFF0D8; color: #3C763D; border: 1px solid #D6E9C6; border-radius: 4px; padding: 8px 12px; font-size: 13px; }
+.era-notes { background: #F4F1FA; color: #2B2340; font-family: "Trebuchet MS", "Segoe UI", sans-serif; padding: 16px; display: grid; gap: 12px; }
+.era-notes h4 { margin: 0; font-size: 20px; color: #6A4FB6; }
+.era-notes form { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.era-notes input, .era-notes textarea, .era-notes select { font: inherit; font-size: 14px; color: #2B2340; background: #fff; border: 2px solid #DCD3F0; border-radius: 10px; padding: 7px 9px; min-width: 0; }
+.era-notes textarea { grid-column: 1 / -1; min-height: 54px; resize: vertical; }
+.era-notes .nbtn { font: inherit; font-weight: 700; color: #fff; background: #6A4FB6; border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+.era-notes .wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.era-notes .stk { position: relative; padding: 12px 12px 14px; border-radius: 6px; min-height: 90px; box-shadow: 0 6px 14px -8px rgba(0,0,0,.35); transform: rotate(var(--r, 0deg)); animation: noteIn .35s cubic-bezier(.2,1.4,.4,1); color: #2B2340; }
+.era-notes .stk b { display: block; font-size: 14px; margin-bottom: 4px; padding-right: 16px; overflow-wrap: anywhere; }
+.era-notes .stk p { font-size: 13px; color: #2B2340 !important; overflow-wrap: anywhere; }
+.era-notes .stk button { position: absolute; top: 4px; right: 6px; background: none; border: 0; font-size: 16px; cursor: pointer; color: #2B2340; }
+@keyframes noteIn { from { transform: scale(.6) rotate(-8deg); opacity: 0; } }
+.era-card { background: var(--tile2); padding: 22px; display: grid; gap: 12px; align-content: center; min-height: 300px; }
+.era-card .big { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+.era-card .meta2 { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 900px) { .evo-top, .evo-body { grid-template-columns: minmax(0, 1fr); } }
 .mini-art { height: 86px; border-radius: 14px; background: var(--tile2); display: grid; place-items: center; overflow: hidden; }
 .mini-art svg { width: 70%; height: 100%; }
 .mini-art .rt { fill: none; stroke: var(--acc); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 5 6; animation: flow 1.6s linear infinite; }
@@ -912,6 +968,14 @@ button.gcard:hover { border-color: var(--ink); }
       <span class="chap-line" aria-hidden="true"><i></i></span>
     </div>
 
+    <section class="t w4 evo" id="t-evo" data-sk="build" aria-label="From bootcamp to now">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Version history</span><span class="hint">Open any version, they all work</span></div>
+      <div class="evo-top"><h2>From bootcamp to now</h2><p>In 2020 I taught myself to code at Flatiron School while working in IT. These are the real projects, rebuilt so you can use them, in order, up to what I build today.</p></div>
+      <div class="evo-rail" id="evoRail" role="tablist" aria-label="Versions"></div>
+      <div class="evo-body"><div class="evo-stage" id="evoStage" aria-live="polite"></div><aside class="evo-side" id="evoSide"></aside></div>
+    </section>
+
     <section class="t w2" id="t-builds" data-sk="build" aria-label="CR-AI">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">Build · applied AI</span><span class="hint">Toggle sources</span></div>
@@ -1176,6 +1240,93 @@ button.gcard:hover { border-color: var(--ink); }
 
   /* Generic flips */
   document.addEventListener("click", function (e) { var f = e.target.closest(".flip"); if (!f || f.id === "deckCard") return; var on = !f.classList.contains("on"); f.classList.toggle("on", on); f.setAttribute("aria-pressed", on ? "true" : "false"); });
+
+  /* Version history: bootcamp projects rebuilt, through to today */
+  (function () {
+    var store2 = { get: function (k, d) { try { var v = localStorage.getItem("evo-" + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set: function (k, v) { try { localStorage.setItem("evo-" + k, JSON.stringify(v)); } catch (e) {} } };
+    var V = [
+      { v: "v0.1", d: "May 2020", n: "Lakers CLI", t: ["Ruby", "Nokogiri", "CLI"], k: "cli", l: "I scraped the Lakers roster from LakersNation. The bug that took hours was one if statement: only print a row when it matches the player you picked." },
+      { v: "v0.2", d: "Jul 2020", n: "Workout tracker", t: ["Ruby", "Sinatra", "MVC", "CRUD"], k: "work", l: "Sign up, log a workout, edit it, delete it. A home button that wouldn't go home is how I learned string interpolation inside HTML." },
+      { v: "v0.3", d: "Sep 2020", n: "Basketball client manager", t: ["Ruby on Rails", "Nested forms"], k: "bcm", l: "Built for basketball trainers. One form creates a client, a location, and an appointment at once. Separation of concerns is a championship roster: every model has one job." },
+      { v: "v0.4", d: "Jul 2021", n: "OmarsNotes", t: ["JavaScript", "Single-page app", "Rails API"], k: "notes", l: "Four classes and two promises between clicking New Note and seeing it on screen. No password, just a name, so notes could be shared later." },
+      { v: "v1.0", d: "Startup", n: "Ridey", t: ["Native iOS", "Co-founder"], k: "ridey", go: "t-ridey", l: "The jump from class projects to an app people download: co-founded and shipped to the App Store." },
+      { v: "v1.5", d: "Startup", n: "Carvenience", t: ["Two-sided marketplace", "Founder"], k: "carv", go: "t-ridey", l: "Two kinds of users, customers and providers, on one platform for mobile auto services." },
+      { v: "v2.0", d: "Now", n: "CR-AI", t: ["Mistral-7B", "QLoRA", "Fine-tuning"], k: "crai", go: "t-builds", l: "A fine-tuned model that reads world news from six sources and forecasts what happens next. You can play against it." },
+      { v: "v3.0", d: "2026", n: "This site", t: ["Cloudflare Workers", "Durable Objects", "WebSockets"], k: "site", go: "top", l: "Live cursors, chat, a real leaderboard, and everything you're clicking. From a Lakers roster in a terminal to this, in six years." }
+    ];
+    var rail = $("evoRail"), stage = $("evoStage"), side = $("evoSide"), cur = 0;
+    rail.innerHTML = V.map(function (x, i) { return '<button type="button" role="tab" data-i="' + i + '" aria-selected="false"><b>' + x.v + "</b><span>" + esc(x.n) + "</span><small>" + esc(x.d) + "</small></button>"; }).join("");
+    var APPS = {
+      cli: function () {
+        stage.className = "evo-stage era-cli";
+        stage.innerHTML = "<pre>$ ruby bin/lakers_cli\nWelcome to the Lakers CLI!\n\n2019-20 Los Angeles Lakers roster:\n   1. LeBron James\n   2. Anthony Davis\n   3. Kyle Kuzma\n   ...\n\nPick a player by number, or type exit.\n> _</pre><button type=\"button\" class=\"go\" id=\"evoRun\">Run it for real in the terminal</button>";
+        $("evoRun").onclick = function () { window.__term && window.__term.run("lakers"); };
+      },
+      work: function () {
+        var W = store2.get("work", [{ x: "Back squat", s: 5, r: 5 }, { x: "Pull-ups", s: 4, r: 8 }]), ed = -1;
+        stage.className = "evo-stage era-bs";
+        function draw(msg) {
+          stage.innerHTML = '<div class="nb"><span>WorkoutTracker</span><small>Signed in as guest</small></div><div class="bd">' + (msg ? '<div class="alert">' + msg + "</div>" : "") +
+            '<form id="wkF"><label>Exercise<input id="wkX" required maxlength="40" placeholder="Bench press"></label><label>Sets<input id="wkS" type="number" min="1" max="20" value="3" required></label><label>Reps<input id="wkR" type="number" min="1" max="100" value="10" required></label><button class="b1" type="submit">Add workout</button></form>' +
+            '<div class="tw"><table><thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th></th></tr></thead><tbody>' +
+            (W.length ? W.map(function (w, i) { return ed === i ? '<tr><td><input id="eX" value="' + esc(w.x) + '" maxlength="40"></td><td><input id="eS" type="number" value="' + w.s + '" style="width:60px"></td><td><input id="eR" type="number" value="' + w.r + '" style="width:60px"></td><td><button class="b1" type="button" data-save="' + i + '">Save</button></td></tr>' : "<tr><td>" + esc(w.x) + "</td><td>" + w.s + "</td><td>" + w.r + '</td><td><button class="b3" type="button" data-edit="' + i + '">Edit</button> <button class="b2" type="button" data-del="' + i + '">Delete</button></td></tr>'; }).join("") : '<tr><td colspan="4" class="empty">No workouts yet. Add your first one above.</td></tr>') +
+            "</tbody></table></div></div>";
+          $("wkF").onsubmit = function (e) { e.preventDefault(); W.push({ x: $("wkX").value.trim(), s: +$("wkS").value, r: +$("wkR").value }); store2.set("work", W); draw("Workout created."); };
+          stage.querySelectorAll("[data-del]").forEach(function (b) { b.onclick = function () { W.splice(+b.getAttribute("data-del"), 1); store2.set("work", W); draw("Workout deleted."); }; });
+          stage.querySelectorAll("[data-edit]").forEach(function (b) { b.onclick = function () { ed = +b.getAttribute("data-edit"); draw(); }; });
+          stage.querySelectorAll("[data-save]").forEach(function (b) { b.onclick = function () { var i = +b.getAttribute("data-save"); W[i] = { x: $("eX").value.trim() || W[i].x, s: +$("eS").value || W[i].s, r: +$("eR").value || W[i].r }; ed = -1; store2.set("work", W); draw("Workout updated."); }; });
+        }
+        draw();
+      },
+      bcm: function () {
+        var A = store2.get("bcm", [{ c: "Example client", loc: "Irvine Rec Center", d: "", t: "17:00", p: 60, ex: 1 }]);
+        stage.className = "evo-stage era-bs";
+        function draw(msg) {
+          var tot = A.reduce(function (s, a) { return s + (+a.p || 0); }, 0);
+          stage.innerHTML = '<div class="nb"><span>Basketball Client Management</span><small>Trainer dashboard</small></div><div class="bd">' + (msg ? '<div class="alert">' + msg + "</div>" : "") +
+            '<form id="bcF"><label>Client name<input id="bcC" required maxlength="40" placeholder="Jordan R."></label><label>Location<input id="bcL" required maxlength="40" placeholder="Heritage Park"></label><label>Date<input id="bcD" type="date" required></label><label>Time<input id="bcT" type="time" value="16:00" required></label><label>Price ($)<input id="bcP" type="number" min="0" value="75" required></label><button class="b1" type="submit">Book session</button></form>' +
+            '<div class="tw"><table><thead><tr><th>Client</th><th>Location</th><th>When</th><th>Price</th><th></th></tr></thead><tbody>' +
+            A.map(function (a, i) { return "<tr><td>" + esc(a.c) + (a.ex ? ' <small style="color:#777">(example)</small>' : "") + "</td><td>" + esc(a.loc) + "</td><td>" + esc((a.d || "Any day") + " " + a.t) + "</td><td>$" + (+a.p || 0) + '</td><td><button class="b2" type="button" data-del="' + i + '">Cancel</button></td></tr>'; }).join("") +
+            '</tbody></table></div><p style="font-size:13px;color:#555"><b>' + A.length + "</b> sessions booked · <b>$" + tot + "</b> on the calendar</p></div>";
+          $("bcF").onsubmit = function (e) { e.preventDefault(); A.push({ c: $("bcC").value.trim(), loc: $("bcL").value.trim(), d: $("bcD").value, t: $("bcT").value, p: +$("bcP").value }); store2.set("bcm", A); draw("Client, location, and appointment created from one form."); };
+          stage.querySelectorAll("[data-del]").forEach(function (b) { b.onclick = function () { A.splice(+b.getAttribute("data-del"), 1); store2.set("bcm", A); draw("Session cancelled."); }; });
+        }
+        draw();
+      },
+      notes: function () {
+        var who = store2.get("who", null), N = store2.get("notes", []), C = { Idea: "#FFE7A3", Todo: "#C9F2D4", Urgent: "#FFC9C2", Someday: "#CFE0FF" };
+        stage.className = "evo-stage era-notes";
+        function draw() {
+          if (!who) {
+            stage.innerHTML = '<h4>OmarsNotes</h4><p style="font-size:14px;color:#5B5170">Sign in with your name to start. No password needed.</p><form id="nsF"><input id="nsN" required maxlength="30" placeholder="Your name" aria-label="Your name"><button class="nbtn" type="submit">Sign in</button></form>';
+            $("nsF").onsubmit = function (e) { e.preventDefault(); who = $("nsN").value.trim(); store2.set("who", who); draw(); };
+            return;
+          }
+          stage.innerHTML = '<h4>Hi ' + esc(who) + ', welcome to OmarsNotes</h4><form id="ntF"><input id="ntT" required maxlength="40" placeholder="Title" aria-label="Title"><select id="ntC" aria-label="Status">' + Object.keys(C).map(function (k) { return "<option>" + k + "</option>"; }).join("") + '</select><textarea id="ntB" maxlength="200" placeholder="Write something" aria-label="Note"></textarea><button class="nbtn" type="submit">New note</button></form>' +
+            '<div class="wall">' + (N.length ? N.map(function (n, i) { return '<div class="stk" style="background:' + C[n.c] + ";--r:" + ((i % 3) - 1) * 1.4 + 'deg"><button type="button" aria-label="Delete note" data-del="' + i + '">×</button><b>' + esc(n.t) + "</b><p>" + esc(n.b) + '</p><small style="font-size:11px;opacity:.7">' + esc(n.c) + "</small></div>"; }).join("") : '<p style="font-size:14px;color:#5B5170">No notes yet. Your first one goes here.</p>') + "</div>";
+          $("ntF").onsubmit = function (e) { e.preventDefault(); N.unshift({ t: $("ntT").value.trim(), b: $("ntB").value.trim(), c: $("ntC").value }); store2.set("notes", N); draw(); };
+          stage.querySelectorAll("[data-del]").forEach(function (b) { b.onclick = function () { N.splice(+b.getAttribute("data-del"), 1); store2.set("notes", N); draw(); }; });
+        }
+        draw();
+      }
+    };
+    function card(x) {
+      stage.className = "evo-stage era-card";
+      stage.innerHTML = '<span class="lbl">' + esc(x.v) + " · " + esc(x.d) + '</span><p class="big">' + esc(x.n) + '</p><div class="meta2">' + x.t.map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("") + '</div><div class="btns"><button type="button" class="btn" id="evoGo">' + (x.k === "crai" ? "Play against it" : x.k === "site" ? "Open the terminal" : "See it on this page") + "</button></div>";
+      $("evoGo").onclick = function () { if (x.k === "site") { window.__term && window.__term.run("help"); return; } var el = $(x.k === "crai" ? "t-game" : x.go); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "center" }); };
+    }
+    function show(i) {
+      cur = i; var x = V[i];
+      rail.querySelectorAll("button").forEach(function (b, k) { b.setAttribute("aria-selected", k === i ? "true" : "false"); b.classList.toggle("done", k < i); });
+      stage.style.animation = "none"; void stage.offsetWidth; stage.style.animation = "";
+      if (APPS[x.k]) APPS[x.k](); else card(x);
+      side.innerHTML = '<span class="lbl">' + esc(x.v) + " · " + esc(x.d) + "</span><h3>" + esc(x.n) + '</h3><div class="stack">' + x.t.map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("") + '</div><p class="lesson"><b>' + (i < 4 ? "What it taught me" : "Why it matters") + "</b>" + esc(x.l) + '</p><div class="nav2"><button type="button" class="btn sm ghost" id="evoPrev"' + (i ? "" : " disabled") + '>← Earlier</button><button type="button" class="btn sm" id="evoNext"' + (i < V.length - 1 ? "" : " disabled") + ">Next version →</button></div>";
+      $("evoPrev").onclick = function () { show(Math.max(0, cur - 1)); }; $("evoNext").onclick = function () { show(Math.min(V.length - 1, cur + 1)); };
+      var b = rail.children[i]; if (b && rail.scrollWidth > rail.clientWidth) rail.scrollTo({ left: b.offsetLeft - 20, behavior: RM ? "auto" : "smooth" });
+    }
+    rail.addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) { show(+b.getAttribute("data-i")); window.__act && window.__act("opened " + V[+b.getAttribute("data-i")].n); } });
+    show(0);
+  })();
 
   /* Receipt printer */
   (function () {
@@ -1841,6 +1992,7 @@ button.gcard:hover { border-color: var(--ink); }
       function close() { if (qt.hidden) return; qt.classList.remove("on"); setTimeout(function () { qt.hidden = true; if (ph.parentNode) ph.parentNode.replaceChild(win, ph); }, RM ? 0 : 300); }
       qt.querySelector("button").addEventListener("click", close); ph.querySelector("button").addEventListener("click", close);
       $("termBtn").addEventListener("click", function () { if (qt.hidden) open(); else close(); });
+      window.__term = { open: open, run: function (c) { open(); setTimeout(function () { run(c); }, RM ? 0 : 320); } };
       addEventListener("keydown", function (e) {
         var t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) && t !== inp;
         if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); if (qt.hidden) open(); else close(); return; }
@@ -1911,7 +2063,7 @@ button.gcard:hover { border-color: var(--ink); }
   })();
 
   /* =========== v12: x-ray mode =========== */
-  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "Animated SVG stroke-dashoffset", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
+  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-evo": "Four bootcamp apps rebuilt in vanilla JS · localStorage", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "Animated SVG stroke-dashoffset", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
   grid.querySelectorAll(".t").forEach(function (t) {
     var id = t.id || (t.classList.contains("intro") ? "intro" : ""), lab = XR[id];
     if (!lab) { var a = t.getAttribute("aria-label") || "Tile"; lab = a === "Skills" ? "Live SVG paths between DOM rects" : a === "Journey" ? "Range input · stepped timeline" : a === "Things you wouldn't guess" ? "Pointer events · swipe physics" : a === "Toolkit" ? "CSS marquee · pause on hover" : a === "Local time and contact" ? "Intl time zone clock" : a + " · HTML + CSS"; }
