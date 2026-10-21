@@ -204,6 +204,57 @@ input[type="range"] { width: 100%; accent-color: var(--acc); height: 28px; margi
 .ticks button.past::before { background: var(--muted); }
 .ticks button.cur::before { background: var(--acc); transform: scale(1.8); }
 .jr-ctl { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Journey stage: a road through twelve scenes that draw themselves in as you arrive */
+.jr-stage { display: block; width: 100%; max-width: 100%; aspect-ratio: 3 / 1; height: auto; border-radius: 14px; background: var(--tile2); border: 1px solid var(--line); cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.jr-stage.drag { cursor: grabbing; }
+.jr-stage .road { fill: none; stroke: var(--line); stroke-width: 3; stroke-linecap: round; }
+.jr-stage .road-on { stroke: var(--acc); }
+.jr-stage .me { fill: var(--acc); }
+.jr-stage .me-ring { fill: none; stroke: var(--acc); stroke-width: 2; opacity: .35; transform-box: fill-box; transform-origin: center; animation: meRing 1.6s ease-out infinite; }
+@keyframes meRing { from { transform: scale(.6); opacity: .6; } to { transform: scale(1.8); opacity: 0; } }
+.jv { opacity: .2; transition: opacity .5s; }
+.jv.seen { opacity: .5; }
+.jv.cur { opacity: 1; }
+.jv .k { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.jv .a { fill: none; stroke: var(--acc); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.jv .fa { fill: var(--acc); stroke: none; }
+.jv .fs { fill: var(--acc-soft); }
+.jv .ft { fill: var(--tile); }
+.jv .d { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1s cubic-bezier(.5,0,.2,1); }
+.jv.seen .d { stroke-dashoffset: 0; }
+.jv .p { transform-box: fill-box; transform-origin: center; transform: scale(0); transition: transform .55s cubic-bezier(.2,1.6,.4,1); }
+.jv.seen .p { transform: scale(1); }
+.jv text { font-family: var(--mono); font-size: 9px; fill: var(--muted); letter-spacing: .06em; }
+.jv .yr { font-size: 11px; font-weight: 600; }
+.jv.cur .yr { fill: var(--acc); }
+.jv.cur .bounce { animation: jBounce .9s cubic-bezier(.5,0,.5,1) infinite alternate; }
+.jv.cur .blink { animation: jBlink 1s steps(2, start) infinite; }
+.jv.cur .spin { animation: jSpin 4s linear infinite; }
+.jv.cur .spin-f { animation: jSpin 1.2s linear infinite; }
+.jv.cur .floaty { animation: jFloat 2.4s ease-in-out infinite alternate; }
+.jv.cur .pulse { animation: jPulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes jBounce { to { transform: translateY(-20px); } }
+@keyframes jBlink { 50% { opacity: 0; } }
+@keyframes jSpin { to { transform: rotate(360deg); } }
+@keyframes jFloat { to { transform: translateY(-7px); } }
+@keyframes jPulse { 50% { transform: scale(1.35); } }
+/* Now tile icons */
+.now-list li { grid-template-columns: 10px minmax(0, 1fr) 22px; }
+.nic { width: 22px; height: 22px; overflow: visible; }
+.nic * { fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nic .n-gear { animation: jSpin 6s linear infinite; }
+.nic .n-cur { fill: var(--acc); stroke: none; animation: jBlink 1s steps(2, start) infinite; }
+.nic .n-ink { stroke: var(--acc); stroke-dasharray: 1; animation: nInk 3s cubic-bezier(.5,0,.3,1) infinite; }
+@keyframes nInk { 0% { stroke-dashoffset: 1; } 60%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -1; } }
+/* Irvine sky */
+.sky { display: block; width: 100%; max-width: 100%; height: auto; overflow: visible; }
+.sky-arc { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 5; }
+.sky-hz { stroke: var(--line); stroke-width: 1.5; }
+.sky .sun { fill: var(--acc); }
+.sky .sun-g { fill: var(--acc); opacity: .18; transform-box: fill-box; transform-origin: center; animation: jPulse 3s ease-in-out infinite; }
+.sky .moon { fill: var(--muted); }
+.sky .star { fill: var(--muted); animation: jBlink 2.4s steps(2, start) infinite; }
+.sky-status { font-size: .9rem; }
 
 /* Skills lens */
 .lens-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -779,6 +830,7 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
     <section class="t w2" data-sk="translate" aria-label="Journey">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">How I got here</span><span class="hint">Drag through it</span></div>
+      <svg class="jr-stage" id="jrStage" viewBox="0 0 600 200" aria-hidden="true"></svg>
       <div class="jr-body" id="jrBody" aria-live="polite"></div>
       <div class="jr-line" aria-hidden="true"><i id="jrLine"></i></div>
       <div class="track"><input type="range" id="jrRange" min="0" max="11" step="1" value="0" aria-label="Move through the journey"><div class="ticks" id="ticks"></div></div>
@@ -911,16 +963,17 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
     <section class="t" aria-label="Now">
       <div class="t-h"><span class="lbl">Now</span><span class="lbl">Oct 2026</span></div>
       <ul class="now-list">
-        <li>Unifying complex IT environments at ManageEngine</li>
-        <li>Building CR-AI and the game on this page</li>
-        <li>Writing about consolidation and applied AI</li>
+        <li><span>Unifying complex IT environments at ManageEngine</span><svg class="nic" viewBox="0 0 24 24" aria-hidden="true"><g transform="translate(12 12)"><g class="n-gear"><circle cx="0" cy="0" r="5"/><path d="M0 -9 V-6 M0 6 V9 M-9 0 H-6 M6 0 H9 M-6.4 -6.4 L-4.2 -4.2 M4.2 4.2 L6.4 6.4 M-6.4 6.4 L-4.2 4.2 M4.2 -4.2 L6.4 -6.4"/></g></g></svg></li>
+        <li><span>Building CR-AI and the game on this page</span><svg class="nic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7 L8 12 L3 17"/><rect class="n-cur" x="11" y="15" width="9" height="2.4" rx="1"/></svg></li>
+        <li><span>Writing about consolidation and applied AI</span><svg class="nic" viewBox="0 0 24 24" aria-hidden="true"><path class="n-ink" pathLength="1" d="M3 17 C6 11, 8 19, 11 14 S 16 9, 21 12"/></svg></li>
       </ul>
     </section>
 
     <section class="t" aria-label="Local time and contact">
       <div class="t-h"><span class="lbl">Irvine, CA</span><span class="hint b">Live</span></div>
+      <svg class="sky" id="sky" viewBox="0 0 200 76" aria-hidden="true"><path class="sky-arc" d="M12 70 A88 58 0 0 1 188 70"/><line class="sky-hz" x1="4" y1="70" x2="196" y2="70"/><g id="skyBody"></g></svg>
       <div class="clock" id="clock">--:--</div>
-      <p style="font-size:.9rem">Open to advisory work, builds, and good conversations.</p>
+      <p class="sky-status" id="skyStatus">Open to advisory work, builds, and good conversations.</p>
       <div class="btns" style="margin-top:auto"><button type="button" class="btn sm" data-copy>Copy email</button></div>
     </section>
 
@@ -1036,7 +1089,18 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
   $("themeBtn").addEventListener("click", toggleTheme);
 
   /* Clock */
-  function tick() { try { var s = new Date().toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" }), p = s.split(" "); $("clock").innerHTML = esc(p[0]) + "<small>" + esc(p[1] || "") + "</small>"; } catch (e) {} }
+  function tick() { try { var s = new Date().toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" }), p = s.split(" "); $("clock").innerHTML = esc(p[0]) + "<small>" + esc(p[1] || "") + "</small>"; sky(); } catch (e) {} }
+  function sky() {
+    var parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "numeric", weekday: "short", hour12: false }).formatToParts(new Date()), o = {};
+    parts.forEach(function (q) { o[q.type] = q.value; });
+    var hr = (+o.hour % 24) + (+o.minute) / 60, wk = ["Sat", "Sun"].indexOf(o.weekday) < 0, day = hr >= 6.5 && hr < 19;
+    var t = day ? (hr - 6.5) / 12.5 : ((hr >= 19 ? hr - 19 : hr + 5) / 11.5), ang = Math.PI * (1 - t), x = 100 + 88 * Math.cos(ang), y = 70 - 58 * Math.sin(ang), b = "";
+    if (day) b = '<circle class="sun-g" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="13"/><circle class="sun" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="7"/>';
+    else b = '<circle class="star" cx="40" cy="22" r="1.4"/><circle class="star" style="animation-delay:.8s" cx="150" cy="16" r="1.2"/><circle class="star" style="animation-delay:1.6s" cx="112" cy="34" r="1.1"/><path class="moon" d="M' + (x - 2).toFixed(1) + " " + (y - 7).toFixed(1) + ' a7 7 0 1 0 7 9 a5.5 5.5 0 1 1 -7 -9 z"/>';
+    $("skyBody").innerHTML = b;
+    $("skyStatus").textContent = wk && hr >= 8 && hr < 18 ? "Working hours in Irvine. Open to advisory work, builds, and good conversations."
+      : day || hr < 23 ? "After hours in Irvine, so probably building something. Email anyway." : "Late night in Irvine. Email anyway; I reply within two business days.";
+  }
   tick(); setInterval(tick, 30000);
 
   /* Telescopic words */
@@ -1260,9 +1324,82 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
     { y: "Now", t: "Building", s: "CR-AI, a fine-tuned forecasting model, and whatever comes next. I've never loved this work more." }
   ];
   var ji = 0, jPlay = 0;
+  /* Journey stage */
+  var JS = (function () {
+    var svg = $("jrStage"), STEP = 220, X0 = 110, W = STEP * 12, GY = 160, pos = 0, target = 0, raf = 0, drag = null;
+    function gy(x) { return GY - 6 + 6 * Math.cos((x - X0) / STEP * 2 * Math.PI); }
+    var road = "M0 " + gy(0).toFixed(1); for (var x = 10; x <= W; x += 10) road += " L" + x + " " + gy(x).toFixed(1);
+    function d(cls, path, dl) { return '<path class="' + cls + ' d" pathLength="1" d="' + path + '"' + (dl ? ' style="transition-delay:' + dl + 's"' : "") + "/>"; }
+    var ART = [
+      // 2001 arrival: a long flight, PK to US
+      d("a", "M-82 -18 C-50 -110, 40 -118, 72 -78", 0) + '<g class="floaty"><g transform="translate(74 -80) rotate(38)"><path class="k p" style="transition-delay:.7s" d="M-13 0 L12 -2 L16 0 L12 2 Z M-1 -1 L-7 -11 L-3 -11 L6 -1 M-1 1 L-7 11 L-3 11 L6 1"/></g></g>' +
+        '<text class="p" style="transition-delay:.2s" x="-92" y="-4">PK</text><text class="p" style="transition-delay:.9s" x="64" y="-52">US</text>',
+      // HS: the court
+      d("k", "M48 0 V-104", 0) + d("k", "M28 -118 H72 V-92 H28 Z", .15) + d("a", "M26 -84 H54", .3) + d("k", "M28 -84 L32 -66 M40 -84 L40 -66 M52 -84 L48 -66", .45) +
+        '<g class="bounce"><g class="p" style="transition-delay:.6s"><circle class="fa" cx="-34" cy="-30" r="12"/><path class="k" style="stroke:var(--tile)" d="M-46 -30 H-22 M-34 -42 V-18"/></g></g>' + '<path class="a d" pathLength="1" style="opacity:.5;transition-delay:.8s" d="M-26 -44 Q0 -110 34 -88"/>',
+      // 2008: the counter
+      d("k", "M-70 -108 H70 L64 -92 Q57 -84 50 -92 Q43 -84 36 -92 Q29 -84 22 -92 Q15 -84 8 -92 Q1 -84 -6 -92 Q-13 -84 -20 -92 Q-27 -84 -34 -92 Q-41 -84 -48 -92 Q-55 -84 -62 -92 Z", 0) + d("k", "M-64 0 V-48 H64 V0", .25) + d("k", "M-74 -48 H74", .35) +
+        '<g class="floaty"><path class="fs p" style="transition-delay:.6s;stroke:var(--acc);stroke-width:2" d="M-18 -56 L18 -56 L0 -86 Z"/><circle class="fa p" style="transition-delay:.8s" cx="-4" cy="-62" r="2.6"/><circle class="fa p" style="transition-delay:.85s" cx="5" cy="-68" r="2.4"/></g>' + d("k", "M36 -48 V-56 M30 -56 H42 M32 -56 Q36 -66 40 -56", .7),
+      // 2016: the degree
+      '<g class="floaty">' + d("k", "M-36 -82 L0 -98 L36 -82 L0 -66 Z", 0) + d("k", "M-20 -75 V-60 Q0 -50 20 -60 V-75", .25) + d("a", "M30 -84 V-62", .45) + '<circle class="fa p" style="transition-delay:.6s" cx="30" cy="-60" r="3.5"/></g>' +
+        d("k", "M-60 -18 H-4 V-38 H-60 Z", .5) + d("a", "M-38 -38 V-18", .7) + '<text class="p" style="transition-delay:.9s" x="10" y="-22">B.A. · CSULA</text>',
+      // 2017: the detour
+      d("k", "M0 0 V-112", 0) + d("k", "M0 -104 H52 L62 -95 L52 -86 H0", .2) + '<text class="p" style="transition-delay:.5s" x="10" y="-92">LAW</text>' + d("a", "M6 -88 L48 -102", .7) +
+        d("k", "M0 -70 H-52 L-62 -61 L-52 -52 H0", .4) + '<text class="p" style="transition-delay:.6s" x="-46" y="-58">?</text>' + d("a", "M-10 -10 C-40 -16, -60 -30, -84 -30", .9),
+      // 2018: first computer
+      d("k", "M-40 -104 H40 Q44 -104 44 -100 V-48 H-44 V-100 Q-44 -104 -40 -104 Z", 0) + d("k", "M-56 -48 H56 L62 -40 H-62 Z", .3) +
+        '<text class="p" style="transition-delay:.6s;fill:var(--ink)" x="-30" y="-74">&lt;/&gt;</text><rect class="fa blink p" style="transition-delay:.75s" x="2" y="-82" width="12" height="3" rx="1"/>' +
+        d("a", "M-60 -110 L-72 -122 M60 -110 L72 -122 M0 -116 V-130", .9),
+      // 2018: Apple and cybersecurity
+      d("k", "M-62 -100 H-26 Q-22 -100 -22 -96 V-30 Q-22 -26 -26 -26 H-62 Q-66 -26 -66 -30 V-96 Q-66 -100 -62 -100 Z", 0) + d("k", "M-50 -34 H-38", .3) +
+        d("a", "M28 -104 L58 -94 V-68 Q58 -46 28 -34 Q-2 -46 -2 -68 V-94 Z", .4) + d("a", "M14 -68 L25 -58 L44 -80", .9),
+      // NJ: the hustle
+      d("k", "M-86 0 V-56 H-66 V-84 H-48 V-40 H-34 V-104 H-18 V-62 H-4 V0", 0) + d("k", "M-62 -72 H-52 M-30 -94 H-22 M-30 -82 H-22", .4) +
+        '<g transform="translate(46 -72)"><circle class="k p" style="transition-delay:.5s" r="22"/><g class="spin"><path class="a" d="M0 0 V-15"/></g><g class="spin-f"><path class="k" d="M0 0 H11"/></g></g><text class="p" style="transition-delay:.8s" x="30" y="-36">ON BREAKS</text>',
+      // 2020: Vroom
+      d("a", "M-62 -16 L-52 -38 L-18 -48 L22 -48 L44 -30 L62 -26 V-12 H-62 Z", 0) + '<circle class="k p" style="transition-delay:.4s" cx="-34" cy="-10" r="9"/><circle class="k p" style="transition-delay:.45s" cx="34" cy="-10" r="9"/>' +
+        '<g class="floaty"><g class="p" style="transition-delay:.7s"><rect class="k" x="-46" y="-104" width="24" height="30" rx="3"/><circle class="a" cx="-34" cy="-94" r="4"/></g><text class="p" style="transition-delay:.9s;fill:var(--acc);font-size:15px;font-weight:700" x="-14" y="-82">8h</text><text class="p" style="transition-delay:1.05s;fill:var(--acc);font-size:15px;font-weight:700" x="26" y="-96">2h</text></g>',
+      // Then: Ridey and the bank
+      d("k", "M-74 -104 H-40 Q-36 -104 -36 -100 V-28 Q-36 -24 -40 -24 H-74 Q-78 -24 -78 -28 V-100 Q-78 -104 -74 -104 Z", 0) +
+        '<rect class="fa p" style="transition-delay:.35s" x="-70" y="-92" width="10" height="10" rx="2"/><rect class="fs p" style="transition-delay:.4s;stroke:var(--acc);stroke-width:1.5" x="-56" y="-92" width="10" height="10" rx="2"/><rect class="fs p" style="transition-delay:.45s;stroke:var(--acc);stroke-width:1.5" x="-70" y="-78" width="10" height="10" rx="2"/>' +
+        d("k", "M6 -74 H84 L45 -98 Z", .4) + d("k", "M14 -70 V-30 M30 -70 V-30 M46 -70 V-30 M62 -70 V-30 M78 -70 V-30", .6) + d("k", "M4 -26 H86", .8),
+      // 2025: unify, many lines become one
+      d("k", "M-86 -104 C-40 -104, -10 -66, 26 -62", 0) + d("k", "M-86 -78 C-40 -78, -10 -64, 26 -62", .1) + d("k", "M-86 -46 C-40 -46, -10 -60, 26 -62", .2) + d("k", "M-86 -20 C-40 -20, -10 -58, 26 -62", .3) +
+        '<circle class="fa p pulse" style="transition-delay:.9s" cx="30" cy="-62" r="8"/>' + d("a", "M38 -62 H88", 1.1),
+      // Now: CR-AI
+      '<g class="p" style="transition-delay:.1s">' + [[-70, -96], [-70, -64], [-70, -32], [-30, -84], [-30, -48], [8, -66]].map(function (n, k) { return '<circle class="' + (k === 5 ? "fa pulse" : "ft") + '" style="stroke:var(--ink);stroke-width:1.8" cx="' + n[0] + '" cy="' + n[1] + '" r="6"/>'; }).join("") + "</g>" +
+        d("k", "M-64 -96 L-36 -84 M-64 -96 L-36 -48 M-64 -64 L-36 -84 M-64 -64 L-36 -48 M-64 -32 L-36 -84 M-64 -32 L-36 -48 M-24 -84 L2 -66 M-24 -48 L2 -66", .3) +
+        d("a", "M26 -24 L42 -40 L54 -34 L84 -86", .7) + '<circle class="fa p" style="transition-delay:1.4s" cx="84" cy="-86" r="4"/><text class="p" style="transition-delay:1s" x="44" y="-12">CR-AI</text>'
+    ];
+    var h = '<g id="jrWorld"><path class="road" d="' + road + '"/><clipPath id="jrClip"><rect id="jrClipR" x="0" y="0" width="0" height="200"/></clipPath><path class="road road-on" clip-path="url(#jrClip)" d="' + road + '"/>';
+    JR.forEach(function (j, i) { var cx = X0 + i * STEP; h += '<g class="jv" data-i="' + i + '" transform="translate(' + cx + " " + gy(cx).toFixed(1) + ')">' + ART[i] + '<text class="yr" x="0" y="28" text-anchor="middle">' + esc(j.y) + "</text></g>"; });
+    h += '<circle class="me-ring" id="jrMeR" r="9"/><circle class="me" id="jrMe" r="6"/></g>';
+    svg.innerHTML = h;
+    var world = $("jrWorld"), me = $("jrMe"), meR = $("jrMeR"), clipR = $("jrClipR"), vs = svg.querySelectorAll(".jv");
+    function paint() {
+      var cx = X0 + pos * STEP, y = gy(cx);
+      world.setAttribute("transform", "translate(" + (300 - cx).toFixed(1) + " 0)");
+      me.setAttribute("cx", cx.toFixed(1)); me.setAttribute("cy", y.toFixed(1)); meR.setAttribute("cx", cx.toFixed(1)); meR.setAttribute("cy", y.toFixed(1));
+      clipR.setAttribute("width", cx.toFixed(1));
+      vs.forEach(function (v, i) { v.classList.toggle("seen", i <= pos + .45); v.classList.toggle("cur", Math.abs(i - pos) < .45); });
+    }
+    function loop() { raf = 0; var dd = target - pos; pos = Math.abs(dd) < .002 ? target : pos + dd * (RM ? 1 : .11); paint(); if (pos !== target) raf = requestAnimationFrame(loop); }
+    function go(i) { target = Math.max(0, Math.min(JR.length - 1, i)); if (!raf) raf = requestAnimationFrame(loop); }
+    svg.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, p: target, id: e.pointerId, moved: false }; svg.setPointerCapture(e.pointerId); svg.classList.add("drag"); stopPlay(); });
+    svg.addEventListener("pointermove", function (e) {
+      if (!drag || e.pointerId !== drag.id) return; var dx = e.clientX - drag.x; if (Math.abs(dx) > 3) drag.moved = true;
+      var scale = svg.getBoundingClientRect().width / 600, np = Math.max(0, Math.min(JR.length - 1, drag.p - dx / (scale * STEP)));
+      target = np; pos = np; paint(); var r = Math.round(np); if (r !== ji) jr(r, true, true);
+    });
+    function end(e) { if (!drag) return; svg.classList.remove("drag"); var r = Math.round(target); drag = null; jr(r, true); }
+    svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", end);
+    paint();
+    return { go: go };
+  })();
   $("ticks").innerHTML = JR.map(function (j, i) { return '<button type="button" aria-label="' + esc(j.t) + '" data-i="' + i + '"></button>'; }).join("");
-  function jr(i, anim) {
+  function jr(i, anim, fromDrag) {
     ji = Math.max(0, Math.min(JR.length - 1, i)); var j = JR[ji];
+    if (!fromDrag && JS) JS.go(ji);
     $("jrBody").innerHTML = '<div class="jr-year">' + esc(j.y) + "<small>" + String(ji + 1).padStart(2, "0") + " / 12</small></div><p class=\"jr-title\">" + esc(j.t) + '</p><p class="jr-text">' + esc(j.s) + "</p>";
     if (anim) { var b = $("jrBody"); b.style.animation = "none"; void b.offsetWidth; b.style.animation = ""; }
     $("jrRange").value = ji; $("jrCount").textContent = (ji + 1) + " of 12"; $("jrLine").style.setProperty("--p", (ji / (JR.length - 1) * 100).toFixed(1) + "%");
