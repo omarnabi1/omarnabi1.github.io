@@ -2802,6 +2802,7 @@ button.gcard:hover { border-color: var(--ink); }
       room = r; user = u; if (!room) return; isOwner = !!owner;
       var base = { nm: isOwner ? "Omar" : me.nm, col: isOwner ? "#F2541B" : me.col };
       if (isOwner) { base.own = true; $("liveBtn").hidden = false; }
+      else { var hasKey = null; try { hasKey = localStorage.getItem("on-owner-key"); } catch (e) {} if (hasKey && !window.claude) toast("Owner key not recognized", "This browser has a key, but it doesn't match OWNER_KEY in Cloudflare."); }
       if (log.v) base.v = log.v;
       room.presence(base).catch(function () {});
       room.onPeers(function (ch) { renderRoom(ch); }, function () { $("here").hidden = true; });
