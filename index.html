@@ -194,6 +194,11 @@ input[type="range"] { width: 100%; accent-color: var(--acc); height: 28px; margi
 .lens-btns button[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
 .lens-btns button[aria-pressed="true"] span { color: var(--acc-ink); opacity: .85; }
 .lens-out { font-size: .92rem; color: var(--muted); min-height: 2.8em; }
+.lens-src .lens-btns { flex: 1; }
+@media (min-width: 681px) {
+  .lens-src .lens-btns button { align-content: space-between; min-height: 150px; padding: 18px; }
+  .lens-src .lens-btns button b { font-size: clamp(1.4rem, 2.2vw, 1.9rem); }
+}
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { font-family: var(--mono); font-size: .66rem; padding: 4px 9px; border-radius: 999px; background: var(--tile2); border: 1px solid var(--line); color: var(--ink); }
 
@@ -696,20 +701,14 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <div class="meta"><span class="chip">Irvine, CA</span><span class="chip">Solutions engineer</span><span class="chip">Builder</span><span class="chip">Problem solver</span></div>
     </section>
 
-    <section class="t" aria-label="Now">
-      <div class="t-h"><span class="lbl">Now</span><span class="lbl">Oct 2026</span></div>
-      <ul class="now-list">
-        <li>Unifying complex IT environments at ManageEngine</li>
-        <li>Building CR-AI and the game on this page</li>
-        <li>Writing about consolidation and applied AI</li>
-      </ul>
-    </section>
-
-    <section class="t" aria-label="Local time and contact">
-      <div class="t-h"><span class="lbl">Irvine, CA</span><span class="hint b">Live</span></div>
-      <div class="clock" id="clock">--:--</div>
-      <p style="font-size:.9rem">Open to advisory work, builds, and good conversations.</p>
-      <div class="btns" style="margin-top:auto"><button type="button" class="btn sm" data-copy>Copy email</button></div>
+    <section class="t w2 lens-src" aria-label="Skills">
+      <div class="t-h"><span class="lbl">What I'm good at</span><span class="hint">Tap one, watch the page</span></div>
+      <div class="lens-btns" id="lensBtns">
+        <button type="button" data-k="unify" aria-pressed="false"><b>Unify</b><span>Make complex environments work as one</span></button>
+        <button type="button" data-k="build" aria-pressed="false"><b>Build</b><span>Take ideas all the way to shipped</span></button>
+        <button type="button" data-k="translate" aria-pressed="false"><b>Translate</b><span>Turn people and risk into plans</span></button>
+      </div>
+      <p class="lens-out" id="lensOut">Each skill lights up the tiles on this page that prove it.</p>
     </section>
 
     <section class="t w2 h2 uf" id="t-unify" data-sk="unify" aria-label="What unify looks like">
@@ -726,36 +725,6 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       </div>
     </section>
 
-    <section class="t w2" data-sk="translate" aria-label="Journey">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">How I got here</span><span class="hint">Drag through it</span></div>
-      <div class="jr-body" id="jrBody" aria-live="polite"></div>
-      <div class="jr-line" aria-hidden="true"><i id="jrLine"></i></div>
-      <div class="track"><input type="range" id="jrRange" min="0" max="11" step="1" value="0" aria-label="Move through the journey"><div class="ticks" id="ticks"></div></div>
-      <div class="jr-ctl"><span class="lbl" id="jrCount">1 of 12</span><div class="btns"><button type="button" class="btn sm ghost" id="jrPrev" aria-label="Previous">←</button><button type="button" class="btn sm ghost" id="jrNext" aria-label="Next">→</button><button type="button" class="btn sm" id="jrPlay">Play it</button></div></div>
-    </section>
-
-    <section class="t w2 lens-src" aria-label="Skills">
-      <div class="t-h"><span class="lbl">What I'm good at</span><span class="hint">Tap one, watch the page</span></div>
-      <div class="lens-btns" id="lensBtns">
-        <button type="button" data-k="unify" aria-pressed="false"><b>Unify</b><span>Make complex environments work as one</span></button>
-        <button type="button" data-k="build" aria-pressed="false"><b>Build</b><span>Take ideas all the way to shipped</span></button>
-        <button type="button" data-k="translate" aria-pressed="false"><b>Translate</b><span>Turn people and risk into plans</span></button>
-      </div>
-      <p class="lens-out" id="lensOut">Each skill lights up the tiles on this page that prove it.</p>
-    </section>
-
-
-    <section class="t w2" id="t-term" data-sk="build" aria-label="Terminal">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Terminal</span><span class="hint">Type help</span></div>
-      <div class="term-win">
-        <div class="term-bar"><i></i><i></i><i></i><span>omar@nabi: ~</span></div>
-        <div class="term-out" id="termOut" aria-live="polite"></div>
-        <form class="term-in" id="termForm" autocomplete="off"><label for="termIn">omar@nabi ~ %</label><input id="termIn" spellcheck="false" autocapitalize="off" placeholder="try: skills"></form>
-      </div>
-      <div class="btns term-sug" id="termSug"><button type="button">help</button><button type="button">whoami</button><button type="button">skills</button><button type="button">builds</button><button type="button">unify</button><button type="button">sudo hire omar</button></div>
-    </section>
     <section class="t w2" id="t-nums" data-sk="unify build" aria-label="Numbers">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">Numbers with receipts</span><span class="hint">Tap a card</span></div>
@@ -767,24 +736,15 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       </div>
     </section>
 
-    <section class="t" aria-label="Things you wouldn't guess">
-      <div class="t-h"><span class="lbl">You wouldn't guess</span><span class="lbl tnum" id="deckN">1/6</span></div>
-      <div class="deck"><div class="deck-shadow two" aria-hidden="true"></div><div class="deck-shadow" aria-hidden="true"></div><button type="button" class="flip" id="deckCard" aria-pressed="false"></button></div>
-      <div class="deck-ctl"><span class="mono">tap to flip · swipe for next</span><button type="button" class="btn sm ghost" id="deckNext">Next card →</button></div>
-    </section>
-
-    <section class="t side" aria-label="Side quest">
-      <div class="t-h"><span class="lbl">Side quest</span><span class="hint">Tap</span></div>
-      <button type="button" class="flip" aria-pressed="false" style="flex:1"><span class="in"><span class="f"><b>There's one more thing I do.</b><span class="lbl">Tap to reveal</span></span><span class="b"><span class="lbl">Zarffron</span>Our family imports Super Negin saffron directly from farmers in Herat.</span></span></button>
-    </section>
-
-
-    <section class="t w2" data-sk="unify build translate" aria-label="Toolkit">
+    <section class="t w2" data-sk="translate" aria-label="Journey">
       <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Toolkit</span><span class="hint b">Hover to pause</span></div>
-      <div class="mq" id="mq"></div>
-      <div class="legend"><span><i style="background:var(--blue)"></i>Unify</span><span><i style="background:var(--acc)"></i>Build</span><span><i style="background:var(--muted)"></i>Translate</span></div>
+      <div class="t-h"><span class="lbl">How I got here</span><span class="hint">Drag through it</span></div>
+      <div class="jr-body" id="jrBody" aria-live="polite"></div>
+      <div class="jr-line" aria-hidden="true"><i id="jrLine"></i></div>
+      <div class="track"><input type="range" id="jrRange" min="0" max="11" step="1" value="0" aria-label="Move through the journey"><div class="ticks" id="ticks"></div></div>
+      <div class="jr-ctl"><span class="lbl" id="jrCount">1 of 12</span><div class="btns"><button type="button" class="btn sm ghost" id="jrPrev" aria-label="Previous">←</button><button type="button" class="btn sm ghost" id="jrNext" aria-label="Next">→</button><button type="button" class="btn sm" id="jrPlay">Play it</button></div></div>
     </section>
+
     <section class="t w2 h2" id="t-game" data-sk="build" aria-label="Beat my AI">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">Play</span><span class="hint">5 questions</span></div>
@@ -866,10 +826,55 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <div class="s5-out" id="s5Out" aria-live="polite"></div>
     </section>
 
+    <section class="t w2" id="t-term" data-sk="build" aria-label="Terminal">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Terminal</span><span class="hint">Type help</span></div>
+      <div class="term-win">
+        <div class="term-bar"><i></i><i></i><i></i><span>omar@nabi: ~</span></div>
+        <div class="term-out" id="termOut" aria-live="polite"></div>
+        <form class="term-in" id="termForm" autocomplete="off"><label for="termIn">omar@nabi ~ %</label><input id="termIn" spellcheck="false" autocapitalize="off" placeholder="try: skills"></form>
+      </div>
+      <div class="btns term-sug" id="termSug"><button type="button">help</button><button type="button">whoami</button><button type="button">skills</button><button type="button">builds</button><button type="button">unify</button><button type="button">sudo hire omar</button></div>
+    </section>
+
     <section class="t w2" id="t-xp" data-sk="unify translate" aria-label="Experience">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">Experience</span><span class="hint">Tap a role</span></div>
       <ul class="xp" id="xp"></ul>
+    </section>
+
+    <section class="t" aria-label="Now">
+      <div class="t-h"><span class="lbl">Now</span><span class="lbl">Oct 2026</span></div>
+      <ul class="now-list">
+        <li>Unifying complex IT environments at ManageEngine</li>
+        <li>Building CR-AI and the game on this page</li>
+        <li>Writing about consolidation and applied AI</li>
+      </ul>
+    </section>
+
+    <section class="t" aria-label="Local time and contact">
+      <div class="t-h"><span class="lbl">Irvine, CA</span><span class="hint b">Live</span></div>
+      <div class="clock" id="clock">--:--</div>
+      <p style="font-size:.9rem">Open to advisory work, builds, and good conversations.</p>
+      <div class="btns" style="margin-top:auto"><button type="button" class="btn sm" data-copy>Copy email</button></div>
+    </section>
+
+    <section class="t w2" data-sk="unify build translate" aria-label="Toolkit">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Toolkit</span><span class="hint b">Hover to pause</span></div>
+      <div class="mq" id="mq"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>Unify</span><span><i style="background:var(--acc)"></i>Build</span><span><i style="background:var(--muted)"></i>Translate</span></div>
+    </section>
+
+    <section class="t" aria-label="Things you wouldn't guess">
+      <div class="t-h"><span class="lbl">You wouldn't guess</span><span class="lbl tnum" id="deckN">1/6</span></div>
+      <div class="deck"><div class="deck-shadow two" aria-hidden="true"></div><div class="deck-shadow" aria-hidden="true"></div><button type="button" class="flip" id="deckCard" aria-pressed="false"></button></div>
+      <div class="deck-ctl"><span class="mono">tap to flip · swipe for next</span><button type="button" class="btn sm ghost" id="deckNext">Next card →</button></div>
+    </section>
+
+    <section class="t side" aria-label="Side quest">
+      <div class="t-h"><span class="lbl">Side quest</span><span class="hint">Tap</span></div>
+      <button type="button" class="flip" aria-pressed="false" style="flex:1"><span class="in"><span class="f"><b>There's one more thing I do.</b><span class="lbl">Tap to reveal</span></span><span class="b"><span class="lbl">Zarffron</span>Our family imports Super Negin saffron directly from farmers in Herat.</span></span></button>
     </section>
 
     <section class="t w2" data-sk="translate" aria-label="Writing">
@@ -1106,8 +1111,9 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
         if (!e.isIntersecting || curLens || stopped) return;
         io.disconnect(); try { sessionStorage.setItem("lensDemo", "1"); } catch (x) {}
         $("lensOut").textContent = "Watch the page reach for the proof. Then tap one yourself.";
-        KS.forEach(function (k, i) { timers.push(setTimeout(function () { if (!stopped) show(k); }, 300 + i * 2500)); });
-        timers.push(setTimeout(function () { if (!stopped) { hide(); stopped = true; $("lensOut").textContent = LENS_OUT; } }, 300 + KS.length * 2500));
+        var base = Math.max(300, 3200 - performance.now());
+        KS.forEach(function (k, i) { timers.push(setTimeout(function () { if (!stopped) show(k); }, base + i * 2500)); });
+        timers.push(setTimeout(function () { if (!stopped) { hide(); stopped = true; $("lensOut").textContent = LENS_OUT; } }, base + KS.length * 2500));
       });
     }, { threshold: .6 });
     io.observe(src);
