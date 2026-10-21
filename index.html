@@ -665,6 +665,15 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
 .segs button { font-size: .78rem; font-weight: 600; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile2); cursor: pointer; }
 .segs button[aria-checked="true"] { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
 .s5-out { margin-top: 18px; display: grid; gap: 12px; }
+.tv { background: #111; border-radius: 18px; padding: 12px 12px 10px; box-shadow: inset 0 0 0 2px #2A2A2A, 0 18px 40px -24px rgba(0,0,0,.6); display: grid; gap: 8px; }
+.tv canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; border-radius: 10px; background: #1A1423; }
+.tv { position: relative; }
+.tv::after { content: ""; position: absolute; left: 12px; right: 12px; top: 12px; aspect-ratio: 16 / 9; border-radius: 10px; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); box-shadow: inset 0 0 40px rgba(0,0,0,.55); }
+.tv-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tv-bar .lbl { color: #9AE6B4; }
+.tv-bar .btn.ghost { color: #EEE; border-color: #444; background: #1C1C1C; }
+button.gcard { font: inherit; color: inherit; cursor: pointer; width: 100%; }
+button.gcard:hover { border-color: var(--ink); }
 .series { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .gcard { padding: 10px 8px; border-radius: 12px; background: var(--tile2); border: 1px solid var(--line); text-align: center; animation: stepIn .35s cubic-bezier(.2,.8,.2,1) both; }
 .gcard small { display: block; font-family: var(--mono); font-size: .58rem; color: var(--muted); text-transform: uppercase; }
@@ -1976,10 +1985,11 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
     /* simulation */
     function avg(t, k) { return POS.reduce(function (s, p) { return s + t[p][k]; }, 0) / 5; }
     function game(A, B, E) {
-      var pts = { A: {}, B: {} }, score = { A: 0, B: 0 };
+      var pts = { A: {}, B: {} }, score = { A: 0, B: 0 }, log = [];
+      function L(o) { o.a = score.A; o.b = score.B; log.push(o); }
       POS.forEach(function (k) { pts.A[k] = 0; pts.B[k] = 0; });
       function poss(off, def, side) {
-        var tov = Math.max(.07, Math.min(.18, .12 + (avg(def, "def") * E.def - avg(off, "ply")) / 700)); if (Math.random() < tov) return;
+        var tov = Math.max(.07, Math.min(.18, .12 + (avg(def, "def") * E.def - avg(off, "ply")) / 700)); if (Math.random() < tov) { L({ s: side, to: 1, who: POS[Math.floor(Math.random() * 5)] }); return; }
         var plyB = (avg(off, "ply") - 75) / 400, shooters = POS.filter(function (k) { return off[k].sht >= 85; }).length, spacing = E.three ? (shooters < 2 ? -.03 : shooters >= 3 ? .02 : 0) : 0;
         var rim = Math.max(def.PF.def, def.C.def);
         for (var att = 0; att < 3; att++) {
@@ -1987,15 +1997,17 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
           for (var j = 0; j < 5; j++) { r -= w[j]; if (r <= 0) { who = POS[j]; break; } }
           var sh = off[who], dm = def[who], three = E.three && Math.random() < Math.max(.02, Math.min(.7, E.three * Math.pow(sh.sht / 80, 3)));
           var pMake = three ? .37 + (sh.sht - 85) / 300 - (dm.def * E.def - 82) / 420 + plyB : .545 + (sh.ins - 82) / 240 - ((dm.def * .5 + rim * .5) * E.def - 82) / 260 + plyB + spacing;
-          if (Math.random() < Math.max(.18, Math.min(.72, pMake))) { var v = three ? 3 : 2; score[side] += v; pts[side][who] += v; if (Math.random() < .07) { score[side] += 1; pts[side][who] += 1; } return; }
-          var oreb = .26 + (avg(off, "reb") - avg(def, "reb")) / 280; if (Math.random() > oreb) return;
+          if (Math.random() < Math.max(.18, Math.min(.72, pMake))) { var v = three ? 3 : 2, and1 = Math.random() < .07; score[side] += v; pts[side][who] += v; if (and1) { score[side] += 1; pts[side][who] += 1; } L({ s: side, who: who, three: three, made: 1, and1: and1, n: sh.n }); return; }
+          var oreb = .26 + (avg(off, "reb") - avg(def, "reb")) / 280; if (Math.random() > oreb) { L({ s: side, who: who, three: three, n: sh.n }); return; }
         }
+        L({ s: side, who: who, three: three, n: sh.n });
       }
       var n = Math.round(E.pace * (.95 + Math.random() * .1));
       for (var i = 0; i < n; i++) { poss(A, B, "A"); poss(B, A, "B"); }
       var ot = 0; while (score.A === score.B && ot < 4) { ot++; for (var o = 0; o < 10; o++) { poss(A, B, "A"); poss(B, A, "B"); } }
       if (score.A === score.B) score.A += 1;
-      return { a: score.A, b: score.B, pts: pts, ot: ot };
+      if (log.length) { log[log.length - 1].a = score.A; log[log.length - 1].b = score.B; }
+      return { a: score.A, b: score.B, pts: pts, ot: ot, log: log };
     }
     function notes(t, E) {
       var out = [], shooters = POS.filter(function (k) { return t[k].sht >= 85; }).length;
@@ -2008,6 +2020,110 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       if (E.def > 1 && avg(t, "def") >= 85) out.push("Built for physical basketball");
       return out;
     }
+    /* 8-bit replay: plays a game's possession log on a 256x144 pixel court */
+    var TV = (function () {
+      var F = { "0": [7,5,5,5,7], "1": [2,6,2,2,7], "2": [7,1,7,4,7], "3": [7,1,3,1,7], "4": [5,5,7,1,1], "5": [7,4,7,1,7], "6": [7,4,7,5,7], "7": [7,1,1,2,2], "8": [7,5,7,5,7], "9": [7,5,7,1,7],
+        A: [2,5,7,5,5], B: [6,5,6,5,6], C: [3,4,4,4,3], D: [6,5,5,5,6], E: [7,4,6,4,7], F: [7,4,6,4,4], G: [3,4,5,5,3], H: [5,5,7,5,5], I: [7,2,2,2,7], J: [1,1,1,5,2], K: [5,5,6,5,5], L: [4,4,4,4,7], M: [5,7,7,5,5],
+        N: [6,5,5,5,5], O: [2,5,5,5,2], P: [6,5,6,4,4], Q: [2,5,5,7,3], R: [6,5,6,5,5], S: [3,4,2,1,6], T: [7,2,2,2,2], U: [5,5,5,5,7], V: [5,5,5,5,2], W: [5,5,7,7,5], X: [5,5,2,5,5], Y: [5,5,2,2,2], Z: [7,1,2,4,7],
+        "+": [0,2,7,2,0], "-": [0,0,7,0,0], "!": [2,2,2,0,2], ".": [0,0,0,0,2], ":": [0,2,0,2,0], "'": [2,2,0,0,0], " ": [0,0,0,0,0] };
+      var cv, x, raf = 0, st = null, spd = 1, SK = ["#8D5524", "#C68642", "#5C3A21", "#E0AC69", "#A0662E"], COL = { A: ["#F2541B", "#FFFFFF"], B: ["#2F5BFF", "#FFD23F"] };
+      var crowd = []; for (var i = 0; i < 420; i++) crowd.push([Math.floor(Math.random() * 256), 20 + Math.floor(Math.random() * 26), ["#E94F37", "#F6F7EB", "#3F88C5", "#FFD23F", "#7A7A7A", "#2E2E2E"][Math.floor(Math.random() * 6)]]);
+      function R(c, a, b, w, h) { x.fillStyle = c; x.fillRect(Math.round(a), Math.round(b), w, h); }
+      function T(str, px, py, c, sc, center) {
+        sc = sc || 1; str = String(str).toUpperCase(); var w = str.length * 4 * sc - sc; if (center) px -= w / 2;
+        for (var k = 0; k < str.length; k++) { var g = F[str[k]] || F[" "]; for (var r = 0; r < 5; r++) for (var q = 0; q < 3; q++) if (g[r] & (4 >> q)) R(c, px + (k * 4 + q) * sc, py + r * sc, sc, sc); }
+      }
+      function court() {
+        R("#1A1423", 0, 0, 256, 50); crowd.forEach(function (c, k) { if (st && (k + st.fl) % 37 === 0) return; R(c[2], c[0], c[1], 2, 2); });
+        R("#C9873F", 0, 50, 256, 94); for (var yy = 54; yy < 144; yy += 6) R("#BE7C36", 0, yy, 256, 1);
+        R("#E8B36B", 0, 50, 256, 2); R("#FFFFFF", 127, 52, 2, 92);
+        R("rgba(242,84,27,.35)", 0, 82, 42, 40); R("rgba(47,91,255,.30)", 214, 82, 42, 40);
+        x.strokeStyle = "#FFFFFF"; x.lineWidth = 1; x.beginPath(); x.ellipse(128, 102, 16, 9, 0, 0, 6.29); x.stroke();
+        x.beginPath(); x.ellipse(14, 102, 66, 38, 0, -1.57, 1.57); x.stroke(); x.beginPath(); x.ellipse(242, 102, 66, 38, 0, 1.57, 4.71); x.stroke();
+        [[8, 1], [248, -1]].forEach(function (h) { R("#555", h[0] - 1, 40, 2, 64); R("#EEE", h[0] - 2, 44, 4, 18); R("#E94F37", h[0] + h[1] * 2 - (h[1] < 0 ? 8 : 0), 60, 8, 2); R("#DDD", h[0] + h[1] * 3 - (h[1] < 0 ? 6 : 0), 62, 6, 4); });
+      }
+      function board(a, b, q, clock) {
+        R("#000", 70, 2, 116, 15); R("#333", 70, 16, 116, 1);
+        T(st.c.an, 74, 5, COL.A[0]); T(a, 112, 5, "#FFD23F", 1, true); T(q, 128, 5, "#9AE6B4", 1, true); T(b, 144, 5, "#FFD23F", 1, true); T(st.c.bn, 182 - st.c.bn.length * 4, 5, COL.B[0]); T(clock, 128, 11, "#777", 1, true);
+      }
+      function man(px, py, side, k, frame, hand) {
+        var c = COL[side]; px = Math.round(px); py = Math.round(py);
+        R("rgba(0,0,0,.25)", px - 3, py + 1, 8, 2);
+        var lg = frame % 2; R(SK[k], px - 1 + (lg ? -1 : 0), py - 4, 2, 4); R(SK[k], px + 2 + (lg ? 1 : 0), py - 4, 2, 4);
+        R(c[1], px - 2, py - 7, 7, 3); R(c[0], px - 2, py - 13, 7, 6); R(SK[k], px - 3, py - 12, 1, 4); R(SK[k], px + 5, py - 12, 1, 4);
+        R(SK[k], px - 1, py - 18, 5, 5); R("#1A1A1A", px - 1, py - 18, 5, 1);
+        if (hand) R("#FFD23F", px, py - 21, 3, 1);
+      }
+      function spots(side, kind) {
+        var hx = side === "A" ? 236 : 20, d = side === "A" ? -1 : 1, L = kind === "def";
+        var b = [[hx + d * 74, 112], [hx + d * 64, 76], [hx + d * 42, 132], [hx + d * 26, 88], [hx + d * 12, 108]];
+        return b.map(function (p) { return L ? [p[0] - d * 9, p[1] - 3] : p; });
+      }
+      function lerp(a, b, t) { return a + (b - a) * t; }
+      function ez(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+      function sample(g) {
+        var lg = g.log, n = Math.min(18, lg.length), out = [];
+        for (var k = 0; k < n; k++) out.push(lg[Math.min(lg.length - 1, Math.round(k * (lg.length - 1) / (n - 1)))]);
+        return out;
+      }
+      function frame(now) {
+        raf = 0; if (!st) return;
+        var dt = Math.min(50, now - (st.last || now)) * spd; st.last = now; st.t += dt; st.fl = Math.floor(now / 120);
+        var D = 1300, ev = st.ev, i = Math.floor(st.t / D), u = (st.t % D) / D;
+        if (i >= ev.length) { final(); return; }
+        var e = ev[i], prev = ev[i - 1], side = e.s, other = side === "A" ? "B" : "A";
+        var oF = spots(side, "off"), dF = spots(side, "def"), pO = prev ? spots(prev.s, "off") : oF, pD = prev ? spots(prev.s, "def") : dF;
+        var run = ez(Math.min(1, u / .38)), hi = POS.indexOf(e.who), hx = side === "A" ? 236 : 20;
+        court();
+        var q = st.g.ot && i > ev.length * .85 ? "OT" : "Q" + Math.min(4, 1 + Math.floor(i / ev.length * 4)), left = 1 - ((i / ev.length * 4) % 1), clk = Math.floor(left * 12) + ":" + String(Math.floor((left * 720) % 60)).padStart(2, "0");
+        var sa = prev ? prev.a : 0, sb = prev ? prev.b : 0;
+        var ppl = [];
+        for (var k = 0; k < 5; k++) {
+          var o = oF[k], dd = dF[k], sw = prev && prev.s !== side, po = sw ? pD[k] : o, pd = sw ? pO[k] : dd;
+          var ox = lerp(po[0], o[0], run), oy = lerp(po[1], o[1], run), dx = lerp(pd[0], dd[0], run), dy = lerp(pd[1], dd[1], run);
+          if (k === hi && u > .38 && u < .62) { var w = (u - .38) / .24; ox = lerp(o[0], o[0] + (side === "A" ? 1 : -1) * (e.three ? 4 : 14), w); }
+          ppl.push([ox, oy, side, k, run < 1 ? st.fl : 0, k === hi]); ppl.push([dx + (k === hi ? (side === "A" ? 6 : -6) * Math.min(1, u * 2) : 0), dy, other, k, run < 1 ? st.fl + 1 : 0, false]);
+        }
+        ppl.sort(function (m, n2) { return m[1] - n2[1]; }).forEach(function (m) { man(m[0], m[1], m[2], m[3], m[4], m[5] && u > .6 && e.made); });
+        var hp = ppl.filter(function (m) { return m[5]; })[0] || [128, 100];
+        var bx = hp[0] + 2, by = hp[1] - 9 - (u < .62 ? Math.abs(Math.sin(st.t / 70)) * 6 : 0);
+        if (e.to) { if (u > .5) { bx = lerp(bx, 128, (u - .5) * 2); by = 120; } }
+        else if (u >= .62) {
+          var s2 = Math.min(1, (u - .62) / .26), rx = side === "A" ? 245 : 11, ry = 61;
+          if (s2 < 1 || e.made) { bx = lerp(hp[0] + 2, rx, s2); by = lerp(hp[1] - 22, ry, s2) - Math.sin(s2 * Math.PI) * 34; if (s2 >= 1) by = 61 + (u - .88) / .12 * 12; }
+          else { var r2 = (u - .88) / .12; bx = rx - (side === "A" ? 1 : -1) * r2 * 30; by = 61 - Math.sin(r2 * Math.PI) * 14 + r2 * 20; }
+        }
+        R("#E8762C", bx - 1, by - 1, 4, 4); R("#7A3A0A", bx, by, 1, 1);
+        if (u > .86 && !e.to) { sa = e.a; sb = e.b; }
+        board(sa, sb, q, clk);
+        T(e.n ? e.n.split(" ").pop().slice(0, 9) : "", hp[0] + 2, hp[1] - 31, side === "A" ? "#FFE0D2" : "#D6E0FF", 1, true);
+        if (u > .82) {
+          var msg = e.to ? "TURNOVER" : e.made ? (e.and1 ? "AND ONE!" : e.three ? "FROM DEEP!" : (st.fl % 3 ? "BUCKET!" : "SWISH!")) : (e.three ? "CLANK!" : "BRICK!");
+          var mc = e.made ? (side === "A" ? "#FFD23F" : "#9EC1FF") : "#FFFFFF";
+          R("rgba(0,0,0,.6)", 128 - msg.length * 4 - 6, 23, msg.length * 8 + 10, 18); T(msg, 128, 28, "#000", 2, true); T(msg, 127, 27, mc, 2, true);
+          if (e.made) T("+" + (e.three ? 3 : 2) + (e.and1 ? "+1" : ""), side === "A" ? 228 : 28, 46 - (u - .82) * 40, mc, 1, true);
+        }
+        if (i === ev.length - 1 && u > .9) T("FINAL POSSESSION", 128, 136, "#FFFFFF", 1, true);
+        raf = requestAnimationFrame(frame);
+      }
+      function final() {
+        court(); var g = st.g, w = g.a > g.b; st.fl = 0; board(g.a, g.b, g.ot ? "OT" : "F", "0:00");
+        R("rgba(0,0,0,.62)", 0, 50, 256, 94);
+        T("FINAL", 128, 62, "#9AE6B4", 2, true); T(st.c.an + " " + g.a + " - " + g.b + " " + st.c.bn, 128, 82, "#FFFFFF", 2, true);
+        T(w ? "YOU TAKE GAME " + (st.gi + 1) : "THEY TAKE GAME " + (st.gi + 1), 128, 104, w ? "#FFD23F" : "#9EC1FF", 1, true);
+        if (st.gi === st.c.games.length - 1) T(st.c.win ? "SERIES WON!" : "SERIES LOST", 128, 116, st.c.win ? "#FFD23F" : "#FF8A8A", 2, true);
+        $("tvLbl").textContent = "Game " + (st.gi + 1) + " · final " + g.a + "-" + g.b;
+        st = null;
+      }
+      function play(c, gi) {
+        cv = $("tvC"); if (!cv) return; x = cv.getContext("2d"); x.imageSmoothingEnabled = false;
+        var g = c.games[gi]; st = { c: c, g: g, gi: gi, ev: sample(g), t: 0, last: 0, fl: 0 };
+        $("tvLbl").textContent = "Game " + (gi + 1) + " · highlights";
+        if (RM) { final(); return; }
+        if (!raf) raf = requestAnimationFrame(frame);
+      }
+      return { play: play, skip: function () { if (st) final(); }, speed: function (v) { spd = v; } };
+    })();
     $("playSeries").addEventListener("click", function () {
       if (POS.some(function (k) { return !pick[k]; })) { toast("Fill all five spots", "Pick a PG, SG, SF, PF, and C first. Or hit Auto-draft."); return; }
       if (spent(pick) > CAP) { toast("Over budget", "Trim your lineup to 18 stars."); return; }
@@ -2022,11 +2138,18 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       function top(side, team) { return POS.map(function (k) { return { n: team[k].n, ppg: tot[side][k] / gp }; }).sort(function (x, y) { return y.ppg - x.ppg; }); }
       var tA = top("A", A), tB = top("B", R), mvp = win ? tA[0] : tB[0];
       var nts = notes(A, E);
-      $("s5Out").innerHTML = '<div class="series">' + games.map(function (g, i) { var w = g.a > g.b; return '<div class="gcard ' + (w ? "w" : "l") + '" style="animation-delay:' + (RM ? 0 : i * 260) + 'ms"><small>Game ' + (i + 1) + (g.ot ? " · OT" : "") + "</small><b>" + g.a + "-" + g.b + "</b><small>" + (w ? "W" : "L") + "</small></div>"; }).join("") + "</div>" +
+      var rshort = (riv === "cpu" ? "CPU" : riv === "friend" ? "FRIEND" : rn.split(" ").pop()).toUpperCase().replace(/[^A-Z0-9 ]/g, "").slice(0, 7);
+      $("s5Out").innerHTML = '<div class="tv"><canvas id="tvC" width="256" height="144" role="img" aria-label="Pixel replay of the deciding game"></canvas><div class="tv-bar"><span class="lbl" id="tvLbl">Replay</span><div class="btns"><button type="button" class="btn sm ghost" id="tvSpd" aria-pressed="false">2x</button><button type="button" class="btn sm ghost" id="tvSkip">Skip to final</button></div></div></div>' +
+        '<div class="series">' + games.map(function (g, i) { var w = g.a > g.b; return '<button type="button" class="gcard ' + (w ? "w" : "l") + '" data-g="' + i + '" aria-label="Replay game ' + (i + 1) + '" style="animation-delay:' + (RM ? 0 : i * 260) + 'ms"><small>Game ' + (i + 1) + (g.ot ? " · OT" : "") + "</small><b>" + g.a + "-" + g.b + "</b><small>" + (w ? "W" : "L") + " · replay</small></button>"; }).join("") + "</div>" +
         '<div class="banner" style="animation-delay:' + (RM ? 0 : gp * 260) + 'ms"><div><h3>' + (win ? "You win the series " : "You lose the series ") + wa + "-" + wb + '</h3><p>vs ' + esc(rn) + " · " + E.label + " · Series MVP: " + esc(mvp.n) + ", " + mvp.ppg.toFixed(1) + ' PPG</p></div><button type="button" class="btn" id="runBack" style="background:var(--acc);border-color:var(--acc);color:var(--acc-ink)">Run it back</button></div>' +
         '<div class="box2"><div><span class="lbl">Your top scorers</span><ol>' + tA.slice(0, 3).map(function (x) { return "<li>" + esc(x.n) + " <span>" + x.ppg.toFixed(1) + " PPG</span></li>"; }).join("") + '</ol></div><div><span class="lbl">' + esc(rn) + '</span><ol>' + tB.slice(0, 3).map(function (x) { return "<li>" + esc(x.n) + " <span>" + x.ppg.toFixed(1) + " PPG</span></li>"; }).join("") + "</ol></div></div>" +
         (nts.length ? '<div class="notes2">' + nts.map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("") + "</div>" : "");
       $("runBack").onclick = function () { $("playSeries").click(); };
+      var tvCtx = { A: A, B: R, an: "YOU", bn: rshort, games: games, win: win };
+      TV.play(tvCtx, gp - 1);
+      $("s5Out").querySelector(".series").addEventListener("click", function (e) { var c = e.target.closest(".gcard"); if (c) TV.play(tvCtx, +c.getAttribute("data-g")); });
+      $("tvSkip").onclick = function () { TV.skip(); };
+      $("tvSpd").onclick = function () { var on = this.getAttribute("aria-pressed") !== "true"; this.setAttribute("aria-pressed", on ? "true" : "false"); TV.speed(on ? 2 : 1); };
       window.__act((win ? "won" : "lost") + " a series " + wa + "-" + wb + " with " + A.PG.n.split(" ").pop() + ", " + A.SF.n.split(" ").pop() + " and " + A.C.n.split(" ").pop());
       if (win) setTimeout(function () { var r = $("s5Out").getBoundingClientRect(); confetti(r.left + r.width / 2, r.top + 40, 120); }, RM ? 0 : gp * 260 + 200);
       var o = $("s5Out"); if (o.scrollIntoView && o.getBoundingClientRect().top > innerHeight * .7) o.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "center" });
