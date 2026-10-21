@@ -168,6 +168,9 @@ em.s { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .uf .conn { stroke: var(--blue); stroke-width: 1.6; stroke-dasharray: 3 4; fill: none; }
 .uf .pkt { fill: var(--acc); }
 .uf .pkt-ring { fill: none; stroke: var(--acc); stroke-width: 2; opacity: .35; }
+.uf-mode button { font-size: .7rem; padding: 5px 10px; }
+.uf-lede { font-size: .95rem; max-width: 60ch; }
+.uf-cap { font-size: .95rem; color: var(--ink) !important; min-height: 2.9em; padding: 10px 14px; border-radius: 12px; background: var(--tile2); border-left: 3px solid var(--acc); animation: fadeIn .3s ease; }
 .uf-ctl { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; font-family: var(--mono); font-size: .7rem; color: var(--muted); text-transform: uppercase; }
 input[type="range"] { width: 100%; accent-color: var(--acc); height: 28px; margin: 0; }
 .phases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -952,12 +955,14 @@ button.gcard:hover { border-color: var(--ink); }
 
     <section class="t w2 h2 uf" id="t-unify" data-sk="unify" aria-label="What unify looks like">
       <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">What I do</span><span class="hint">Drag the slider</span></div>
-      <h2>Untangle an IT stack</h2>
+      <div class="t-h"><span class="lbl">What I do</span><div class="segs uf-mode" id="ufMode" role="radiogroup" aria-label="Explanation style"><button type="button" role="radio" data-m="plain" aria-checked="true">Plain English</button><button type="button" role="radio" data-m="it" aria-checked="false">IT view</button></div></div>
+      <h2 id="ufH">Make a company's tech work as one</h2>
+      <p class="uf-lede" id="ufLede">Most companies run on a pile of separate tools that were bought one at a time. Each has its own login, its own screen, and its own wires to the others. Drag the slider to see what I do about it.</p>
       <svg id="ufSvg" viewBox="0 0 700 330" role="img" aria-label="Eight IT tools wired point to point. Overlapping tools merge into endpoint management, then the remaining six connect through a shared integration layer with one view on top."><g id="ufScene"></g><g id="ufPkt"></g></svg>
       <div class="uf-ctl"><span>Before</span><input type="range" id="ufRange" min="0" max="100" value="0" aria-label="Before to after"><span>After</span></div>
       <div class="phases"><span id="ph1">1 · Tangled</span><span id="ph2">2 · Merge overlaps</span><span id="ph3">3 · Integrate and see it all</span></div>
-      <div class="stats3"><div><b id="dsLinks">14</b><span>brittle point-to-point links</span></div><div><b id="dsAgents">3</b><span>agents on every laptop</span></div><div><b id="dsView">8</b><span>places to look in an incident</span></div></div>
+      <p class="uf-cap" id="ufCap" aria-live="polite"></p>
+      <div class="stats3"><div><b id="dsLinks">14</b><span data-it="brittle point-to-point links" data-pl="fragile connections that break">fragile connections that break</span></div><div><b id="dsAgents">3</b><span data-it="agents on every laptop" data-pl="background apps on every laptop">background apps on every laptop</span></div><div><b id="dsView">8</b><span data-it="places to look in an incident" data-pl="screens to check when something goes wrong">screens to check when something goes wrong</span></div></div>
       <div class="scen">
         <div><span class="lbl">Run something through it</span><div class="btns" id="scenBtns" style="margin-top:8px"><button type="button" class="btn sm ghost" data-s="hire" aria-pressed="false">New hire</button><button type="button" class="btn sm ghost" data-s="login" aria-pressed="false">Suspicious login</button><button type="button" class="btn sm ghost" data-s="audit" aria-pressed="false">Audit request</button></div></div>
         <ol class="steps empty" id="steps"><li>Unifying isn't swapping everything for one product. It's merging what truly overlaps and connecting the rest. Pick a scenario to see it work.</li></ol>
@@ -1812,7 +1817,17 @@ button.gcard:hover { border-color: var(--ink); }
       { k: "sd", l1: "Service", l2: "desk", b: [540, 282], a: [522, TY] },
       { k: "net", l1: "Network", l2: "monitoring", b: [334, 250], a: [634, TY] }
     ];
-    var IDX = {}; TOOLS.forEach(function (t, i) { IDX[t.k] = i; });
+    var PL = { end: ["Laptop", "manager", "+ updates, remote help"], pat: ["Software", "updates"], rem: ["Remote", "help tool"], idn: ["Logins", "who is who"], pam: ["Master", "keys"], siem: ["Security", "camera"], sd: ["Help", "desk"], net: ["Wi-Fi and", "network"] };
+    var plain = true;
+    function lb(tl) { if (!plain) return [tl.l1, tl.l2, tl.l2b]; var q = PL[tl.k]; return [q[0], q[1], q[2]]; }
+    var PCHIPS = { c1: "One login everywhere", c2: "One list of devices", c3: "Automatic handoffs" };
+    var CAP = { plain: ["Before: every tool is its own island. People copy information between them by hand, and when something goes wrong, someone checks eight screens.", "Step 1: some tools do the same job. Three separate laptop tools become one, so there's less to buy, update, and break.", "Step 2: the rest get connected through one shared layer, so information flows on its own and everything shows up in one view."],
+      it: ["Before: point-to-point integrations, duplicate agents, and no single pane of glass. Every incident means pivoting across consoles.", "Merge overlaps: endpoint, patching, and remote access consolidate into one agent and one console.", "Integrate: shared identity, a common asset inventory, and workflow automation with alert correlation feed a single view."] };
+    var PSCEN = {
+      hire: ["HR asks for a new employee to be set up.", "That request starts an automatic checklist. Nobody types anything twice.", "The new person's logins are created, with the right access.", "That one login works in every connected tool.", "Their laptop installs the apps and updates it needs.", "Everything is recorded in one place, ready to show an auditor."],
+      login: ["The security camera spots someone logging in at 2 a.m. from somewhere new.", "The system checks who that account belongs to and which laptop it's on.", "Logins shows whose account it is and what it can open.", "Any master keys that account holds are locked for now.", "A help desk ticket opens with the whole story already attached.", "The team sees the full timeline in one place instead of digging."],
+      audit: ["An auditor asks who could get into sensitive systems last quarter.", "The answer comes from one shared source instead of four.", "Logins: who was in which groups, and when.", "Master keys: every time someone used elevated access, recorded.", "Security camera: the matching evidence.", "One report, instead of four exports stitched together in a spreadsheet."]
+    };
     var EDGES = [["end","idn"],["end","siem"],["end","sd"],["pat","sd"],["rem","idn"],["idn","pam"],["idn","net"],["pam","siem"],["pam","sd"],["siem","net"],["sd","net"],["pat","rem"],["end","net"],["rem","siem"]];
     var CHIPS = { c1: { x: 170, t: "Shared identity" }, c2: { x: 350, t: "Asset inventory" }, c3: { x: 540, t: "Workflows + alert correlation" } };
     var SCEN = {
@@ -1830,14 +1845,15 @@ button.gcard:hover { border-color: var(--ink); }
         h += '<g style="opacity:' + p2.toFixed(2) + '" transform="translate(0 ' + ((1 - p2) * 14).toFixed(1) + ')">';
         TOOLS.forEach(function (tl) { if (!tl.merge) h += '<line class="conn" x1="' + tl.a[0] + '" y1="' + (TY - TH / 2) + '" x2="' + tl.a[0] + '" y2="' + (BAND_Y + BAND_H) + '"/>'; });
         [250, 350, 450].forEach(function (x) { h += '<line class="conn" x1="' + x + '" y1="' + BAND_Y + '" x2="' + x + '" y2="' + (VIEW.y + 28) + '"/>'; });
-        h += '<rect class="band" x="24" y="' + BAND_Y + '" width="652" height="' + BAND_H + '" rx="12"/><text class="band-t" x="36" y="' + (BAND_Y + 14) + '">INTEGRATION LAYER</text>';
-        Object.keys(CHIPS).forEach(function (k) { var c = CHIPS[k], w = c.t.length * 6.3 + 22, on = hi[k]; h += '<rect class="chip-r' + (on ? " hot" : "") + '" x="' + (c.x - w / 2).toFixed(1) + '" y="' + (BAND_Y + 20) + '" width="' + w.toFixed(1) + '" height="26" rx="13"/><text class="chip-t' + (on ? " hot" : "") + '" x="' + c.x + '" y="' + (BAND_Y + 37) + '" text-anchor="middle">' + c.t + "</text>"; });
-        h += '<rect class="view' + (hi.view ? " hot" : "") + '" x="170" y="' + (VIEW.y - 28) + '" width="360" height="56" rx="14"/><text class="view-t" x="' + VIEW.x + '" y="' + (VIEW.y + 2) + '" text-anchor="middle">One view across all of it</text><text class="view-s" x="' + VIEW.x + '" y="' + (VIEW.y + 18) + '" text-anchor="middle">dashboards · alerts · audit reports</text></g>';
+        h += '<rect class="band" x="24" y="' + BAND_Y + '" width="652" height="' + BAND_H + '" rx="12"/><text class="band-t" x="36" y="' + (BAND_Y + 14) + '">' + (plain ? "SHARED CONNECTION LAYER" : "INTEGRATION LAYER") + '</text>';
+        Object.keys(CHIPS).forEach(function (k) { var c = { x: CHIPS[k].x, t: plain ? PCHIPS[k] : CHIPS[k].t }, w = c.t.length * 6.3 + 22, on = hi[k]; h += '<rect class="chip-r' + (on ? " hot" : "") + '" x="' + (c.x - w / 2).toFixed(1) + '" y="' + (BAND_Y + 20) + '" width="' + w.toFixed(1) + '" height="26" rx="13"/><text class="chip-t' + (on ? " hot" : "") + '" x="' + c.x + '" y="' + (BAND_Y + 37) + '" text-anchor="middle">' + c.t + "</text>"; });
+        h += '<rect class="view' + (hi.view ? " hot" : "") + '" x="170" y="' + (VIEW.y - 28) + '" width="360" height="56" rx="14"/><text class="view-t" x="' + VIEW.x + '" y="' + (VIEW.y + 2) + '" text-anchor="middle">One view across all of it</text><text class="view-s" x="' + VIEW.x + '" y="' + (VIEW.y + 18) + '" text-anchor="middle">' + (plain ? "one screen · one alert · one report" : "dashboards · alerts · audit reports") + '</text></g>';
       }
-      TOOLS.forEach(function (tl, i) { var op = tl.merge ? 1 - clamp((p1 - .55) / .4) : 1; if (op <= 0) return; var l2 = tl.l2b && p1 > .7 ? tl.l2b : tl.l2;
-        h += '<g style="opacity:' + op.toFixed(2) + '" transform="translate(' + pos[i][0].toFixed(1) + " " + pos[i][1].toFixed(1) + ')"><rect class="nd' + (hi[tl.k] ? " hot" : "") + '" x="' + (-TW / 2) + '" y="' + (-TH / 2) + '" width="' + TW + '" height="' + TH + '" rx="10"/><text class="nd-t" x="0" y="-2" text-anchor="middle">' + tl.l1 + '</text><text class="nd-s" x="0" y="12" text-anchor="middle">' + l2 + "</text></g>"; });
+      TOOLS.forEach(function (tl, i) { var op = tl.merge ? 1 - clamp((p1 - .55) / .4) : 1; if (op <= 0) return; var L3 = lb(tl), l2 = L3[2] && p1 > .7 ? L3[2] : L3[1];
+        h += '<g style="opacity:' + op.toFixed(2) + '" transform="translate(' + pos[i][0].toFixed(1) + " " + pos[i][1].toFixed(1) + ')"><rect class="nd' + (hi[tl.k] ? " hot" : "") + '" x="' + (-TW / 2) + '" y="' + (-TH / 2) + '" width="' + TW + '" height="' + TH + '" rx="10"/><text class="nd-t" x="0" y="-2" text-anchor="middle">' + L3[0] + '</text><text class="nd-s" x="0" y="12" text-anchor="middle">' + l2 + "</text></g>"; });
       $("ufScene").innerHTML = h;
       $("dsLinks").textContent = Math.round(14 * (1 - p1)); $("dsAgents").textContent = Math.round(3 - 2 * p1); $("dsView").textContent = Math.round(8 - 7 * p2);
+      var ci = t < .34 ? 0 : t < .8 ? 1 : 2, ct = CAP[plain ? "plain" : "it"][ci]; if ($("ufCap").textContent !== ct && !run) $("ufCap").textContent = ct;
       $("ph1").classList.toggle("on", t < .34); $("ph2").classList.toggle("on", t >= .34 && t < .8); $("ph3").classList.toggle("on", t >= .8);
     }
     function setT(t) { cur = t; $("ufRange").value = Math.round(t * 100); draw(t); }
@@ -1847,7 +1863,7 @@ button.gcard:hover { border-color: var(--ink); }
     function startScen(name) {
       stopScen(); var list = SCEN[name], me = { stop: false }, i = 0; run = me;
       $("scenBtns").querySelector('[data-s="' + name + '"]').setAttribute("aria-pressed", "true");
-      function show() { var st = $("steps"); st.classList.remove("empty"); st.innerHTML = list.map(function (s, j) { return '<li class="' + (j === i ? "on" : "") + '">' + esc(s[1]) + "</li>"; }).join(""); }
+      function show() { var st = $("steps"); st.classList.remove("empty"); st.innerHTML = list.map(function (s, j) { return '<li class="' + (j === i ? "on" : "") + '">' + esc(plain ? PSCEN[name][j] : s[1]) + "</li>"; }).join(""); }
       function hop() {
         if (me.stop) return; hi = {}; hi[list[i][0]] = 1; draw(1); show();
         if (i === list.length - 1) { setTimeout(function () { if (!me.stop) $("ufPkt").innerHTML = ""; }, 1400); return; }
@@ -1860,6 +1876,14 @@ button.gcard:hover { border-color: var(--ink); }
       if (cur < 1) tween(1, 1600, function () { setTimeout(hop, 200); }); else hop();
     }
     $("ufRange").addEventListener("input", function () { stopScen(); setT(this.value / 100); });
+    $("ufMode").addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return; plain = b.getAttribute("data-m") === "plain";
+      $("ufMode").querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-checked", x === b ? "true" : "false"); });
+      $("ufH").textContent = plain ? "Make a company's tech work as one" : "Untangle an IT stack";
+      $("ufLede").textContent = plain ? "Most companies run on a pile of separate tools that were bought one at a time. Each has its own login, its own screen, and its own wires to the others. Drag the slider to see what I do about it." : "Consolidate where tools overlap, integrate the rest, and give the team one view. Drag the slider, then run a scenario through the result.";
+      document.querySelectorAll("#t-unify .stats3 span[data-pl]").forEach(function (sp) { sp.textContent = sp.getAttribute(plain ? "data-pl" : "data-it"); });
+      $("ufCap").textContent = ""; stopScen(); draw(cur);
+    });
     $("scenBtns").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) startScen(b.getAttribute("data-s")); });
     draw(0);
     var seen = false;
@@ -2139,7 +2163,7 @@ button.gcard:hover { border-color: var(--ink); }
   })();
 
   /* =========== v12: x-ray mode =========== */
-  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-evo": "Four bootcamp apps rebuilt in vanilla JS · localStorage", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "CSS phone · animated route", "t-carv": "Two-sided request flow · both apps in one tile", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
+  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine · plain-English mode", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-evo": "Four bootcamp apps rebuilt in vanilla JS · localStorage", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "CSS phone · animated route", "t-carv": "Two-sided request flow · both apps in one tile", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
   grid.querySelectorAll(".t").forEach(function (t) {
     var id = t.id || (t.classList.contains("intro") ? "intro" : ""), lab = XR[id];
     if (!lab) { var a = t.getAttribute("aria-label") || "Tile"; lab = a === "Skills" ? "Live SVG paths between DOM rects" : a === "Journey" ? "Range input · stepped timeline" : a === "Things you wouldn't guess" ? "Pointer events · swipe physics" : a === "Toolkit" ? "CSS marquee · pause on hover" : a === "Local time and contact" ? "Intl time zone clock" : a + " · HTML + CSS"; }
