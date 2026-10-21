@@ -31,11 +31,11 @@
   //   OWNER_KEY   your private key; open https://omarnabi.com/#owner=KEY once per device
   //   NTFY_TOPIC  a long random ntfy.sh topic name for phone alerts
 
-  // Uncomment once omarnabi.com is on your Cloudflare account (see README, step 5).
-  // "routes": [
-  //   { "pattern": "omarnabi.com", "custom_domain": true },
-  //   { "pattern": "www.omarnabi.com", "custom_domain": true }
-  // ],
+  // omarnabi.com is served by this Worker (the zone lives on Cloudflare).
+  "routes": [
+    { "pattern": "omarnabi.com", "custom_domain": true },
+    { "pattern": "www.omarnabi.com", "custom_domain": true }
+  ],
 
   "observability": { "enabled": true }
 }
