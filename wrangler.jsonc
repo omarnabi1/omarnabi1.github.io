@@ -32,6 +32,8 @@
   //   NTFY_TOPIC  a long random ntfy.sh topic name for phone alerts
 
   // omarnabi.com is served by this Worker (the zone lives on Cloudflare).
+  // Also keep the direct address (omarnabi.<subdomain>.workers.dev) for testing.
+  "workers_dev": true,
   "routes": [
     { "pattern": "omarnabi.com", "custom_domain": true },
     { "pattern": "www.omarnabi.com", "custom_domain": true }
