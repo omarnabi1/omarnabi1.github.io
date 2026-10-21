@@ -83,6 +83,14 @@ em.s { font-family: var(--serif); font-style: italic; font-weight: 400; }
 /* ---------- Top bar ---------- */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(12px); }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; }
+.cv-s { display: none; }
+@media (max-width: 680px) {
+  .top .wrap { gap: 8px; }
+  .top .act { gap: 5px; min-width: 0; }
+  .top .act .pill { padding: 8px 11px; }
+  .cv-l { display: none; } .cv-s { display: inline; }
+}
+@media (max-width: 420px) { .brand-t { display: none; } }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
 .brand i { width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-style: normal; font-size: .8rem; font-weight: 800; }
 .top nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
@@ -545,7 +553,8 @@ table.lb tr.crai td:nth-child(2) { color: var(--blue); font-weight: 700; }
 .xg-r { display: grid; gap: 8px; }
 .xr { padding: 12px 14px; border-radius: 14px; background: var(--tile2); border: 1px solid var(--line); display: grid; gap: 4px; transition: border-color .2s, transform .2s; }
 .xr:hover { border-color: var(--ink); transform: translateY(-2px); }
-.xr.star { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+.xr.star { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); position: relative; }
+.xr-star { justify-self: start; font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--acc); color: var(--acc-ink); margin-bottom: 2px; }
 .xr-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .xr-c { font-weight: 800; font-size: .98rem; display: inline-flex; align-items: center; gap: 6px; }
 .now-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
@@ -981,7 +990,7 @@ button.gcard:hover { border-color: var(--ink); }
 <div class="prog" id="prog" aria-hidden="true"></div>
 <header class="top">
   <div class="wrap">
-    <a href="#top" class="brand"><i>ON</i>Omar Nabi</a>
+    <a href="#top" class="brand"><i>ON</i><span class="brand-t">Omar Nabi</span></a>
     <nav aria-label="Sections" id="secNav"><span class="nav-ind" id="navInd" aria-hidden="true"><i></i></span><a href="#ch-work" data-ch="work">Work</a><a href="#ch-builds" data-ch="builds">Builds</a><a href="#ch-play" data-ch="play">Play</a><a href="#ch-about" data-ch="about">About</a><a href="#ch-contact" data-ch="contact">Contact</a></nav>
     <div class="act">
       <span id="omarHere"></span>
@@ -989,7 +998,7 @@ button.gcard:hover { border-color: var(--ink); }
       <button type="button" class="pill" id="liveBtn" hidden>Live now</button>
       <button type="button" class="pill term-pill" id="termBtn" aria-label="Open the terminal" title="Terminal (press ` or Ctrl+K)"><span class="mono">&gt;_</span><kbd>⌘K</kbd></button>
       <button type="button" class="pill" id="themeBtn" aria-label="Switch light or dark">◐</button>
-      <button type="button" class="pill dark" id="cvBtn">30-sec version</button>
+      <button type="button" class="pill dark" id="cvBtn"><span class="cv-l">30-sec version</span><span class="cv-s">30 sec</span></button>
     </div>
   </div>
   <nav class="mnav" id="mnav" aria-label="Chapters"><div class="wrap"><div class="mseg" id="mseg"><a href="#ch-work" data-ch="work" aria-label="Work"><i></i></a><a href="#ch-builds" data-ch="builds" aria-label="Builds"><i></i></a><a href="#ch-play" data-ch="play" aria-label="Play"><i></i></a><a href="#ch-about" data-ch="about" aria-label="About"><i></i></a><a href="#ch-contact" data-ch="contact" aria-label="Contact"><i></i></a></div><p class="mlbl"><b id="mnum">01</b> <span id="mname">Work</span><span class="mhint">tap a bar to jump</span></p></div></nav>
@@ -1929,7 +1938,7 @@ button.gcard:hover { border-color: var(--ink); }
       box.className = "xp2 roles";
       box.innerHTML = G.map(function (g) {
         return '<div class="xg"><div class="xg-h"><b>' + esc(g.g) + "</b><span>" + esc(g.d) + '</span></div><div class="xg-r">' + g.r.map(function (r) {
-          return '<article class="xr' + (r.star ? " star" : "") + '"><div class="xr-top"><span class="xr-c">' + esc(r.c) + (r.cur ? ' <i class="now-dot" title="Current"></i>' : "") + '</span><span class="xr-y">' + esc(r.y) + '</span></div><p class="xr-r">' + esc(r.r) + '</p><p class="xr-o">' + esc(r.o) + '</p><div class="xr-k">' + r.k.map(function (k) { return '<button type="button" class="kchip" data-k="' + k + '">' + esc(NM[k]) + "</button>"; }).join("") + "</div></article>";
+          return '<article class="xr' + (r.star ? " star" : "") + '">' + (r.star ? '<span class="xr-star">Biggest impact</span>' : "") + '<div class="xr-top"><span class="xr-c">' + esc(r.c) + (r.cur ? ' <i class="now-dot" title="Current"></i>' : "") + '</span><span class="xr-y">' + esc(r.y) + '</span></div><p class="xr-r">' + esc(r.r) + '</p><p class="xr-o">' + esc(r.o) + '</p><div class="xr-k">' + r.k.map(function (k) { return '<button type="button" class="kchip" data-k="' + k + '">' + esc(NM[k]) + "</button>"; }).join("") + "</div></article>";
         }).join("") + "</div></div>";
       }).join("");
     }
