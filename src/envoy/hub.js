@@ -8,7 +8,9 @@ import { readMessage, buildCampaign } from "./llm.js";
 
 const GAME_TTL_MS = 7 * 24 * 3600 * 1000;
 const day = () => new Date().toISOString().slice(0, 10);
-const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+// Bump BUILD_V when the builder prompt changes, so older builds stop being served or listed.
+const BUILD_V = "v2|";
+const norm = (s) => BUILD_V + String(s || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
 
 export class EnvoyHub extends DurableObject {
   constructor(ctx, env) {
@@ -60,7 +62,7 @@ export class EnvoyHub extends DurableObject {
 
   /* ----- RPC ----- */
   catalog() {
-    const built = this.sql.exec(`SELECT camp, prompt, plays FROM custom ORDER BY plays DESC, at DESC LIMIT 8`).toArray().map((r) => ({ ...summaryOf(JSON.parse(r.camp)), prompt: r.prompt, plays: r.plays }));
+    const built = this.sql.exec(`SELECT camp, prompt, plays FROM custom WHERE k LIKE ? ORDER BY plays DESC, at DESC LIMIT 8`, BUILD_V + "%").toArray().map((r) => ({ ...summaryOf(JSON.parse(r.camp)), prompt: r.prompt, plays: r.plays }));
     const left = Number(this.env.ENVOY_DAILY_BUILDS || 8) - ((this.sql.exec(`SELECT n FROM budget WHERE k = ?`, `${day()}:build`).toArray()[0] || {}).n || 0);
     const diffs = Object.entries(DIFFS).map(([id, d]) => ({ id, name: d.name, text: d.text, mult: d.mult }));
     return { campaigns: catalog(), built, diffs, ai: !!this.env.AI, buildsLeft: this.env.AI ? Math.max(0, left) : 0 };
