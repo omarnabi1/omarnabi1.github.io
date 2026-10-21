@@ -88,6 +88,26 @@ em.s { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .top nav { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
 .top nav a { font-size: .86rem; font-weight: 600; text-decoration: none; padding: 7px 11px; border-radius: 999px; color: var(--muted); white-space: nowrap; }
 .top nav a:hover { color: var(--ink); background: var(--tile); }
+.top nav { position: relative; }
+.top nav a { position: relative; z-index: 1; transition: color .25s; }
+.top nav a.on { color: var(--ink); }
+.top nav a.on:hover { background: none; }
+.nav-ind { position: absolute; z-index: 0; top: 0; bottom: 0; left: 0; width: 0; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); overflow: hidden; opacity: 0; transition: transform .45s cubic-bezier(.3,1.25,.5,1), width .45s cubic-bezier(.3,1.25,.5,1), opacity .25s; pointer-events: none; }
+.nav-ind.show { opacity: 1; }
+.nav-ind i { position: absolute; left: 10px; right: 10px; bottom: 3px; height: 2px; border-radius: 2px; background: var(--acc); transform-origin: 0 50%; transform: scaleX(var(--np, 0)); }
+/* Chapters: full-width headers that structure the grid and match the nav */
+.chap { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: 18px; row-gap: 6px; padding: clamp(40px, 7vw, 84px) 4px 4px; scroll-margin-top: 64px; position: relative; }
+.chap-n { font-family: var(--mono); font-size: .8rem; font-weight: 600; letter-spacing: .1em; color: var(--acc); align-self: start; padding-top: .9em; }
+.chap-h { font-size: clamp(2.6rem, 6.4vw, 5rem); font-weight: 800; letter-spacing: -.045em; line-height: .95; overflow: hidden; padding-bottom: .06em; }
+.chap-h .w { display: inline-block; transform: translateY(calc((1 - var(--rp, 1)) * 105%)); }
+.chap-p { grid-column: 2; font-size: clamp(1rem, 1.5vw, 1.2rem); color: var(--muted); max-width: 40rem; opacity: calc(.15 + var(--rp, 1) * .85); transform: translateY(calc((1 - var(--rp, 1)) * 14px)); }
+.chap-p em.s { color: var(--acc); }
+.chap-line { grid-column: 1 / -1; height: 2px; margin-top: 18px; border-radius: 2px; background: var(--line); position: relative; overflow: hidden; }
+.chap-line i { position: absolute; inset: 0; background: linear-gradient(90deg, var(--acc), var(--blue)); transform-origin: 0 50%; transform: scaleX(var(--cp, 0)); }
+@media (max-width: 680px) { .chap { grid-template-columns: minmax(0, 1fr); } .chap-p { grid-column: 1; } .chap-n { padding-top: 0; } }
+@media (prefers-reduced-motion: reduce) { .chap-h .w, .chap-p { transform: none; opacity: 1; } .nav-ind { transition: none; } }
+#links .chapclaw .ln { opacity: .55; stroke-width: 1.6; }
+#links .chapclaw .glow { opacity: .08; }
 .top .act { display: flex; gap: 6px; }
 .pill { font-size: .82rem; font-weight: 600; padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .pill:hover { border-color: var(--ink); }
@@ -678,7 +698,7 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
 <header class="top">
   <div class="wrap">
     <a href="#top" class="brand"><i>ON</i>Omar Nabi</a>
-    <nav aria-label="Sections"><a href="#t-unify">Work</a><a href="#t-builds">Builds</a><a href="#t-game">Play</a><a href="#t-contact">Contact</a></nav>
+    <nav aria-label="Sections" id="secNav"><span class="nav-ind" id="navInd" aria-hidden="true"><i></i></span><a href="#ch-work" data-ch="work">Work</a><a href="#ch-builds" data-ch="builds">Builds</a><a href="#ch-play" data-ch="play">Play</a><a href="#ch-about" data-ch="about">About</a><a href="#ch-contact" data-ch="contact">Contact</a></nav>
     <div class="act">
       <span id="omarHere"></span>
       <div class="here" id="here" hidden><button type="button" class="here-btn" id="hereBtn" aria-expanded="false"><span class="live-dot" aria-hidden="true"></span><span class="here-dots" id="hereDots"></span><span id="hereTxt">1</span><span class="lbl-txt">here now</span></button><div class="here-pop" id="herePop" hidden></div></div>
@@ -711,6 +731,13 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <p class="lens-out" id="lensOut">Each skill lights up the tiles on this page that prove it.</p>
     </section>
 
+    <div class="chap" id="ch-work" data-ch="work">
+      <span class="chap-n">01</span>
+      <h2 class="chap-h"><span class="w">Work</span></h2>
+      <p class="chap-p">I make complicated IT <em class="s">work as one.</em> Here's what that looks like.</p>
+      <span class="chap-line" aria-hidden="true"><i></i></span>
+    </div>
+
     <section class="t w2 h2 uf" id="t-unify" data-sk="unify" aria-label="What unify looks like">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">What I do</span><span class="hint">Drag the slider</span></div>
@@ -736,6 +763,19 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       </div>
     </section>
 
+    <section class="t w2" data-sk="unify build translate" aria-label="Toolkit">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Toolkit</span><span class="hint b">Hover to pause</span></div>
+      <div class="mq" id="mq"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>Unify</span><span><i style="background:var(--acc)"></i>Build</span><span><i style="background:var(--muted)"></i>Translate</span></div>
+    </section>
+
+    <section class="t w2" id="t-xp" data-sk="unify translate" aria-label="Experience">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Experience</span><span class="hint">Tap a role</span></div>
+      <ul class="xp" id="xp"></ul>
+    </section>
+
     <section class="t w2" data-sk="translate" aria-label="Journey">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">How I got here</span><span class="hint">Drag through it</span></div>
@@ -745,14 +785,12 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <div class="jr-ctl"><span class="lbl" id="jrCount">1 of 12</span><div class="btns"><button type="button" class="btn sm ghost" id="jrPrev" aria-label="Previous">←</button><button type="button" class="btn sm ghost" id="jrNext" aria-label="Next">→</button><button type="button" class="btn sm" id="jrPlay">Play it</button></div></div>
     </section>
 
-    <section class="t w2 h2" id="t-game" data-sk="build" aria-label="Beat my AI">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Play</span><span class="hint">5 questions</span></div>
-      <h2>Beat my AI</h2>
-      <div class="gm" id="gm"></div>
-      <div class="board" id="board"></div>
-      <p class="note" id="gameNote">Prototype: outcomes are illustrative, and players other than you are samples.</p>
-    </section>
+    <div class="chap" id="ch-builds" data-ch="builds">
+      <span class="chap-n">02</span>
+      <h2 class="chap-h"><span class="w">Builds</span></h2>
+      <p class="chap-p">Then I build what runs on top of it.</p>
+      <span class="chap-line" aria-hidden="true"><i></i></span>
+    </div>
 
     <section class="t w2" id="t-builds" data-sk="build" aria-label="CR-AI">
       <span class="lit-tag">Proof</span>
@@ -762,6 +800,17 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <svg class="pipe" id="pipe" viewBox="0 0 560 230" role="img" aria-label="Six sources flow into a fine-tuned Mistral-7B model, which outputs a forecast"></svg>
       <div class="toggles" id="srcToggles"></div>
       <p class="note">Switch sources off and watch the forecast move. Sample question: Brent crude above $90? Illustrative weights.</p>
+    </section>
+
+    <section class="t w2" id="t-term" data-sk="build" aria-label="Terminal">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Terminal</span><span class="hint">Type help</span></div>
+      <div class="term-win">
+        <div class="term-bar"><i></i><i></i><i></i><span>omar@nabi: ~</span></div>
+        <div class="term-out" id="termOut" aria-live="polite"></div>
+        <form class="term-in" id="termForm" autocomplete="off"><label for="termIn">omar@nabi ~ %</label><input id="termIn" spellcheck="false" autocapitalize="off" placeholder="try: skills"></form>
+      </div>
+      <div class="btns term-sug" id="termSug"><button type="button">help</button><button type="button">whoami</button><button type="button">skills</button><button type="button">builds</button><button type="button">unify</button><button type="button">sudo hire omar</button></div>
     </section>
 
     <section class="t" id="t-ridey" data-sk="build" aria-label="Ridey">
@@ -780,6 +829,39 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <p style="font-size:.9rem">A two-sided marketplace for mobile auto services.</p>
     </section>
 
+    <section class="t w2" data-sk="translate" aria-label="Writing">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Writing</span><span class="lbl">On Substack, soon</span></div>
+      <ul class="posts">
+        <li><div><h3>Fewer tools is a security strategy</h3><p>What changes when an organization consolidates.</p></div><span class="soon">Soon</span></li>
+        <li><div><h3>From the customer counter to the codebase</h3><p>What retail and a law firm taught me about solving problems.</p></div><span class="soon">Soon</span></li>
+        <li><div><h3>Fine-tuning a small model to read the news</h3><p>QLoRA on Mistral-7B, and how it compares to frontier models.</p></div><span class="soon">Soon</span></li>
+      </ul>
+    </section>
+
+    <div class="chap" id="ch-play" data-ch="play">
+      <span class="chap-n">03</span>
+      <h2 class="chap-h"><span class="w">Play</span></h2>
+      <p class="chap-p">Games built on the same ideas. Try to beat me.</p>
+      <span class="chap-line" aria-hidden="true"><i></i></span>
+    </div>
+
+    <section class="t w2 h2" id="t-game" data-sk="build" aria-label="Beat my AI">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Play</span><span class="hint">5 questions</span></div>
+      <h2>Beat my AI</h2>
+      <div class="gm" id="gm"></div>
+      <div class="board" id="board"></div>
+      <p class="note" id="gameNote">Prototype: outcomes are illustrative, and players other than you are samples.</p>
+    </section>
+
+    <section class="t w2" id="t-cal" data-sk="build" aria-label="Calibration trainer">
+      <span class="lit-tag">Proof</span>
+      <div class="t-h"><span class="lbl">Game · calibration</span><span class="hint">10 questions</span></div>
+      <h2>Are you as sure as you think?</h2>
+      <div id="cal"></div>
+    </section>
+
     <section class="t w2" id="t-off" data-sk="unify" aria-label="Offboarding race">
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">Game · offboarding race</span><span class="hint">Beat the clock</span></div>
@@ -790,13 +872,6 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <div class="sys-grid" id="sysGrid"></div>
       <div id="raceRes"></div>
       <div class="btns"><button type="button" class="btn" id="raceStart">Start the clock</button><button type="button" class="btn ghost" id="raceAuto" hidden>Now automate it</button></div>
-    </section>
-
-    <section class="t w2" id="t-cal" data-sk="build" aria-label="Calibration trainer">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Game · calibration</span><span class="hint">10 questions</span></div>
-      <h2>Are you as sure as you think?</h2>
-      <div id="cal"></div>
     </section>
 
     <section class="t w4" id="t-s5" data-sk="build" aria-label="All-time starting five">
@@ -826,22 +901,12 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <div class="s5-out" id="s5Out" aria-live="polite"></div>
     </section>
 
-    <section class="t w2" id="t-term" data-sk="build" aria-label="Terminal">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Terminal</span><span class="hint">Type help</span></div>
-      <div class="term-win">
-        <div class="term-bar"><i></i><i></i><i></i><span>omar@nabi: ~</span></div>
-        <div class="term-out" id="termOut" aria-live="polite"></div>
-        <form class="term-in" id="termForm" autocomplete="off"><label for="termIn">omar@nabi ~ %</label><input id="termIn" spellcheck="false" autocapitalize="off" placeholder="try: skills"></form>
-      </div>
-      <div class="btns term-sug" id="termSug"><button type="button">help</button><button type="button">whoami</button><button type="button">skills</button><button type="button">builds</button><button type="button">unify</button><button type="button">sudo hire omar</button></div>
-    </section>
-
-    <section class="t w2" id="t-xp" data-sk="unify translate" aria-label="Experience">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Experience</span><span class="hint">Tap a role</span></div>
-      <ul class="xp" id="xp"></ul>
-    </section>
+    <div class="chap" id="ch-about" data-ch="about">
+      <span class="chap-n">04</span>
+      <h2 class="chap-h"><span class="w">About</span></h2>
+      <p class="chap-p">The parts that don't fit on a resume.</p>
+      <span class="chap-line" aria-hidden="true"><i></i></span>
+    </div>
 
     <section class="t" aria-label="Now">
       <div class="t-h"><span class="lbl">Now</span><span class="lbl">Oct 2026</span></div>
@@ -859,13 +924,6 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <div class="btns" style="margin-top:auto"><button type="button" class="btn sm" data-copy>Copy email</button></div>
     </section>
 
-    <section class="t w2" data-sk="unify build translate" aria-label="Toolkit">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Toolkit</span><span class="hint b">Hover to pause</span></div>
-      <div class="mq" id="mq"></div>
-      <div class="legend"><span><i style="background:var(--blue)"></i>Unify</span><span><i style="background:var(--acc)"></i>Build</span><span><i style="background:var(--muted)"></i>Translate</span></div>
-    </section>
-
     <section class="t" aria-label="Things you wouldn't guess">
       <div class="t-h"><span class="lbl">You wouldn't guess</span><span class="lbl tnum" id="deckN">1/6</span></div>
       <div class="deck"><div class="deck-shadow two" aria-hidden="true"></div><div class="deck-shadow" aria-hidden="true"></div><button type="button" class="flip" id="deckCard" aria-pressed="false"></button></div>
@@ -877,15 +935,12 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
       <button type="button" class="flip" aria-pressed="false" style="flex:1"><span class="in"><span class="f"><b>There's one more thing I do.</b><span class="lbl">Tap to reveal</span></span><span class="b"><span class="lbl">Zarffron</span>Our family imports Super Negin saffron directly from farmers in Herat.</span></span></button>
     </section>
 
-    <section class="t w2" data-sk="translate" aria-label="Writing">
-      <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Writing</span><span class="lbl">On Substack, soon</span></div>
-      <ul class="posts">
-        <li><div><h3>Fewer tools is a security strategy</h3><p>What changes when an organization consolidates.</p></div><span class="soon">Soon</span></li>
-        <li><div><h3>From the customer counter to the codebase</h3><p>What retail and a law firm taught me about solving problems.</p></div><span class="soon">Soon</span></li>
-        <li><div><h3>Fine-tuning a small model to read the news</h3><p>QLoRA on Mistral-7B, and how it compares to frontier models.</p></div><span class="soon">Soon</span></li>
-      </ul>
-    </section>
+    <div class="chap" id="ch-contact" data-ch="contact">
+      <span class="chap-n">05</span>
+      <h2 class="chap-h"><span class="w">Contact</span></h2>
+      <p class="chap-p">Got a tangled stack or an idea worth <em class="s">building?</em></p>
+      <span class="chap-line" aria-hidden="true"><i></i></span>
+    </div>
 
     <section class="t w4 plan" id="t-plan" aria-label="Build your plan">
       <div class="t-h"><span class="lbl">Working together</span><span class="hint">Pick what hurts</span></div>
@@ -1145,6 +1200,45 @@ body.xray .t > * { outline: 1px solid color-mix(in srgb, var(--blue) 25%, transp
         else { retract(set); setTimeout(function () { tiles.forEach(function (t) { t.classList.remove("gather"); }); }, 400); }
       })(t0);
     }, 500);
+  })();
+  /* Chapters: scroll-linked headline reveals, a nav that tracks where you are, and claws that hand off to each chapter's tiles */
+  (function () {
+    var chaps = Array.prototype.slice.call(grid.querySelectorAll(".chap")), nav = $("secNav"), ind = $("navInd"), links = {}, cur = null, raf = 0, clawed = {};
+    nav.querySelectorAll("a[data-ch]").forEach(function (a) { links[a.getAttribute("data-ch")] = a; });
+    function tilesOf(ch) { var out = [], el = ch.nextElementSibling; while (el && !el.classList.contains("chap")) { if (el.classList.contains("t")) out.push(el); el = el.nextElementSibling; } return out; }
+    function handoff(ch) {
+      var id = ch.getAttribute("data-ch"); if (RM || clawed[id] || curLens) return; clawed[id] = true;
+      var r = buildClaws(ch.querySelector(".chap-n"), tilesOf(ch), true), set = newSet(r.h, "chapclaw reel");
+      tugLater(r); setTimeout(function () { retract(set); }, 2300);
+    }
+    function moveInd(a, np) {
+      if (!a) { ind.classList.remove("show"); return; }
+      ind.style.transform = "translateX(" + a.offsetLeft + "px)"; ind.style.width = a.offsetWidth + "px"; ind.style.setProperty("--np", np.toFixed(3)); ind.classList.add("show");
+    }
+    function tick() {
+      raf = 0; var vh = innerHeight, line = vh * .35, act = null, np = 0;
+      chaps.forEach(function (ch, i) {
+        var r = ch.getBoundingClientRect();
+        var rp = RM ? 1 : Math.max(0, Math.min(1, (vh * .98 - r.top) / (vh * .42)));
+        ch.style.setProperty("--rp", rp.toFixed(3));
+        var next = chaps[i + 1], end = next ? next.getBoundingClientRect().top : grid.getBoundingClientRect().bottom;
+        var cp = Math.max(0, Math.min(1, (line - r.top) / Math.max(1, end - r.top)));
+        ch.style.setProperty("--cp", cp.toFixed(3));
+        if (r.top < line) { act = ch.getAttribute("data-ch"); np = cp; }
+        if (r.top < vh * .6 && r.bottom > 0) handoff(ch);
+      });
+      if (act !== cur) {
+        Object.keys(links).forEach(function (k) { links[k].classList.toggle("on", k === act); if (k === act) links[k].setAttribute("aria-current", "true"); else links[k].removeAttribute("aria-current"); });
+        cur = act;
+        var a = links[act];
+        if (a && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: Math.max(0, a.offsetLeft - nav.clientWidth / 2 + a.offsetWidth / 2), behavior: RM ? "auto" : "smooth" });
+      }
+      moveInd(links[act], np);
+    }
+    function req() { if (!raf) raf = requestAnimationFrame(tick); }
+    addEventListener("scroll", req, { passive: true }); addEventListener("resize", req);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(req);
+    tick();
   })();
   if ("ResizeObserver" in window) { var lt; new ResizeObserver(function () { clearTimeout(lt); lt = setTimeout(function () { drawLinks(false); }, 120); }).observe(grid); }
   $("lensBtns").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setLens(b.getAttribute("data-k")); });
