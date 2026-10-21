@@ -52,15 +52,16 @@ function randomTurn(st, r) {
   }
   endMonth(st);
 }
-for (const camp of CAMPAIGNS) {
+const DIFFS_TO_TEST = process.argv[2] ? process.argv[2].split(",") : ["standard"];
+for (const diff of DIFFS_TO_TEST) for (const camp of CAMPAIGNS) {
   for (const mode of ["random", "smart"]) {
     let wins = 0, wars = 0, sc = 0, mo = 0; const N = 300;
     for (let s = 1; s <= N; s++) {
       let x = s * 99991; const r = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
-      const st = newGame(camp.id, s * 7919, "asis");
+      const st = newGame(camp.id, s * 7919, "asis", undefined, diff);
       while (!st.ended) mode === "smart" ? smartTurn(st) : randomTurn(st, r);
       if (st.outcome === "win") { wins++; mo += st.month; } if (st.outcome === "war") wars++; sc += st.score;
     }
-    console.log(camp.id.padEnd(5), mode.padEnd(6), "win", (wins / N * 100).toFixed(0).padStart(3) + "%", "war", (wars / N * 100).toFixed(0).padStart(3) + "%", "winMonth", wins ? (mo / wins).toFixed(1) : "-", "score", Math.round(sc / N));
+    console.log(diff.padEnd(8), camp.id.padEnd(5), mode.padEnd(6), "win", (wins / N * 100).toFixed(0).padStart(3) + "%", "war", (wars / N * 100).toFixed(0).padStart(3) + "%", "winMonth", wins ? (mo / wins).toFixed(1) : "-", "score", Math.round(sc / N));
   }
 }

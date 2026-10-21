@@ -10,6 +10,16 @@ export const COST = { listen: 1, message: 1, aid: 1, keepers: 2, summit: 2, deal
 export const SUMMIT_MOOD = 50;
 export const WALKOUT = 2;
 
+// Difficulty presets (Xbox Accessibility Guideline 108: several presets, respectful names, changeable anytime).
+export const DIFFS = {
+  relaxed: { name: "Relaxed", envoys: 1, drift: 0.5, world: 0.5, crisis: 0.6, deal: 1, reveal: true, noWar: true, walk: 1, mult: 0.5, text: "Every hand face up, gentle pressure, and the world never tips into war. For learning, or for exploring history." },
+  standard: { name: "Standard", envoys: 0, drift: 1, world: 1, crisis: 1, deal: 0, walk: 2, mult: 1, text: "The intended game. Hidden cards, real pressure, and you can lose." },
+  hard: { name: "Hard", envoys: 0, drift: 1.15, world: 1.15, crisis: 1.3, deal: 0, walk: 2, mult: 1.5, text: "Hotter hotspots and sharper crises. Every envoy counts." },
+  brutal: { name: "Brutal", envoys: 0, drift: 1.3, world: 1.3, crisis: 1.5, deal: 0, hideRecon: true, walk: 3, mult: 2, text: "The hottest world, the harshest crises, no CR-AI guesses on thin sources, and longer walkouts." },
+};
+const D = (st) => DIFFS[st.diff] || DIFFS.standard;
+const envoysFor = (st, camp) => Math.max(2, camp.envoys + D(st).envoys);
+
 /* ---------- seeded RNG ---------- */
 function rand(st) {
   let t = (st.seed = (st.seed + 0x6d2b79f5) >>> 0);
@@ -55,7 +65,7 @@ function cardState(p, k) {
   return c.r ? "recon" : "unknown";
 }
 
-export function newGame(campId, seed, twistId, customCamp) {
+export function newGame(campId, seed, twistId, customCamp, diff) {
   const camp = customCamp || CAMPAIGN_BY_ID[campId];
   if (!camp) throw new Error("unknown campaign");
   const st = {
@@ -63,8 +73,10 @@ export function newGame(campId, seed, twistId, customCamp) {
     c: camp.id,
     camp: customCamp || undefined,
     seed: seed >>> 0,
+    diff: DIFFS[diff] ? diff : "standard",
+    mult: (DIFFS[diff] || DIFFS.standard).mult,
     month: 1,
-    envoys: camp.envoys,
+    envoys: 0,
     global: camp.globalStart,
     flareups: 0,
     deals: [],
@@ -87,6 +99,7 @@ export function newGame(campId, seed, twistId, customCamp) {
       parties: Object.fromEntries(h.parties.map((p) => [p.id, { mood: p.mood, walked: 0, cards: Object.fromEntries(CARD_ORDER.map((k) => [k, cardState(p, k)])) }])),
     };
   }
+  st.envoys = envoysFor(st, camp);
   const tw = (camp.twists || []).find((t) => t.id === twistId);
   if (tw) {
     if (tw.fx) applyFx(st, tw.fx);
@@ -101,10 +114,11 @@ function log(st, kind, text, extra = {}) {
   if (st.log.length > 60) st.log.splice(0, st.log.length - 60);
 }
 
-function applyFx(st, fx) {
+function applyFx(st, fx, harm = 1) {
   const fl = [];
-  for (const [hid, d] of Object.entries(fx.tension || {})) {
+  for (const [hid, d0] of Object.entries(fx.tension || {})) {
     const h = st.hs[hid];
+    const d = d0 > 0 ? Math.round(d0 * harm) : d0;
     if (h && !h.done) {
       h.tension = clamp(h.tension + d);
       fl.push({ hs: hid, k: "tension", d });
@@ -119,8 +133,10 @@ function applyFx(st, fx) {
     }
   }
   if (fx.global) {
-    st.global = clamp(st.global + fx.global);
-    fl.push({ k: "global", d: fx.global });
+    const g = fx.global > 0 ? Math.round(fx.global * harm) : fx.global;
+    st.global = clamp(st.global + g);
+    if (D(st).noWar) st.global = Math.min(st.global, 95);
+    fl.push({ k: "global", d: g });
   }
   if (fx.envoys) st.envoys = Math.max(0, st.envoys + fx.envoys);
   return fl;
@@ -235,7 +251,8 @@ export function act(st, a, hid, opts = {}, ai = null) {
         if (s.walked) return { party: p.id, yes: false, why: "absent" };
         if (crossesRed(p, tags)) return { party: p.id, yes: false, why: "red" };
         const v = ids.reduce((x, id) => x + weight(p, H.clauses.find((c) => c.id === id)), 0) + (s.mood - 50) / 10;
-        return { party: p.id, yes: v >= 2, why: v >= 2 ? "yes" : "no" };
+        const need = 2 - D(st).deal;
+        return { party: p.id, yes: v >= need, why: v >= need ? "yes" : "no" };
       });
       const yes = votes.filter((v) => v.yes).length;
       const vetoNo = H.parties.filter((p) => p.veto && !votes.find((v) => v.party === p.id).yes);
@@ -284,7 +301,7 @@ const cardName = (k) => ({ red: "red line", goal: "real goal", flex: "flexibilit
 function walkOut(st, H, p, why, out) {
   const s = st.hs[H.id].parties[p.id];
   if (s.walked) return;
-  s.walked = WALKOUT;
+  s.walked = D(st).walk || WALKOUT;
   s.mood = clamp(s.mood - 15);
   s.cards.red = "known";
   log(st, "walk", `${p.short} walked out. ${why}`, { hs: H.id, party: p.id });
@@ -302,16 +319,30 @@ function bark(p, verdict, m) {
   return list[(p.id.length + m) % list.length];
 }
 
+/* ---------- difficulty can change at any time; the score keeps the easiest multiplier used ---------- */
+export function setDifficulty(st, diff) {
+  if (!DIFFS[diff]) return { error: "Unknown difficulty" };
+  if (st.ended) return { error: "Game over" };
+  const camp = campaignOf(st);
+  const before = envoysFor(st, camp);
+  st.diff = diff;
+  st.mult = Math.min(st.mult || 1, DIFFS[diff].mult);
+  st.envoys = Math.max(0, st.envoys + (envoysFor(st, camp) - before));
+  if (DIFFS[diff].noWar) st.global = Math.min(st.global, 95);
+  log(st, "act", `Difficulty set to ${DIFFS[diff].name}.`);
+  return { diff };
+}
+
 /* ---------- crisis cards ---------- */
 export function resolveCrisis(st, choice) {
   if (st.ended) return { error: "Game over" };
   if (!st.crisis) return { error: "No crisis to resolve" };
   const ev = st.crisis;
   const c = ev.choices[choice === 1 ? 1 : 0];
-  const fx = applyFx(st, c.fx || {});
+  const fx = applyFx(st, c.fx || {}, D(st).crisis);
   log(st, "crisis", `${ev.title}: you chose "${c.label}".`, { hs: ev.hs });
   st.crisis = null;
-  if (st.global >= 100) finish(st, "war");
+  if (st.global >= 100 && !D(st).noWar) finish(st, "war");
   return { fx };
 }
 
@@ -346,7 +377,7 @@ export function endMonth(st) {
       out.drift[H.id] = 0;
       continue;
     }
-    const d = 3 + Math.floor(rand(st) * 6) - (h.talks ? 3 : 0);
+    const d = Math.round((3 + Math.floor(rand(st) * 6) - (h.talks ? 3 : 0)) * D(st).drift);
     h.tension = clamp(h.tension + d);
     out.drift[H.id] = d;
   }
@@ -360,7 +391,7 @@ export function endMonth(st) {
     const h = st.hs[id];
     h.tension = 72;
     h.peace = clamp(h.peace - 20);
-    st.global = clamp(st.global + 8);
+    st.global = clamp(st.global + Math.round(8 * D(st).world));
     st.flareups += 1;
     out.flares.push(id);
     log(st, "flare", `${hsDef(camp, id).name} flares up!`, { hs: id });
@@ -372,7 +403,8 @@ export function endMonth(st) {
     }
   }
   const pressure = camp.hotspots.reduce((s, H) => s + (st.hs[H.id].done ? 0 : Math.max(0, st.hs[H.id].tension - 70)), 0);
-  st.global = clamp(st.global + Math.round(pressure / 12));
+  st.global = clamp(st.global + Math.round((pressure / 12) * D(st).world));
+  if (D(st).noWar) st.global = Math.min(st.global, 95);
   out.globalDelta = st.global - before;
 
   for (const H of camp.hotspots) {
@@ -387,7 +419,7 @@ export function endMonth(st) {
     }
   }
 
-  if (st.global >= 100) {
+  if (st.global >= 100 && !D(st).noWar) {
     finish(st, "war");
     return out;
   }
@@ -396,7 +428,7 @@ export function endMonth(st) {
     return out;
   }
   st.month += 1;
-  st.envoys = camp.envoys;
+  st.envoys = envoysFor(st, camp);
   drawCrisis(st);
   return out;
 }
@@ -409,7 +441,7 @@ function finish(st, outcome) {
   let s = st.deals.length * 400 + (100 - st.global) * 4 - st.flareups * 40;
   for (const H of camp.hotspots) s += Math.round(st.hs[H.id].peace / 2);
   if (outcome === "win") s += 500 + (camp.months - st.month) * 60;
-  st.score = Math.max(0, Math.round(s));
+  st.score = Math.max(0, Math.round(s * (st.mult || 1)));
   log(st, "end", { win: "You did it.", war: "The world tipped into war.", timeout: "Time ran out." }[outcome]);
 }
 
@@ -430,6 +462,9 @@ export function view(st) {
     goal: camp.goal,
     note: camp.note,
     twist: st.twist,
+    diff: st.diff || "standard",
+    mult: st.mult || 1,
+    noWar: !!D(st).noWar,
     month: st.month,
     envoys: st.envoys,
     global: st.global,
@@ -456,6 +491,7 @@ export function view(st) {
         shield: h.shield,
         signed: h.clauses,
         need: summitNeed(H.parties.length),
+        forecast: forecastOf(st, h),
         clauses: H.clauses.map((c) => ({ id: c.id, name: c.name })),
         history: over && H.history ? H.history : null,
         offered: h.offered,
@@ -463,12 +499,13 @@ export function view(st) {
           const s = h.parties[p.id];
           const cards = {};
           for (const k of CARD_ORDER) {
-            const stt = over ? "known" : s.cards[k];
+            let stt = over || D(st).reveal ? "known" : s.cards[k];
+            if (stt === "recon" && D(st).hideRecon) stt = "unknown";
             const c = (p.cards || {})[k] || {};
             cards[k] = { s: stt, t: stt === "known" ? c.t || null : stt === "recon" ? c.r : null, wrong: over && c.r && c.ok === false && cardState(p, k) === "recon" ? c.r : null };
           }
-          const goalKnown = over || s.cards.goal === "known";
-          const redKnown = over || s.cards.red === "known";
+          const goalKnown = over || D(st).reveal || s.cards.goal === "known";
+          const redKnown = over || D(st).reveal || s.cards.red === "known";
           return {
             id: p.id,
             name: p.name,
@@ -487,6 +524,16 @@ export function view(st) {
       };
     }),
   };
+}
+
+// Telegraph next month (the Into the Breach lesson): will this hotspot flare if left alone?
+function forecastOf(st, h) {
+  if (h.done || h.shield) return null;
+  const lo = Math.round((3 - (h.talks ? 3 : 0)) * D(st).drift);
+  const hi = Math.round((8 - (h.talks ? 3 : 0)) * D(st).drift);
+  if (h.tension + lo >= 100) return "will";
+  if (h.tension + hi >= 100) return "may";
+  return null;
 }
 
 function fxHint(camp, fx) {

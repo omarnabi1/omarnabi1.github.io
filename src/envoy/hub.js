@@ -3,7 +3,7 @@
 
 import { DurableObject } from "cloudflare:workers";
 import { CAMPAIGN_BY_ID } from "./campaigns.js";
-import { newGame, act, endMonth, resolveCrisis, view, catalog, summaryOf, campaignOf } from "./engine.js";
+import { newGame, act, endMonth, resolveCrisis, setDifficulty, view, catalog, summaryOf, campaignOf, DIFFS } from "./engine.js";
 import { readMessage, buildCampaign } from "./llm.js";
 
 const GAME_TTL_MS = 7 * 24 * 3600 * 1000;
@@ -20,6 +20,7 @@ export class EnvoyHub extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS custom (k TEXT PRIMARY KEY, id TEXT NOT NULL, camp TEXT NOT NULL, prompt TEXT, at INTEGER NOT NULL, plays INTEGER NOT NULL DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS board2 (id INTEGER PRIMARY KEY, c TEXT NOT NULL, name TEXT NOT NULL, score INTEGER NOT NULL, outcome TEXT, at INTEGER NOT NULL)`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS board2_c ON board2 (c, score)`);
+    try { this.sql.exec(`ALTER TABLE board2 ADD COLUMN diff TEXT`); } catch {}
     this.sql.exec(`CREATE TABLE IF NOT EXISTS budget (k TEXT PRIMARY KEY, n INTEGER NOT NULL)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS hits (iph TEXT NOT NULL, kind TEXT NOT NULL, at INTEGER NOT NULL)`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS hits_iph ON hits (iph, kind, at)`);
@@ -61,7 +62,8 @@ export class EnvoyHub extends DurableObject {
   catalog() {
     const built = this.sql.exec(`SELECT camp, prompt, plays FROM custom ORDER BY plays DESC, at DESC LIMIT 8`).toArray().map((r) => ({ ...summaryOf(JSON.parse(r.camp)), prompt: r.prompt, plays: r.plays }));
     const left = Number(this.env.ENVOY_DAILY_BUILDS || 8) - ((this.sql.exec(`SELECT n FROM budget WHERE k = ?`, `${day()}:build`).toArray()[0] || {}).n || 0);
-    return { campaigns: catalog(), built, ai: !!this.env.AI, buildsLeft: this.env.AI ? Math.max(0, left) : 0 };
+    const diffs = Object.entries(DIFFS).map(([id, d]) => ({ id, name: d.name, text: d.text, mult: d.mult }));
+    return { campaigns: catalog(), built, diffs, ai: !!this.env.AI, buildsLeft: this.env.AI ? Math.max(0, left) : 0 };
   }
 
   async build(prompt, iph) {
@@ -81,7 +83,7 @@ export class EnvoyHub extends DurableObject {
     return { campaign: summaryOf(camp) };
   }
 
-  create(campId, twist, name, iph) {
+  create(campId, twist, name, iph, diff) {
     const custom = CAMPAIGN_BY_ID[campId] ? null : this.customById(campId);
     if (!CAMPAIGN_BY_ID[campId] && !custom) return { error: "Unknown scenario." };
     if (this.limited(iph, "new", 40)) return { error: "Too many new games this hour." };
@@ -89,7 +91,7 @@ export class EnvoyHub extends DurableObject {
     this.sql.exec(`DELETE FROM hits WHERE at < ?`, Date.now() - 3600 * 1000);
     if (custom) this.sql.exec(`UPDATE custom SET plays = plays + 1 WHERE id = ?`, campId);
     const id = crypto.randomUUID().replace(/-/g, "");
-    const st = newGame(campId, crypto.getRandomValues(new Uint32Array(1))[0], twist, custom || undefined);
+    const st = newGame(campId, crypto.getRandomValues(new Uint32Array(1))[0], twist, custom || undefined, diff);
     this.sql.exec(`INSERT INTO g2 (id, state, name, iph, at, upd) VALUES (?, ?, ?, ?, ?, ?)`, id, JSON.stringify(st), name || "", iph, Date.now(), Date.now());
     return { id, view: view(st) };
   }
@@ -106,6 +108,7 @@ export class EnvoyHub extends DurableObject {
     let res;
     if (body.a === "crisis") res = resolveCrisis(st, body.choice);
     else if (body.a === "end") res = endMonth(st);
+    else if (body.a === "diff") res = setDifficulty(st, body.value);
     else {
       let ai = null;
       if (body.a === "message" && body.text) {
@@ -125,7 +128,7 @@ export class EnvoyHub extends DurableObject {
     if (res.error) return res;
     if (st.ended && !st.recorded) {
       st.recorded = true;
-      if (g.name) this.sql.exec(`INSERT INTO board2 (c, name, score, outcome, at) VALUES (?, ?, ?, ?, ?)`, st.c, g.name, st.score, st.outcome, Date.now());
+      if (g.name) this.sql.exec(`INSERT INTO board2 (c, name, score, outcome, at, diff) VALUES (?, ?, ?, ?, ?, ?)`, st.c, g.name, st.score, st.outcome, Date.now(), st.diff || "standard");
     }
     this.save(id, st);
     return { view: view(st), res };
@@ -143,9 +146,9 @@ export class EnvoyHub extends DurableObject {
 
   board(c) {
     const rows = this.sql
-      .exec(`SELECT name AS n, MAX(score) AS s, outcome AS o FROM board2 WHERE c = ? GROUP BY lower(name) ORDER BY s DESC LIMIT 10`, c)
+      .exec(`SELECT b.name AS n, b.score AS s, b.outcome AS o, b.diff AS d FROM board2 b JOIN (SELECT lower(name) AS ln, MAX(score) AS ms FROM board2 WHERE c = ? GROUP BY lower(name)) m ON lower(b.name) = m.ln AND b.score = m.ms WHERE b.c = ? GROUP BY lower(b.name) ORDER BY s DESC LIMIT 10`, c, c)
       .toArray()
-      .map((r) => ({ n: r.n, s: r.s, o: r.o }));
+      .map((r) => ({ n: r.n, s: r.s, o: r.o, d: r.d || "standard" }));
     const stats = this.sql.exec(`SELECT COUNT(*) AS games, SUM(CASE WHEN outcome = 'win' THEN 1 ELSE 0 END) AS wins FROM board2 WHERE c = ?`, c).toArray()[0] || {};
     return { rows, games: stats.games || 0, wins: stats.wins || 0 };
   }

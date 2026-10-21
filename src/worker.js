@@ -149,7 +149,7 @@ async function envoyApi(req, env, ctx, url, path) {
   if (path === "/api/envoy/new") {
     let name = cleanText(d.name, 20) || "";
     if (name && looksLikeOmar(name)) name = "Visitor";
-    const r = await hub.create(cid(d.c) || "", cleanId(d.twist) || "asis", name, iph);
+    const r = await hub.create(cid(d.c) || "", cleanId(d.twist) || "asis", name, iph, cleanId(d.diff) || "standard");
     return json(r, r.error ? 400 : 200);
   }
   if (path === "/api/envoy/move") {
@@ -162,6 +162,7 @@ async function envoyApi(req, env, ctx, url, path) {
       clause: cleanId(d.clause),
       clauses: Array.isArray(d.clauses) ? d.clauses.filter((c) => cleanId(c)).slice(0, 3) : undefined,
       choice: d.choice === 1 ? 1 : 0,
+      value: cleanId(d.value),
       text: typeof d.text === "string" ? d.text.slice(0, 400) : "",
     };
     const r = await hub.move(id, body, iph);

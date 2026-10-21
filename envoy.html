@@ -247,7 +247,48 @@ button { cursor: pointer; }
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(0,0,0,.25); border-top-color: currentColor; animation: spin .8s linear infinite; display: inline-block; vertical-align: -3px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* readability + accessibility */
+.lbl { font-size: .68rem; }
+.tok .nm { font-size: .8rem; }
+.hc { font-size: .84rem; }
+.hc .k { font-size: .6rem; }
+.td { position: absolute; top: 4px; right: 5px; width: auto !important; height: auto !important; background: none !important; font: 700 .68rem var(--mono); }
+.td.documented { color: var(--ok); } .td.partial { color: var(--warn); } .td.thin { color: var(--bad); }
+.ab.off { opacity: .34; }
+.hl { position: relative; z-index: 3; animation: hl 1.3s ease-in-out infinite !important; box-shadow: 0 0 0 3px var(--acc), 0 0 22px rgba(255,107,51,.6) !important; border-radius: 16px; }
+@keyframes hl { 50% { box-shadow: 0 0 0 6px rgba(255,107,51,.35), 0 0 30px rgba(255,107,51,.75); } }
+.hs.hlmap .core { stroke: var(--acc); stroke-width: 5; }
+.hs .fc { font: 700 11px var(--mono); }
+.diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.dif { text-align: left; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: grid; gap: 3px; }
+.dif[aria-pressed="true"] { border-color: var(--acc); box-shadow: 0 0 0 2px var(--acc-soft); }
+.dif b { font-size: .95rem; }
+.dif small { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+.dif .m { font-family: var(--mono); font-size: .62rem; color: var(--acc); }
+.goal { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.goal b { color: var(--ink); }
+.iconbtn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-size: 1rem; display: grid; place-items: center; padding: 0; }
+.iconbtn:hover { border-color: var(--muted); }
+.sheet { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 22px; display: grid; gap: 14px; animation: deal .4s cubic-bezier(.3,1.4,.5,1); }
+.sheet h2 { font-size: 1.6rem; letter-spacing: -.03em; }
+.sheet ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--muted); }
+.sheet li b { color: var(--ink); }
+.sheet .rowx { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 7px 12px; font-size: .84rem; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.mission { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: start; }
+.mission span:nth-child(odd) { font-size: 1.4rem; line-height: 1.2; }
+.mission span:nth-child(even) { color: var(--muted); }
+.mission b { color: var(--ink); }
+.logl { display: grid; gap: 6px; font-size: .88rem; }
+.logl div { padding: 8px 10px; border-radius: 10px; background: var(--panel2); }
+.logl small { color: var(--muted); font-family: var(--mono); font-size: .64rem; margin-right: 6px; }
+.ticker div { pointer-events: auto; cursor: pointer; }
+body.rm *, body.rm *::before, body.rm *::after { animation: none !important; transition: none !important; }
+
 @media (max-width: 1020px) {
+  .diffs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .camps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .under { grid-template-columns: minmax(0, 1fr); }
 }
@@ -269,6 +310,8 @@ button { cursor: pointer; }
   .tokens { gap: 5px; }
   .tok .av { width: 44px; height: 44px; font-size: 1.3rem; }
   .hud .t { display: none; }
+  .goal { display: none; }
+  .iconbtn { width: 34px; height: 34px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
@@ -299,7 +342,10 @@ button { cursor: pointer; }
   </section>
 
   <section class="setup" id="setup" hidden>
-    <div class="twists" id="twists"></div>
+    <div style="display:grid;gap:12px">
+      <div class="twists" id="twists"></div>
+      <div style="display:grid;gap:6px"><span class="lbl">Difficulty · change it anytime</span><div class="diffs" id="diffs"></div></div>
+    </div>
     <div style="display:grid;gap:10px;justify-items:end">
       <div class="namefield"><label class="lbl" for="name">Name for the leaderboard (optional)</label><input id="name" maxlength="20" placeholder="your name" autocomplete="nickname"></div>
       <button class="btn" id="go" type="button">Play ▸</button>
@@ -334,7 +380,11 @@ button { cursor: pointer; }
     <div class="stat"><span class="lbl">Envoys</span><div class="envoys" id="hEnv"></div></div>
     <div class="stat world"><span class="lbl">World <b id="hGlobalN"></b></span><div class="bar"><b id="hGlobal"></b></div></div>
     <div class="stat"><span class="lbl">Deals</span><div class="deals" id="hDeals"></div></div>
+    <span class="goal" id="hGoal"></span>
     <span class="grow"></span>
+    <button class="iconbtn" id="logBtn" type="button" aria-label="Dispatch log" title="Dispatch log">📜</button>
+    <button class="iconbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
+    <button class="iconbtn" id="setBtn" type="button" aria-label="Settings" title="Settings">⚙</button>
     <button class="btn ghost sm" id="quitBtn" type="button">Quit</button>
     <button class="btn sm" id="endBtn" type="button">End month ⏭</button>
   </div>
@@ -368,13 +418,29 @@ button { cursor: pointer; }
     return fetch(path, o).then(function (r) { return r.json().catch(function () { return { error: "Server error (" + r.status + ")" }; }); }).catch(function () { return { error: "Network error." }; });
   }
   function toast(msg, ms) { var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, ms || 3200); }
-  function banner(big, small) { var b = document.createElement("div"); b.className = "banner"; b.innerHTML = esc(big) + (small ? "<small>" + esc(small) + "</small>" : ""); document.body.appendChild(b); setTimeout(function () { b.remove(); }, 1500); }
+  function banner(big, small) { var b = document.createElement("div"); b.className = "banner"; b.style.animationDuration = (1.4 * SP()) + "s"; b.innerHTML = esc(big) + (small ? "<small>" + esc(small) + "</small>" : ""); document.body.appendChild(b); setTimeout(function () { b.remove(); }, 1500 * SP()); }
   function floatAt(x, y, text, color) { var f = document.createElement("div"); f.className = "float"; f.textContent = text; f.style.left = x + "px"; f.style.top = y + "px"; f.style.color = color || "var(--ink)"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 1250); }
   function flash() { var f = document.createElement("div"); f.className = "flash"; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 850); var g = $("game"); g.classList.remove("shake"); void g.offsetWidth; g.classList.add("shake"); }
 
   var ERA = { now: "NOW", past: "PAST", future: "FUTURE" };
   var ERAICON = { now: "🔥", past: "📜", future: "🛰️" };
   var EXAMPLES = ["Partition of India, 1947", "Sudan civil war", "Taiwan Strait, 2030", "Camp David, 1978", "Arctic shipping war, 2040", "Kosovo, 1999"];
+  var SET = Object.assign({ speed: "normal", sound: false, motion: true }, store.get("envoy-settings") || {});
+  var DIFF = store.get("envoy-diff") || "standard";
+  var SP = function () { return SET.speed === "fast" ? 0.5 : 1; };
+  function applySettings() { document.body.classList.toggle("rm", !SET.motion); store.set("envoy-settings", SET); }
+  applySettings();
+  /* Optional sound, off by default; nothing important is conveyed by sound alone. */
+  var AC = null;
+  function sfx(kind) {
+    if (!SET.sound) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      var notes = { tap: [[520, .05]], good: [[523, .08], [659, .08], [784, .12]], bad: [[220, .12], [180, .18]], flare: [[110, .35]], deal: [[523, .1], [659, .1], [784, .1], [1046, .25]], month: [[392, .08], [523, .12]] }[kind] || [[440, .05]];
+      var t = AC.currentTime;
+      notes.forEach(function (n) { var o = AC.createOscillator(), g = AC.createGain(); o.type = kind === "flare" ? "sawtooth" : "triangle"; o.frequency.value = n[0]; g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.0001, t + n[1]); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + n[1]); t += n[1] * .8; });
+    } catch (e) {}
+  }
   var CAT = null, PICK = null, TWIST = "asis", ID = null, G = null, SEL = null, PARTY = null, MODE = null, OFFER = null, TERMS = [], BUSY = false, TIP = 0;
   var face = function (m, walked) { return walked ? "🚪" : m >= 70 ? "😀" : m >= 50 ? "🙂" : m >= 35 ? "😐" : m >= 20 ? "😠" : "😡"; };
   var moodCol = function (m) { return m >= 50 ? "var(--ok)" : m >= 35 ? "var(--warn)" : "var(--bad)"; };
@@ -396,10 +462,15 @@ button { cursor: pointer; }
     renderCamps();
     var tw = c.twists && c.twists.length ? c.twists : [];
     $("twists").innerHTML = '<span class="lbl">' + ERAICON[c.era] + " " + esc(c.title) + " · " + esc(c.year) + (tw.length ? " · pick a starting point" : "") + "</span>" + (tw.length ? tw.map(function (t) { return '<button type="button" class="twist" data-t="' + t.id + '" aria-pressed="' + (t.id === TWIST) + '"><b>' + esc(t.name) + "</b><small>" + esc(t.text) + "</small></button>"; }).join("") : '<p style="color:var(--muted)">' + esc(c.tagline) + "</p>");
+    renderDiffs();
     $("setup").hidden = false;
     $("setup").scrollIntoView({ behavior: "smooth", block: "center" });
     loadBoard(c.id, c.title);
   }
+  function renderDiffs() {
+    $("diffs").innerHTML = (CAT.diffs || []).map(function (d) { return '<button type="button" class="dif" data-d="' + d.id + '" aria-pressed="' + (d.id === DIFF) + '"><b>' + esc(d.name) + "</b><small>" + esc(d.text) + '</small><span class="m">Score ×' + d.mult + "</span></button>"; }).join("");
+  }
+  $("diffs").addEventListener("click", function (e) { var b = e.target.closest("[data-d]"); if (!b) return; DIFF = b.getAttribute("data-d"); store.set("envoy-diff", DIFF); renderDiffs(); });
   $("camps").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (!b) return; choose(CAT.campaigns.find(function (c) { return c.id === b.getAttribute("data-c"); })); });
   $("built").addEventListener("click", function (e) { var b = e.target.closest("[data-built]"); if (!b) return; choose(CAT.built.find(function (c) { return c.id === b.getAttribute("data-built"); })); });
   $("twists").addEventListener("click", function (e) { var b = e.target.closest("[data-t]"); if (!b) return; TWIST = b.getAttribute("data-t"); [].forEach.call($("twists").querySelectorAll(".twist"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); }); });
@@ -422,7 +493,7 @@ button { cursor: pointer; }
     if (!PICK) return;
     var nm = $("name").value.trim(); store.set("envoy-name", nm);
     $("go").disabled = true;
-    api("/api/envoy/new", { c: PICK.id, twist: TWIST, name: nm }).then(function (r) {
+    api("/api/envoy/new", { c: PICK.id, twist: TWIST, name: nm, diff: DIFF }).then(function (r) {
       $("go").disabled = false;
       if (r.error) { toast(r.error); return; }
       ID = r.id; store.set("envoy-g2", ID); track("start", { c: PICK.id, twist: TWIST });
@@ -434,7 +505,7 @@ button { cursor: pointer; }
     if (!inline) $("lbName").textContent = title || "";
     api("/api/envoy/leaderboard?c=" + encodeURIComponent(c)).then(function (r) {
       if (!r || r.error || !r.rows) { el.innerHTML = ""; return; }
-      el.innerHTML = r.rows.length ? '<table class="lb">' + r.rows.map(function (x, i) { return "<tr><td>" + (i + 1) + "</td><td>" + esc(x.n) + "</td><td>" + (x.o === "win" ? "🕊️" : x.o === "war" ? "🔥" : "⏳") + '</td><td class="r">' + x.s + "</td></tr>"; }).join("") + '</table><p class="lbl" style="margin-top:6px">' + r.games + " games · " + r.wins + " wins</p>" : '<p style="color:var(--muted);font-size:.9rem">No names yet. Be first.</p>';
+      el.innerHTML = r.rows.length ? '<table class="lb">' + r.rows.map(function (x, i) { return "<tr><td>" + (i + 1) + "</td><td>" + esc(x.n) + "</td><td>" + (x.o === "win" ? "🕊️" : x.o === "war" ? "🔥" : "⏳") + '</td><td class="lbl">' + esc(({ relaxed: "Relaxed", standard: "Std", hard: "Hard", brutal: "Brutal" })[x.d] || "") + '</td><td class="r">' + x.s + "</td></tr>"; }).join("") + '</table><p class="lbl" style="margin-top:6px">' + r.games + " games · " + r.wins + " wins</p>" : '<p style="color:var(--muted);font-size:.9rem">No names yet. Be first.</p>';
     });
   }
 
@@ -459,7 +530,7 @@ button { cursor: pointer; }
     if (WORLD && WORLD.land) s += '<path class="land" d="' + path(WORLD.land) + '"/><path d="' + path(WORLD.borders) + '" fill="none" stroke="#2A3345" stroke-width=".5"/>';
     var P = {}; G.hotspots.forEach(function (h) { P[h.id] = proj([h.lon, h.lat]); });
     // Nudge hotspots that sit on top of each other (e.g. Afghanistan and the Pakistan frontier).
-    var ids = Object.keys(P), MIN = 64;
+    var ids = Object.keys(P), MIN = 100;
     for (var it = 0; it < 30; it++) for (var a = 0; a < ids.length; a++) for (var b = a + 1; b < ids.length; b++) {
       var A = P[ids[a]], B = P[ids[b]]; if (!A || !B) continue;
       var dx = B[0] - A[0], dy = B[1] - A[1], dd = Math.hypot(dx, dy) || 0.01;
@@ -479,10 +550,12 @@ button { cursor: pointer; }
         '<circle class="ring" r="' + r + '" stroke="' + c + '" style="animation-duration:' + Math.max(0.6, 2.4 - h.tension / 55).toFixed(2) + 's"/>' +
         '<circle class="core" r="' + r + '" fill="' + c + '"/>' +
         (h.done ? '<text text-anchor="middle" dy="5" style="font-size:14px;stroke-width:0">🕊️</text>' : '<text class="n" text-anchor="middle" dy="4" style="fill:#0A0D12;stroke-width:0">' + h.tension + "</text>") +
-        '<text text-anchor="middle" y="' + (r + 17) + '">' + esc(h.name) + (h.talks && !h.done ? " 🤝" : "") + (h.shield ? " 🪖" : "") + "</text></g>";
+        '<text text-anchor="middle" y="' + (r + 17) + '">' + esc(h.name) + (h.talks && !h.done ? " 🤝" : "") + (h.shield ? " 🪖" : "") + "</text>" +
+        (h.forecast ? '<text class="fc" text-anchor="middle" y="' + (r + 32) + '" style="fill:' + (h.forecast === "will" ? "#FF5A5F" : "#F5B544") + '">' + (h.forecast === "will" ? "🔥 FLARES NEXT TURN" : "⚠ MAY FLARE") + "</text>" : "") + "</g>";
     });
     $("map").setAttribute("viewBox", "0 0 " + W + " " + H);
     $("map").innerHTML = s;
+    applyHL();
   }
   function hsXY(id) { var g = $("map").querySelector('[data-hs="' + id + '"]'); if (!g) return [window.innerWidth / 2, 200]; var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top]; }
   $("map").addEventListener("click", function (e) { var g = e.target.closest("[data-hs]"); if (g) selectHs(g.getAttribute("data-hs")); });
@@ -498,8 +571,7 @@ button { cursor: pointer; }
     if (window.innerWidth > 760) $("panel").classList.remove("closed");
     whenMapReady(function () { loadWorld().then(drawMap); });
     renderAll();
-    banner(v.title, ERA[v.era] + " · " + v.year);
-    if (fresh) coach(1);
+    if (fresh) showBriefing(); else banner(v.title, ERA[v.era] + " · " + v.year);
     if (G.crisis) setTimeout(showCrisis, 900);
     if (G.ended) setTimeout(showEnd, 600);
   }
@@ -514,6 +586,7 @@ button { cursor: pointer; }
     $("hGlobal").style.width = G.global + "%"; $("hGlobalN").textContent = G.global;
     var d = ""; for (var k = 0; k < G.goal; k++) d += '<span class="' + (k < G.deals.length ? "on" : "") + '">🕊️</span>'; $("hDeals").innerHTML = d;
     $("endBtn").disabled = G.ended || !!G.crisis;
+    $("hGoal").innerHTML = "Goal: <b>" + G.goal + " deal" + (G.goal > 1 ? "s" : "") + "</b> by " + G.unit.toLowerCase() + " " + G.months + (G.noWar ? "" : " · keep World under 100");
   }
   var ICON = { flare: "🔥 ", deal: "🕊️ ", walk: "🚪 ", intel: "👂 ", msg: "✉️ ", crisis: "⚡ ", vote: "🗳️ ", back: "↩️ ", act: "• ", start: "🌍 ", end: "🏁 " };
   function renderTicker() { $("ticker").innerHTML = G.log.slice(-3).map(function (l) { return "<div>" + (ICON[l.kind] || "") + esc(l.text) + "</div>"; }).join(""); }
@@ -529,7 +602,7 @@ button { cursor: pointer; }
     var t;
     if (e.target.closest(".x")) { $("panel").classList.add("closed"); SEL = null; drawMap(); return; }
     if ((t = e.target.closest("[data-p]"))) { PARTY = t.getAttribute("data-p"); if (MODE === "deal") MODE = null; OFFER = null; renderPanel(); if (TIP === 2) coach(3); return; }
-    if ((t = e.target.closest("[data-a]")) && !t.disabled) { pickAction(t.getAttribute("data-a")); return; }
+    if ((t = e.target.closest("[data-a]"))) { if (t.getAttribute("data-why")) { toast("🔒 " + t.getAttribute("data-why")); sfx("bad"); return; } sfx("tap"); pickAction(t.getAttribute("data-a")); return; }
     if ((t = e.target.closest("[data-o]")) && !t.disabled) { OFFER = OFFER === t.getAttribute("data-o") ? null : t.getAttribute("data-o"); renderPanel(); return; }
     if ((t = e.target.closest("[data-term]")) && !t.disabled) { var id = t.getAttribute("data-term"), i = TERMS.indexOf(id); if (i >= 0) TERMS.splice(i, 1); else if (TERMS.length < 3) TERMS.push(id); renderPanel(); return; }
     if (e.target.closest("#send")) return send();
@@ -585,7 +658,7 @@ button { cursor: pointer; }
     else if (!h.done) html += '<p class="why">Tap a party to see their cards.</p>';
     if (h.done) html += '<p class="histbox">Signed: ' + (h.signed || []).map(function (id) { var c = h.clauses.find(function (x) { return x.id === id; }); return esc(c ? c.name : id); }).join(" · ") + "</p>";
     else {
-      html += '<div class="dock">' + ACTS.map(function (a) { var w = whyNot(a, h); return '<button type="button" class="ab" data-a="' + a.a + '"' + (w ? " disabled" : "") + ' aria-pressed="' + (MODE === a.a) + '" title="' + esc(w || a.d) + '"><span class="ic">' + a.ic + "</span>" + a.n + '<span class="cost">' + new Array(a.c + 1).join("🕴️") + "</span></button>"; }).join("") + "</div>";
+      html += '<div class="dock">' + ACTS.map(function (a) { var w = whyNot(a, h); return '<button type="button" class="ab' + (w ? " off" : "") + '" data-a="' + a.a + '"' + (w ? ' aria-disabled="true" data-why="' + esc(w) + '"' : "") + ' aria-pressed="' + (MODE === a.a) + '" title="' + esc(w || a.d) + '"><span class="ic">' + a.ic + "</span>" + a.n + '<span class="cost">' + new Array(a.c + 1).join("🕴️") + "</span></button>"; }).join("") + "</div>";
       var hints = ACTS.map(function (a) { return whyNot(a, h); });
       var why = hints[4] && hints[4].indexOf("Need") === 0 && !h.talks ? "🤝 Talks: " + hints[4] : "";
       html += '<p class="why">' + esc(why) + "</p>";
@@ -593,11 +666,12 @@ button { cursor: pointer; }
       if (MODE === "deal") html += dealHtml(h);
     }
     el.innerHTML = html;
+    applyHL();
   }
   function tokenHtml(p, h) {
     var sent = h.offered.indexOf(p.id) >= 0;
     return '<button type="button" class="tok' + (PARTY === p.id ? " sel" : "") + (p.walked ? " gone" : "") + '" data-p="' + p.id + '" aria-label="' + esc(p.name) + ", mood " + p.mood + '">' +
-      (p.veto ? '<span class="vt">VETO</span>' : "") + '<span class="td ' + p.tier + '" title="' + ({ documented: "Well documented", partial: "Partly documented", thin: "Thin sources: cards are CR-AI guesses" })[p.tier] + '"></span>' +
+      (p.veto ? '<span class="vt">VETO</span>' : "") + '<span class="td ' + p.tier + '" title="' + ({ documented: "Well documented", partial: "Partly documented", thin: "Thin sources: cards are CR-AI guesses" })[p.tier] + '">' + ({ documented: "✓", partial: "◐", thin: "?" })[p.tier] + "</span>" +
       '<span class="av" style="--m:' + p.mood + ";--mc:" + moodCol(p.mood) + '"><span>' + esc(p.icon || "🏳️") + '</span><span class="face">' + face(p.mood, p.walked) + "</span></span>" +
       '<span class="nm">' + esc(p.short) + "</span>" + (sent ? '<span class="sent" title="Messaged this turn">✉️</span>' : "") + (p.walked ? '<span class="gone-l">OUT ' + p.walked + "</span>" : "") + "</button>";
   }
@@ -652,6 +726,7 @@ button { cursor: pointer; }
   }
   function tokXY(pid) { var t = $("panel").querySelector('[data-p="' + pid + '"]'); if (!t) return null; var r = t.getBoundingClientRect(); return [r.left + r.width / 2 - 14, r.top]; }
   function react(body, res) {
+    sfx(res.verdict === "red" || (res.walkouts && res.walkouts.length) ? "bad" : res.verdict === "love" || res.reveal ? "good" : "tap");
     if (res.reveal) { toast(res.reveal.wrong ? "👂 CR-AI's guess was wrong! Good thing you checked." : "👂 Card revealed."); if (TIP === 3) coach(4); }
     if (body.a === "message") {
       var d = (res.fx[0] || {}).d || 0, xy = tokXY(body.party);
@@ -673,8 +748,8 @@ button { cursor: pointer; }
         clearInterval(tick);
         setTimeout(function () {
           G = r.view; TERMS = [];
-          if (res.passed) { banner("Deal signed! 🕊️", h.name); confetti(); coach(0); }
-          else toast("🗳️ Vote failed: " + votes.filter(function (v) { return v.yes; }).length + " of " + votes.length + " said yes. You need " + res.need + ", including every veto.", 4600);
+          if (res.passed) { banner("Deal signed! 🕊️", h.name); confetti(); coach(0); sfx("deal"); }
+          else sfx("bad"), toast("🗳️ Vote failed: " + votes.filter(function (v) { return v.yes; }).length + " of " + votes.length + " said yes. You need " + res.need + ", including every veto.", 4600);
           if (res.walkouts && res.walkouts.length) flash();
           renderAll();
           if (G.ended) setTimeout(showEnd, 1300);
@@ -683,7 +758,7 @@ button { cursor: pointer; }
       }
       var v = votes[i++], t = $("panel").querySelector('[data-p="' + v.party + '"]');
       if (t) { t.classList.add(v.yes ? "vote-yes" : "vote-no"); var m = document.createElement("span"); m.className = "vmark"; m.textContent = v.yes ? "✅" : v.why === "red" ? "⛔" : v.why === "absent" ? "🚪" : "❌"; t.appendChild(m); }
-    }, 420);
+    }, 420 * SP());
   }
   function confetti() {
     var cols = ["#FF6B33", "#3DDC97", "#7C95FF", "#F5B544", "#EEF1F6"];
@@ -700,7 +775,13 @@ button { cursor: pointer; }
   $("endBtn").addEventListener("click", function () {
     var b = $("endBtn");
     if (BUSY || !G || G.ended) return;
-    if (G.envoys > 0 && !b.dataset.sure) { b.dataset.sure = "1"; b.textContent = G.envoys + " envoy" + (G.envoys > 1 ? "s" : "") + " left. End?"; setTimeout(function () { delete b.dataset.sure; b.textContent = "End month ⏭"; }, 2800); return; }
+    var risky = G.hotspots.filter(function (h) { return h.forecast; });
+    if ((G.envoys > 0 || risky.length) && !b.dataset.sure) {
+      b.dataset.sure = "1";
+      b.textContent = (risky.length ? "⚠ " + risky.length + " may flare" : G.envoys + " envoy" + (G.envoys > 1 ? "s" : "") + " left") + ". End?";
+      if (risky.length) toast("⚠ " + risky.map(function (h) { return h.name; }).join(", ") + (risky.length > 1 ? " are" : " is") + " close to flaring. Aid or peacekeepers can cool " + (risky.length > 1 ? "them" : "it") + ". Tap End again to continue.", 4500);
+      setTimeout(function () { delete b.dataset.sure; b.textContent = "End month ⏭"; }, 3500); return;
+    }
     delete b.dataset.sure; b.textContent = "End month ⏭";
     BUSY = true;
     api("/api/envoy/move", { id: ID, a: "end" }).then(function (r) {
@@ -711,14 +792,14 @@ button { cursor: pointer; }
       renderAll();
       Object.keys(out.drift || {}).forEach(function (id, i) { setTimeout(function () { var xy = hsXY(id), d = out.drift[id]; if (d) floatAt(xy[0] - 12, xy[1] - 6, "+" + d + "🔥", "var(--warn)"); }, i * 120); });
       (out.flares || []).forEach(function (id, i) {
-        setTimeout(function () { flash(); var h = G.hotspots.find(function (x) { return x.id === id; }); banner(h.name + " flares up! 🔥", "Spreading along the links"); }, 700 + i * 1300);
+        setTimeout(function () { flash(); sfx("flare"); var h = G.hotspots.find(function (x) { return x.id === id; }); banner(h.name + " flares up! 🔥", "Spreading along the links"); }, (700 + i * 1300) * SP());
       });
       if (TIP === 4 || TIP === 5) coach(0);
       setTimeout(function () {
         if (G.ended) return showEnd();
-        banner(G.unit + " " + G.month, "World tension " + G.global);
-        if (G.crisis) setTimeout(showCrisis, 1150);
-      }, 700 + (out.flares || []).length * 1300);
+        banner(G.unit + " " + G.month, "World tension " + G.global); sfx("month");
+        if (G.crisis) setTimeout(showCrisis, 1150 * SP());
+      }, (700 + (out.flares || []).length * 1300) * SP());
     });
   });
 
@@ -741,6 +822,7 @@ button { cursor: pointer; }
 
   function showEnd() {
     if (!G) return;
+    $("tip").hidden = true; TIP = 0; applyHL();
     var win = G.outcome === "win", wrong = [];
     G.hotspots.forEach(function (h) { h.parties.forEach(function (p) { ["goal", "flex", "red"].forEach(function (k) { if (p.cards[k].wrong) wrong.push({ p: p, k: k }); }); }); });
     var hist = G.hotspots.filter(function (h) { return h.history; });
@@ -776,22 +858,87 @@ button { cursor: pointer; }
     delete b.dataset.sure; b.textContent = "Quit"; store.del("envoy-g2"); quit();
   });
 
-  /* ================= COACH ================= */
+  /* ================= COACH (teach by doing: each tip points at the thing to tap) ================= */
   var TIPS = {
-    1: "👆 Tap a glowing hotspot. Red ones are close to flaring up.",
-    2: "Tap a party. Their face is their mood; the dot is how well CR-AI knows them.",
-    3: "Try ✉️ Message with an offer they want, or 👂 Listen to reveal a card.",
-    4: "Get enough parties to 🙂, open 🤝 Talks, then propose a 📜 Deal. Then ⏭ End month.",
-    5: "Now 📜 Deal: pick up to 3 terms. Every VETO party must say yes."
+    1: "👆 Tap the glowing hotspot. Red ones are close to flaring up.",
+    2: "Tap a party. Their face is their mood; ✓ ◐ ? shows how well CR-AI knows them.",
+    3: "Tap ✉️ Message and offer them something they want (👍).",
+    4: "Win over enough parties to 🙂, open 🤝 Talks, then propose a 📜 Deal. When you're out of envoys, tap End month.",
+    5: "Talks are open. Tap 📜 Deal and pick up to 3 terms. Every VETO party must say yes."
   };
   function coach(n) {
     var t = $("tip");
-    if (n && store.get("envoy-coached")) { TIP = 0; t.hidden = true; return; }
+    if (n && store.get("envoy-coached")) { TIP = 0; t.hidden = true; applyHL(); return; }
     TIP = n;
-    if (!n) { t.hidden = true; store.set("envoy-coached", 1); return; }
+    if (!n) { t.hidden = true; store.set("envoy-coached", 1); applyHL(); return; }
     t.innerHTML = "<span>" + TIPS[n] + '</span><button type="button" id="tipX">skip</button>'; t.hidden = false;
-    $("tipX").onclick = function () { store.set("envoy-coached", 1); TIP = 0; t.hidden = true; };
+    $("tipX").onclick = function () { store.set("envoy-coached", 1); TIP = 0; t.hidden = true; applyHL(); };
+    applyHL();
   }
+  function applyHL() {
+    [].forEach.call(document.querySelectorAll(".hl, .hlmap"), function (el) { el.classList.remove("hl"); el.classList.remove("hlmap"); });
+    if (!G || !TIP) return;
+    var el = null;
+    if (TIP === 1) { var hot = G.hotspots.filter(function (h) { return !h.done; }).sort(function (a, b) { return b.tension - a.tension; })[0]; el = hot && $("map").querySelector('[data-hs="' + hot.id + '"]'); if (el) { el.classList.add("hlmap"); return; } }
+    if (TIP === 2) el = $("panel").querySelector(".tok:not(.gone)");
+    if (TIP === 3) el = $("panel").querySelector('[data-a="message"]:not(.off)') || $("panel").querySelector('[data-a="listen"]:not(.off)');
+    if (TIP === 4) el = G.envoys ? $("panel").querySelector('[data-a="summit"]:not(.off)') : $("endBtn");
+    if (TIP === 5) el = $("panel").querySelector('[data-a="deal"]');
+    if (el) el.classList.add("hl");
+  }
+
+  /* ================= SHEETS: briefing, help, settings, log ================= */
+  function sheet(html, onClick) {
+    var ov = $("overlay");
+    ov.innerHTML = '<div class="ov" data-close="1"><div class="sheet" role="dialog">' + html + "</div></div>";
+    ov.firstChild.addEventListener("click", function (e) { if (e.target.getAttribute("data-close") || e.target.closest("[data-x]")) { ov.innerHTML = ""; return; } if (onClick) onClick(e); });
+  }
+  function showBriefing() {
+    var d = (CAT.diffs || []).find(function (x) { return x.id === G.diff; }) || {};
+    sheet('<span class="lbl">' + ERA[G.era] + " · " + G.year + " · " + esc(d.name || "") + "</span><h2>" + esc(G.title) + '</h2><p style="color:var(--muted)">' + esc(G.tagline) + "</p>" +
+      '<div class="mission"><span>🎯</span><span><b>Win:</b> sign ' + G.goal + " deal" + (G.goal > 1 ? "s" : "") + " before " + G.unit.toLowerCase() + " " + G.months + ".</span>" +
+      (G.noWar ? "<span>🌿</span><span><b>Relaxed:</b> the world can't tip into war. Take your time.</span>" : "<span>🔥</span><span><b>Lose:</b> if World tension hits 100. Hotspots that reach 100 flare up and spread.</span>") +
+      "<span>🕴️</span><span><b>Each " + G.unit.toLowerCase() + "</b> you get " + G.maxEnvoys + " envoys to spend on hotspots.</span>" +
+      '<span>🙂</span><span><b>Win parties over</b> with offers they want, open talks, then propose a deal.</span></div>' +
+      (G.note ? '<p class="lbl" style="line-height:1.5">' + esc(G.note) + "</p>" : "") +
+      '<button class="btn" type="button" data-x="1" id="briefGo">Start ▸</button>');
+    $("briefGo").addEventListener("click", function () { $("overlay").innerHTML = ""; banner(G.title, ERA[G.era] + " · " + G.year); coach(1); if (G.crisis) setTimeout(showCrisis, 900); });
+  }
+  $("helpBtn").addEventListener("click", function () {
+    sheet('<h2>How to play</h2><ul>' +
+      "<li><b>Goal:</b> sign " + G.goal + " deal" + (G.goal > 1 ? "s" : "") + " before " + G.unit.toLowerCase() + " " + G.months + "." + (G.noWar ? "" : " You lose if World tension hits 100.") + "</li>" +
+      "<li><b>Hotspots</b> heat up every turn. At 100 they flare: World tension jumps and linked hotspots heat up. ⚠ marks the ones at risk next turn.</li>" +
+      "<li><b>👂 Listen</b> reveals a hidden card. <b>✉️ Message</b> offers a term: 👍 they like it, 👎 they don't, ⛔ red line (they get angry).</li>" +
+      "<li><b>🎁 Aid</b> cools a hotspot by 10. <b>🪖 Peacekeepers</b> cool it by 18 and freeze it for 2 turns, but some parties refuse foreign troops.</li>" +
+      "<li><b>🤝 Talks</b> open when enough parties are at 🙂. Then <b>📜 Deal</b>: up to 3 terms; every VETO party plus all but one other must say yes.</li>" +
+      "<li><b>✓ ◐ ?</b> show how well CR-AI's sources cover a party. Dashed cards are CR-AI guesses, and some are wrong.</li>" +
+      '</ul><button class="btn" type="button" data-x="1">Got it</button>');
+  });
+  $("setBtn").addEventListener("click", showSettings);
+  function showSettings() {
+    var seg = function (key, opts) { return '<span class="seg">' + opts.map(function (o) { return '<button type="button" data-k="' + key + '" data-v="' + o[0] + '" aria-pressed="' + (String(key === "diff" ? G.diff : SET[key]) === String(o[0])) + '">' + o[1] + "</button>"; }).join("") + "</span>"; };
+    sheet('<h2>Settings</h2>' +
+      '<div class="rowx"><span>Difficulty <span class="lbl">· score uses the easiest you played</span></span>' + seg("diff", (CAT.diffs || []).map(function (d) { return [d.id, d.name]; })) + "</div>" +
+      '<div class="rowx"><span>Animation speed</span>' + seg("speed", [["normal", "Normal"], ["fast", "Fast"]]) + "</div>" +
+      '<div class="rowx"><span>Motion and effects</span>' + seg("motion", [[true, "On"], [false, "Reduced"]]) + "</div>" +
+      '<div class="rowx"><span>Sound</span>' + seg("sound", [[false, "Off"], [true, "On"]]) + "</div>" +
+      '<button class="btn" type="button" data-x="1">Done</button>', function (e) {
+        var b = e.target.closest("[data-k]"); if (!b) return;
+        var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+        if (k === "diff") {
+          if (BUSY) return; BUSY = true;
+          api("/api/envoy/move", { id: ID, a: "diff", value: v }).then(function (r) { BUSY = false; if (r.error) { toast(r.error); return; } G = r.view; DIFF = v; store.set("envoy-diff", v); renderAll(); showSettings(); toast("Difficulty: " + ((CAT.diffs || []).find(function (d) { return d.id === v; }) || {}).name); });
+          return;
+        }
+        SET[k] = v === "true" ? true : v === "false" ? false : v; applySettings(); if (k === "sound" && SET.sound) sfx("good"); showSettings();
+      });
+  }
+  function showLog() {
+    var K = { flare: "🔥", deal: "🕊️", walk: "🚪", intel: "👂", msg: "✉️", crisis: "⚡", vote: "🗳️", back: "↩️", act: "•", start: "🌍", end: "🏁" };
+    sheet('<h2>Dispatches</h2><div class="logl">' + G.log.slice().reverse().map(function (l) { return "<div><small>" + esc(G.unit.slice(0, 1)) + l.m + "</small>" + (K[l.kind] || "") + " " + esc(l.text) + "</div>"; }).join("") + '</div><button class="btn" type="button" data-x="1">Close</button>');
+  }
+  $("logBtn").addEventListener("click", showLog);
+  $("ticker").addEventListener("click", showLog);
 
   /* ================= BOOT ================= */
   api("/api/envoy/catalog").then(function (r) {
