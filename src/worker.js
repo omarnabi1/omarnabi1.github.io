@@ -128,6 +128,15 @@ async function envoyApi(req, env, ctx, url, path) {
     const r = await hub.get(id);
     return json(r, r.error ? 404 : 200);
   }
+  if (path.startsWith("/api/envoy/admin/")) {
+    if (!(await safeEqual(req.headers.get("x-owner-key") || "", env.OWNER_KEY || ""))) return json({ error: "unauthorized" }, 401);
+    if (path === "/api/envoy/admin/customs") return json(await hub.customs());
+    if (path === "/api/envoy/admin/forget" && req.method === "POST") {
+      const d = await readJson(req);
+      return json(await hub.forget(typeof d.id === "string" ? d.id.slice(0, 24) : ""));
+    }
+    return json({ error: "not found" }, 404);
+  }
   if (req.method !== "POST") return json({ error: "not found" }, 404);
   if (!originAllowed(req, env)) return json({ error: "forbidden" }, 403);
   const d = await readJson(req);

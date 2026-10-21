@@ -409,7 +409,7 @@ button { cursor: pointer; }
   $("bgo").addEventListener("click", buildIt);
   function buildIt() {
     var q = $("bq").value.trim(); if (!q) { $("bq").focus(); return; }
-    var btn = $("bgo"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> CR-AI is building…';
+    var btn = $("bgo"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Building, about a minute'; toast("CR-AI is mapping the parties, red lines and history. Usually 30 to 60 seconds.", 6000);
     track("build", { prompt: q });
     api("/api/envoy/build", { prompt: q }).then(function (r) {
       btn.disabled = false; btn.textContent = "Build it";

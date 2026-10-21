@@ -131,6 +131,16 @@ export class EnvoyHub extends DurableObject {
     return { view: view(st), res };
   }
 
+  // Owner moderation: remove a player-built scenario (bad output or abusive prompt).
+  forget(id) {
+    const n = this.sql.exec(`SELECT COUNT(*) AS c FROM custom WHERE id = ?`, id).toArray()[0].c;
+    this.sql.exec(`DELETE FROM custom WHERE id = ?`, id);
+    return { removed: n };
+  }
+  customs() {
+    return { rows: this.sql.exec(`SELECT id, prompt, plays, at FROM custom ORDER BY at DESC LIMIT 100`).toArray() };
+  }
+
   board(c) {
     const rows = this.sql
       .exec(`SELECT name AS n, MAX(score) AS s, outcome AS o FROM board2 WHERE c = ? GROUP BY lower(name) ORDER BY s DESC LIMIT 10`, c)

@@ -67,6 +67,9 @@ Rules:
 - tags are short snake_case words. Each party's wants/dislikes/red must use tags that appear on that hotspot's clauses (red may also use "foreign_troops"). Every party must want at least one clause.
 - For thinly documented parties set tier "thin" and give an "r" (the common outside reconstruction) on cards; set ok false when that reconstruction is wrong.
 - lat/lon are the real location of each hotspot.
+- Be specific and historically accurate for the conflict's own date. No anachronisms: nothing that happened after that date. Card texts must be specific to this conflict and party; never generic filler.
+- A mediator or great power usually starts with higher mood (40 to 55); bitter enemies start low (15 to 30).
+- icon: one emoji. Use the country flag for states (e.g. 🇪🇬), ⚔️ for armed groups, 🕊️ for mediators, 🏛️ for governments without a flag, 👥 for communities, 🌐 for international bodies.
 - 4 events: short crisis titles with two choices. fx keys: tension {hotspotId: delta}, mood {"hotspotId.partyId": delta}, global delta, envoys -1. Deltas between -15 and 15.`;
 
 const BUILD_EXAMPLE = {
@@ -109,13 +112,22 @@ export async function buildCampaign(env, request) {
 const slug = (s, n = 24) => String(s || "").toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "").slice(0, n);
 const clip = (s, n) => (typeof s === "string" ? s.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().replace(/\s*[\u2013\u2014]\s*/g, ": ").slice(0, n) : "");
 const num = (v, lo, hi, d) => (typeof v === "number" && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d);
-const oneEmoji = (s) => {
-  const m = String(s || "").match(/\p{Extended_Pictographic}(️|‍\p{Extended_Pictographic})*|[\u{1F1E6}-\u{1F1FF}]{2}/u);
-  return m ? m[0] : "🏳️";
+const FLAGS = { "united states": "🇺🇸", usa: "🇺🇸", america: "🇺🇸", washington: "🇺🇸", israel: "🇮🇱", egypt: "🇪🇬", iran: "🇮🇷", iraq: "🇮🇶", syria: "🇸🇾", lebanon: "🇱🇧", jordan: "🇯🇴", saudi: "🇸🇦", turkey: "🇹🇷", russia: "🇷🇺", soviet: "☭", ussr: "☭", ukraine: "🇺🇦", china: "🇨🇳", taiwan: "🇹🇼", japan: "🇯🇵", korea: "🇰🇷", india: "🇮🇳", pakistan: "🇵🇰", afghanistan: "🇦🇫", bangladesh: "🇧🇩", "united kingdom": "🇬🇧", britain: "🇬🇧", british: "🇬🇧", ireland: "🇮🇪", france: "🇫🇷", germany: "🇩🇪", serbia: "🇷🇸", yugoslav: "🇷🇸", bosnia: "🇧🇦", croatia: "🇭🇷", kosovo: "🇽🇰", greece: "🇬🇷", cyprus: "🇨🇾", armenia: "🇦🇲", azerbaijan: "🇦🇿", georgia: "🇬🇪", ethiopia: "🇪🇹", eritrea: "🇪🇷", sudan: "🇸🇩", somalia: "🇸🇴", kenya: "🇰🇪", nigeria: "🇳🇬", congo: "🇨🇩", rwanda: "🇷🇼", uganda: "🇺🇬", "south africa": "🇿🇦", mozambique: "🇲🇿", angola: "🇦🇴", libya: "🇱🇾", algeria: "🇩🇿", morocco: "🇲🇦", colombia: "🇨🇴", venezuela: "🇻🇪", cuba: "🇨🇺", mexico: "🇲🇽", brazil: "🇧🇷", argentina: "🇦🇷", "el salvador": "🇸🇻", guatemala: "🇬🇹", haiti: "🇭🇹", myanmar: "🇲🇲", vietnam: "🇻🇳", indonesia: "🇮🇩", philippines: "🇵🇭", "sri lanka": "🇱🇰", nepal: "🇳🇵", palestin: "🇵🇸", plo: "🇵🇸", qatar: "🇶🇦", oman: "🇴🇲", "united nations": "🇺🇳", nato: "🌐", "european union": "🇪🇺" };
+const iconFor = (raw, name) => {
+  const m = String(raw || "").match(/\p{Extended_Pictographic}(️|‍\p{Extended_Pictographic})*|[\u{1F1E6}-\u{1F1FF}]{2}|☭/u);
+  if (m && !m[0].startsWith("\u{1F3F3}")) return m[0];
+  const n = " " + String(name || "").toLowerCase().replace(/[^a-z ]+/g, " ") + " ";
+  const hit = Object.keys(FLAGS).sort((a, b) => b.length - a.length).find((k) => n.includes(" " + k + " ") || (k.length > 5 && n.includes(k)));
+  if (hit) return FLAGS[hit];
+  if (/army|militia|front|rebel|guerrilla|brigade|movement|liberation|insurg|forces/.test(n)) return "⚔️";
+  if (/communit|tribe|farmer|people|civil|union|worker|villag|elders/.test(n)) return "👥";
+  if (/mediat|church|envoy/.test(n)) return "🕊️";
+  if (/company|corp|mining|industr/.test(n)) return "🏭";
+  return "🏛️";
 };
 
 const shortName = (s) => {
-  const t = clip(s, 60);
+  const t = clip(s, 60).replace(/^(the\s+)?(government|people|republic|kingdom|state)\s+of\s+(the\s+)?/i, "");
   if (t.length <= 16) return t;
   const cut = t.slice(0, 16);
   return cut.slice(0, cut.lastIndexOf(" ") > 6 ? cut.lastIndexOf(" ") : 16);
@@ -157,7 +169,7 @@ export function sanitizeCampaign(o, request) {
         id: pid,
         name: clip(p.name, 48) || pid,
         short: clip(p.short, 16) || shortName(p.name) || pid,
-        icon: oneEmoji(p.icon),
+        icon: iconFor(p.icon, p.name),
         veto: !!p.veto,
         mood: num(p.mood, 15, 50, 32),
         tier: ["documented", "partial", "thin"].includes(p.tier) ? p.tier : "documented",
