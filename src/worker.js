@@ -1,6 +1,7 @@
 // omarnabi.com: one Worker serves the static site, the live layer, the leaderboard,
 // visit history for the owner, phone alerts, and a first-party analytics proxy.
 import { DurableObject } from "cloudflare:workers";
+export { EnvoyHub } from "./envoy/hub.js";
 
 /* ---------- shared constants ---------- */
 const GAME = {
@@ -16,6 +17,7 @@ const NOTIFY_RULES = [
   { match: "built a plan", title: "Someone built a plan for their team", tags: "clipboard" },
   { match: "sudo hire omar", title: "sudo hire omar", tags: "computer" },
   { match: "beat CR-AI", title: "Someone beat CR-AI", tags: "trophy" },
+  { match: "signed a framework in Envoy", title: "Someone brokered a deal in Envoy", tags: "dove" },
 ];
 
 function brier(ps, os) {
@@ -98,6 +100,60 @@ function originAllowed(req, env) {
 }
 
 const lobby = (env) => env.LOBBY.get(env.LOBBY.idFromName("main"));
+const envoy = (env) => env.ENVOY.get(env.ENVOY.idFromName("main"));
+
+async function readJson(req, max = 4000) {
+  const body = await req.text();
+  if (body.length > max) return { error: "too large" };
+  try {
+    const d = JSON.parse(body);
+    return d && typeof d === "object" ? d : { error: "bad json" };
+  } catch {
+    return { error: "bad json" };
+  }
+}
+
+/* ---------- Envoy: the CR-AI mediation game ---------- */
+async function envoyApi(req, env, ctx, url, path) {
+  const hub = envoy(env);
+  const gid = (v) => (typeof v === "string" && /^[a-f0-9]{32}$/.test(v) ? v : null);
+  if (path === "/api/envoy/scenarios" && req.method === "GET") return json(await hub.catalog(), 200, { "cache-control": "public, max-age=60" });
+  if (path === "/api/envoy/leaderboard" && req.method === "GET") {
+    return json(await hub.board(String(url.searchParams.get("sc") || "")), 200, { "cache-control": "public, max-age=15" });
+  }
+  if (path === "/api/envoy/game" && req.method === "GET") {
+    const id = gid(url.searchParams.get("id"));
+    if (!id) return json({ error: "bad id" }, 400);
+    const r = await hub.view(id);
+    return json(r, r.error ? 404 : 200);
+  }
+  if (req.method !== "POST") return json({ error: "not found" }, 404);
+  if (!originAllowed(req, env)) return json({ error: "forbidden" }, 403);
+  const d = await readJson(req);
+  if (d.error) return json(d, 400);
+  const iph = await ipHash(req, env);
+  if (path === "/api/envoy/new") {
+    let name = cleanText(d.name, 20) || "";
+    if (name && looksLikeOmar(name)) name = "Visitor";
+    const r = await hub.create(String(d.sc || ""), name, iph);
+    return json(r, r.error ? 400 : 200);
+  }
+  const id = gid(d.id);
+  if (!id) return json({ error: "bad id" }, 400);
+  if (path === "/api/envoy/move") {
+    const clauses = Array.isArray(d.clauses) ? d.clauses.filter((c) => cleanId(c)).slice(0, 6) : undefined;
+    const r = await hub.move(id, { move: cleanId(d.move), target: cleanId(d.target), guarantor: cleanId(d.guarantor), variant: cleanId(d.variant), clauses, pitch: d.pitch }, iph);
+    if (r.view && r.view.ended && r.view.outcome === "deal") {
+      ctx.waitUntil(lobby(env).notify("Someone brokered a deal in Envoy", `Score ${r.view.score} in ${r.view.sc}.`, "dove").catch(() => {}));
+    }
+    return json(r, r.error ? 400 : 200);
+  }
+  if (path === "/api/envoy/end-turn") {
+    const r = await hub.endTurn(id);
+    return json(r, r.error ? 400 : 200);
+  }
+  return json({ error: "not found" }, 404);
+}
 
 /* ---------- PostHog reverse proxy (first-party, so ad blockers don't drop it) ---------- */
 async function posthogProxy(req, env, url) {
@@ -174,6 +230,8 @@ export default {
       if (!(await safeEqual(req.headers.get("x-owner-key") || "", env.OWNER_KEY || ""))) return json({ error: "unauthorized" }, 401);
       return json({ rows: await lobby(env).history(Number(url.searchParams.get("limit")) || 100) });
     }
+
+    if (path.startsWith("/api/envoy/")) return envoyApi(req, env, ctx, url, path);
 
     if (path.startsWith("/api/")) return json({ error: "not found" }, 404);
     return env.ASSETS.fetch(req);

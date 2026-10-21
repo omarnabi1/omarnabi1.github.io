@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Envoy · Omar Nabi</title>
+<meta name="description" content="Envoy is a mediation strategy game built on CR-AI. Broker a deal in Afghanistan or the Strait of Hormuz against AI-voiced parties with hidden red lines.">
+<meta name="theme-color" content="#F2541B">
+<link rel="canonical" href="https://omarnabi.com/envoy">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://omarnabi.com/envoy">
+<meta property="og:title" content="Envoy: can you broker the deal?">
+<meta property="og:description" content="A mediation game built on CR-AI. Six parties, hidden red lines, ten months. Most players don't get the deal.">
+<meta property="og:image" content="https://omarnabi.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="/js/config.js"></script>
+<script src="/js/analytics.js"></script>
+<style>
+:root {
+  --bg: #EEF0F3; --tile: #FFFFFF; --tile2: #F5F6F8; --ink: #0E1116; --muted: #5C6370; --line: #DDE1E7;
+  --acc: #F2541B; --acc-ink: #FFFFFF; --acc-soft: rgba(242, 84, 27, .1); --blue: #2F5BFF; --blue-soft: rgba(47, 91, 255, .1);
+  --ok: #13804A; --ok-soft: rgba(19, 128, 74, .1); --warn: #B45309; --warn-soft: rgba(180, 83, 9, .1); --bad: #C4231B;
+  --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r: 22px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0D11; --tile: #14171D; --tile2: #1B1F27; --ink: #ECEEF2; --muted: #9AA1AD; --line: #272C35;
+    --acc: #FF6B33; --acc-ink: #0B0D11; --acc-soft: rgba(255, 107, 51, .14); --blue: #7C95FF; --blue-soft: rgba(124, 149, 255, .14);
+    --ok: #4CD39A; --ok-soft: rgba(76, 211, 154, .12); --warn: #F3A64A; --warn-soft: rgba(243, 166, 74, .12); --bad: #FF6B6B; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0D11; --tile: #14171D; --tile2: #1B1F27; --ink: #ECEEF2; --muted: #9AA1AD; --line: #272C35;
+  --acc: #FF6B33; --acc-ink: #0B0D11; --acc-soft: rgba(255, 107, 51, .14); --blue: #7C95FF; --blue-soft: rgba(124, 149, 255, .14);
+  --ok: #4CD39A; --ok-soft: rgba(76, 211, 154, .12); --warn: #F3A64A; --warn-soft: rgba(243, 166, 74, .12); --bad: #FF6B6B; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p { margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; border-radius: 8px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)) 80px max(16px, env(safe-area-inset-right, 0px)); }
+.lbl { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tnum { font-variant-numeric: tabular-nums; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; }
+.brand i { width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-style: normal; font-size: .8rem; }
+.pill { font-size: .82rem; font-weight: 600; padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+.pill:hover { border-color: var(--ink); }
+.t { background: var(--tile); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; min-width: 0; }
+.btn { font-weight: 700; padding: 11px 18px; border-radius: 999px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.btn:hover:not(:disabled) { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover:not(:disabled) { border-color: var(--ink); background: transparent; color: var(--ink); }
+.btn.sm { padding: 7px 13px; font-size: .86rem; }
+.note { font-size: .84rem; color: var(--muted); }
+
+/* ---------- Intro ---------- */
+.hero { padding: clamp(24px, 6vw, 64px) 0 24px; display: grid; gap: 14px; max-width: 760px; }
+.hero h1 { font-size: clamp(3rem, 9vw, 6rem); font-weight: 800; letter-spacing: -.05em; line-height: .9; }
+.hero h1 em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--acc); letter-spacing: -.02em; }
+.hero p { font-size: clamp(1.02rem, 1.6vw, 1.22rem); color: var(--muted); }
+.picks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.pick { text-align: left; cursor: pointer; display: grid; gap: 10px; border: 1px solid var(--line); background: var(--tile); border-radius: var(--r); padding: 20px; transition: border-color .2s, transform .2s; }
+.pick:hover { border-color: var(--ink); }
+.pick[aria-pressed="true"] { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+.pick h2 { font-size: 1.6rem; letter-spacing: -.03em; }
+.pick .row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.diff { font-family: var(--mono); font-size: .66rem; letter-spacing: .08em; padding: 3px 8px; border-radius: 999px; background: var(--tile2); border: 1px solid var(--line); }
+.diff.hard { color: var(--acc); border-color: var(--acc); }
+.start { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-top: 16px; }
+.field { display: grid; gap: 6px; }
+.field input { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); min-width: 220px; }
+.intro-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+.how { display: grid; gap: 12px; }
+.how h3 { font-size: 1.05rem; }
+.how ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--muted); font-size: .95rem; }
+.how ol b { color: var(--ink); }
+.tiers { display: grid; gap: 8px; }
+.tier { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; align-items: start; font-size: .9rem; color: var(--muted); }
+.arch { width: 100%; height: auto; }
+.arch rect { fill: var(--tile2); stroke: var(--line); }
+.arch .hot { fill: var(--acc-soft); stroke: var(--acc); }
+.arch .blu { fill: var(--blue-soft); stroke: var(--blue); }
+.arch text { fill: var(--ink); font: 600 12px var(--sans); }
+.arch .s { fill: var(--muted); font: 400 10px var(--mono); }
+.arch path { stroke: var(--muted); fill: none; stroke-width: 1.2; }
+.lb { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.lb td, .lb th { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+.lb th { font-family: var(--mono); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+.lb .r { text-align: right; }
+.tabs { display: flex; gap: 6px; margin: 8px 0; }
+.tabs button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); cursor: pointer; font-size: .84rem; font-weight: 600; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* ---------- Game ---------- */
+.bar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 12px 16px; margin: 0 0 14px; border-radius: 16px; background: color-mix(in srgb, var(--tile) 90%, transparent); backdrop-filter: blur(12px); border: 1px solid var(--line); }
+.bar h2 { font-size: 1.1rem; letter-spacing: -.02em; }
+.bar .grow { flex: 1; }
+.cap { display: inline-flex; gap: 4px; vertical-align: middle; }
+.cap i { width: 11px; height: 11px; border-radius: 50%; background: var(--acc); }
+.cap i.off { background: var(--line); }
+.chip { font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.on { color: var(--ok); border-color: var(--ok); }
+.chip.veto { color: var(--acc); border-color: var(--acc); }
+.chip.thin { color: var(--bad); border-color: var(--bad); }
+.chip.partial { color: var(--warn); border-color: var(--warn); }
+.chip.documented { color: var(--ok); border-color: var(--ok); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 14px; align-items: start; }
+.col { display: grid; gap: 14px; min-width: 0; }
+.scores { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.sc { display: grid; gap: 6px; }
+.sc .v { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
+.sc .d { font-family: var(--mono); font-size: .66rem; }
+.sc .d.good { color: var(--ok); } .sc .d.bad { color: var(--bad); }
+.meter { position: relative; height: 6px; border-radius: 4px; background: var(--tile2); overflow: visible; }
+.meter b { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--ink); transition: width .5s; }
+.meter b.lo { background: var(--ok); } .meter b.mid { background: var(--warn); } .meter b.hi { background: var(--bad); }
+.meter s { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--muted); opacity: .6; }
+.actors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.actor { position: relative; display: grid; gap: 10px; align-content: start; cursor: pointer; transition: border-color .2s, box-shadow .2s; padding: 16px; }
+.actor:hover { border-color: color-mix(in srgb, var(--ink) 35%, var(--line)); }
+.actor.sel { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+.actor.gone { opacity: .55; }
+.actor h3 { font-size: 1.02rem; letter-spacing: -.01em; }
+.actor .role { font-size: .8rem; color: var(--muted); }
+.actor .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.stat { display: grid; grid-template-columns: 70px minmax(0, 1fr) 28px; gap: 8px; align-items: center; font-size: .78rem; color: var(--muted); }
+.stat .meter b { background: var(--blue); }
+.stat .meter b.tr { background: var(--acc); }
+.cards { display: grid; gap: 6px; }
+.card { border-radius: 12px; padding: 8px 10px; font-size: .82rem; background: var(--tile2); border: 1px solid transparent; }
+.card .k { font-family: var(--mono); font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; }
+.card.recon { background: transparent; border: 1px dashed var(--warn); }
+.card.recon .k i { color: var(--warn); font-style: normal; }
+.card.unknown { color: var(--muted); }
+.card.wrong { border: 1px solid var(--bad); background: transparent; }
+.card.wrong .k i { color: var(--bad); font-style: normal; }
+.card .was { margin-top: 4px; color: var(--muted); text-decoration: line-through; font-size: .78rem; }
+.walk { position: absolute; top: 12px; right: 12px; font-family: var(--mono); font-size: .62rem; padding: 3px 7px; border-radius: 999px; background: var(--bad); color: #fff; }
+.moves { display: grid; gap: 8px; }
+.moves .mv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; text-align: left; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--tile); cursor: pointer; }
+.moves .mv:hover:not(:disabled) { border-color: var(--ink); }
+.moves .mv:disabled { opacity: .45; cursor: not-allowed; }
+.moves .mv[aria-pressed="true"] { border-color: var(--acc); background: var(--acc-soft); }
+.mv b { font-size: .92rem; }
+.mv small { grid-column: 1; color: var(--muted); font-size: .78rem; }
+.mv .c { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-family: var(--mono); font-size: .74rem; color: var(--acc); }
+.cfg { display: grid; gap: 10px; padding: 14px; border-radius: 14px; background: var(--tile2); }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opts button { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); cursor: pointer; font-size: .82rem; }
+.opts button[aria-pressed="true"] { border-color: var(--acc); color: var(--acc); }
+.opts button:disabled { opacity: .4; cursor: not-allowed; }
+.clauses { display: grid; gap: 6px; }
+.clauses label { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--tile); border: 1px solid var(--line); cursor: pointer; font-size: .84rem; }
+.clauses label span { color: var(--muted); display: block; font-size: .78rem; }
+.cfg textarea { width: 100%; min-height: 92px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); resize: vertical; }
+.feed { display: grid; gap: 8px; max-height: 560px; overflow: auto; }
+.ev { font-size: .86rem; padding: 9px 11px; border-radius: 12px; background: var(--tile2); }
+.ev .tt { font-family: var(--mono); font-size: .6rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.ev.event, .ev.spill { border-left: 3px solid var(--warn); }
+.ev.walkout { border-left: 3px solid var(--bad); }
+.ev.deal, .ev.end { border-left: 3px solid var(--acc); }
+.ev.intel { border-left: 3px solid var(--blue); }
+.ev .detail { color: var(--muted); font-size: .8rem; }
+.quote { margin-top: 6px; padding: 8px 10px; border-radius: 10px; background: var(--tile); border: 1px solid var(--line); font-family: var(--serif); font-size: 1.04rem; line-height: 1.35; }
+.quote small { display: block; font-family: var(--mono); font-size: .58rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-top: 6px; }
+.tone { font-family: var(--mono); font-size: .62rem; }
+.tone.p { color: var(--ok); } .tone.n { color: var(--bad); }
+.votes { display: grid; gap: 4px; margin-top: 6px; font-size: .8rem; }
+.votes div { display: flex; justify-content: space-between; gap: 8px; }
+.votes .y { color: var(--ok); } .votes .no { color: var(--bad); }
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 40; max-width: min(520px, calc(100vw - 32px)); padding: 14px 16px; border-radius: 16px; background: var(--ink); color: var(--bg); box-shadow: 0 12px 40px rgba(0,0,0,.25); font-size: .9rem; }
+.toast b { display: block; margin-bottom: 2px; }
+.end { display: grid; gap: 14px; }
+.end .ko { font-size: clamp(2.4rem, 7vw, 4.4rem); font-weight: 800; letter-spacing: -.05em; line-height: .95; }
+.end .ko.w { color: var(--ok); } .end .ko.l { color: var(--bad); }
+.kpis { display: flex; gap: 22px; flex-wrap: wrap; }
+.kpis b { display: block; font-size: 1.8rem; letter-spacing: -.03em; }
+.kpis span { font-size: .8rem; color: var(--muted); }
+.debrief { white-space: pre-line; font-size: .98rem; }
+.debrief-h { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.busy { opacity: .6; pointer-events: none; }
+@media (max-width: 1020px) {
+  .layout { display: flex; flex-direction: column; }
+  .layout > .col { display: contents; }
+  #endBox { order: 0; } #scoresBox { order: 1; } #movesBox { order: 2; } #actors { order: 3; } #feedBox { order: 4; }
+  .scores { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .actors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .intro-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .picks, .actors { grid-template-columns: minmax(0, 1fr); }
+  .scores { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+  .sc { gap: 3px; } .sc .v { font-size: 1.1rem; }
+  .field input { min-width: 0; width: 100%; }
+  .field { flex: 1 1 100%; }
+  .bar { position: static; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/"><i>ON</i><span>omarnabi.com</span></a>
+    <a class="pill" href="/#t-builds">About CR-AI</a>
+  </header>
+
+  <!-- ---------- Intro ---------- -->
+  <main id="intro">
+    <section class="hero">
+      <span class="lbl">A strategy game built on CR-AI</span>
+      <h1>Envoy. <em>Broker the deal.</em></h1>
+      <p>You're an independent mediator with ten months and limited political capital. Six parties sit across the table. Each has a real goal, room to bend, and a red line. Some of them you can read from thousands of documents. Some have barely left a trace, and you'll be working from a reconstruction that might be wrong.</p>
+    </section>
+
+    <div class="picks" id="picks" role="group" aria-label="Choose a conflict"></div>
+    <div class="start">
+      <div class="field"><label class="lbl" for="name">Your name, for the leaderboard (optional)</label><input id="name" maxlength="20" placeholder="your name" autocomplete="nickname"></div>
+      <button class="btn" id="go" type="button">Start mediating</button>
+      <button class="btn ghost" id="resume" type="button" hidden>Resume your game</button>
+    </div>
+    <p class="note" id="liveNote" style="margin-top:10px"></p>
+
+    <div class="intro-grid">
+      <section class="t how">
+        <span class="lbl">How to play</span>
+        <ol>
+          <li><b>Read the parties.</b> Each card shows trust in you, readiness for a deal, and three hidden cards. <b>Veto</b> parties must sign.</li>
+          <li><b>Spend capital.</b> Six points a turn. Listen quietly to reveal cards, open back-channels where you write the message yourself, send aid, bring in guarantors, deploy monitors.</li>
+          <li><b>Convene talks</b> once three parties trust you (45+), then <b>propose a framework</b> of up to four clauses. Every veto party plus five of six must accept.</li>
+          <li><b>Don't cross a red line.</b> A party that sees its red line in your proposal walks out for two turns.</li>
+          <li><b>The world pushes back.</b> Each month brings an event, and violence can spill over from connected conflicts.</li>
+        </ol>
+      </section>
+      <section class="t how">
+        <span class="lbl">Why some cards are dashed</span>
+        <p class="note">CR-AI's biggest problem is balance: the side without a press office disappears from the data. Envoy makes that visible. Each party's evidence tier comes from how many documents in its own voice exist in the CR-AI dataset.</p>
+        <div class="tiers">
+          <div class="tier"><span class="chip documented">Documented</span><span>50+ documents. All three cards start known.</span></div>
+          <div class="tier"><span class="chip partial">Partial</span><span>10 to 49. The goal is known; the rest is reconstructed or unknown.</span></div>
+          <div class="tier"><span class="chip thin">Thin</span><span>Under 10. You start from CR-AI's reconstruction, and some reconstructions are wrong.</span></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="intro-grid">
+      <section class="t how">
+        <span class="lbl">Under the hood</span>
+        <svg class="arch" viewBox="0 0 640 220" role="img" aria-label="Collectors feed the CR-AI dataset, which seeds Envoy's scenarios. A rules engine owns every number. Claude voices the parties and grades your back-channel messages through a structured tool call, capped by the engine.">
+          <rect x="6" y="20" width="140" height="56" rx="12"/><text x="18" y="44">Daily collectors</text><text class="s" x="18" y="62">RSS · GDELT · Telegram</text>
+          <rect x="6" y="100" width="140" height="56" rx="12"/><text x="18" y="124">CR-AI dataset</text><text class="s" x="18" y="142">11,123 docs · 15+ langs</text>
+          <path d="M76 76 V100"/>
+          <rect class="blu" x="196" y="100" width="150" height="56" rx="12"/><text x="208" y="124">Scenarios</text><text class="s" x="208" y="142">graph scores · coverage</text>
+          <path d="M146 128 H196"/>
+          <rect class="hot" x="396" y="30" width="150" height="56" rx="12"/><text x="408" y="54">Rules engine</text><text class="s" x="408" y="72">owns every number</text>
+          <rect x="396" y="140" width="150" height="56" rx="12"/><text x="408" y="164">Claude (Haiku)</text><text class="s" x="408" y="182">voice + bounded grade</text>
+          <path d="M346 128 L396 58"/><path d="M471 140 V86"/>
+          <rect x="566" y="80" width="68" height="56" rx="12"/><text x="578" y="112">You</text>
+          <path d="M546 58 L566 98"/><path d="M546 168 L566 120"/>
+        </svg>
+        <p class="note">The model never sets a score. It returns a grade from -2 to +2 through a forced tool call, and the engine caps what that grade can do, so a clever prompt can't talk a party into signing. Daily spend caps and per-visitor limits keep it cheap; if the model is unavailable, parties fall back to scripted replies.</p>
+      </section>
+      <section class="t how">
+        <span class="lbl">Leaderboard</span>
+        <div class="tabs" role="tablist" id="lbTabs"></div>
+        <div id="lb"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ---------- Game ---------- -->
+  <main id="game" hidden>
+    <div class="bar">
+      <div><span class="lbl" id="gTheater"></span><h2 id="gTitle"></h2></div>
+      <div><span class="lbl">Month</span><div class="tnum" style="font-weight:800" id="gTurn"></div></div>
+      <div><span class="lbl">Capital</span><div id="gCap"></div></div>
+      <span class="chip" id="gTalks">No talks</span>
+      <span class="grow"></span>
+      <button class="btn ghost sm" id="quit" type="button">New game</button>
+      <button class="btn" id="endTurn" type="button">End month</button>
+    </div>
+
+    <div class="layout">
+      <div class="col">
+        <section class="t" id="scoresBox"><div class="lbl" style="margin-bottom:12px">Conflict scores · tick marks show where you started</div><div class="scores" id="scores"></div></section>
+        <section class="actors" id="actors" aria-label="Parties"></section>
+        <section class="t end" id="endBox" hidden></section>
+      </div>
+      <div class="col">
+        <section class="t" id="movesBox" style="display:grid;gap:10px">
+          <span class="lbl">Your move</span>
+          <div class="moves" id="moves"></div>
+          <div class="cfg" id="cfg" hidden></div>
+        </section>
+        <section class="t" id="feedBox" style="display:grid;gap:10px">
+          <span class="lbl">Dispatches</span>
+          <div class="feed" id="feed" aria-live="polite"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  var CAT = null, DIMS = [], SC = null, G = null, ID = null, sel = { move: null, target: null, guarantor: null, variant: "local", clauses: [] };
+  var DIFF = { afghanistan: ["Standard", ""], iran: ["Hard", "hard"] };
+  var TIER = { documented: "Documented", partial: "Partial", thin: "Thin sources" };
+  var CARDN = { goal: "Real goal", flex: "Flexibility", red: "Red line" };
+  var act = function (s) { try { if (window.__act) window.__act(s); } catch (e) {} try { if (window.posthog && posthog.capture) posthog.capture("envoy", { action: s }); } catch (e) {} };
+
+  function api(path, body) {
+    var opt = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {};
+    return fetch(path, opt).then(function (r) { return r.json().catch(function () { return { error: "Server error (" + r.status + ")" }; }); }).catch(function () { return { error: "Network error. Check your connection." }; });
+  }
+  function toast(title, text, ms) {
+    var t = $("toast"); t.innerHTML = "<b>" + esc(title) + "</b>" + esc(text || ""); t.hidden = false;
+    clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, ms || 4200);
+  }
+
+  /* ---------- Intro ---------- */
+  function renderPicks() {
+    var chosen = store.get("envoy-sc") || "afghanistan";
+    $("picks").innerHTML = CAT.scenarios.map(function (s) {
+      var d = DIFF[s.id] || ["", ""];
+      return '<button type="button" class="pick" data-sc="' + s.id + '" aria-pressed="' + (s.id === chosen) + '"><div class="row"><span class="lbl">' + esc(s.name) + '</span><span class="diff ' + d[1] + '">' + d[0] + '</span></div><h2>' + esc(s.title) + "</h2><p class=\"note\">" + esc(s.blurb) + "</p><p class=\"lbl\">Connected: " + s.neighbors.map(function (n) { return esc(n.name); }).join(" · ") + "</p></button>";
+    }).join("");
+  }
+  $("picks").addEventListener("click", function (e) {
+    var b = e.target.closest(".pick"); if (!b) return;
+    store.set("envoy-sc", b.getAttribute("data-sc"));
+    [].forEach.call($("picks").children, function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+  });
+  function chosenSc() { var b = $("picks").querySelector('[aria-pressed="true"]'); return b ? b.getAttribute("data-sc") : "afghanistan"; }
+
+  var lbSc = "afghanistan";
+  function renderBoardTabs() {
+    $("lbTabs").innerHTML = CAT.scenarios.map(function (s) { return '<button type="button" role="tab" data-sc="' + s.id + '" aria-selected="' + (s.id === lbSc) + '">' + esc(s.name) + "</button>"; }).join("");
+  }
+  $("lbTabs").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; lbSc = b.getAttribute("data-sc"); renderBoardTabs(); loadBoard(lbSc, $("lb")); });
+  function loadBoard(sc, el) {
+    api("/api/envoy/leaderboard?sc=" + encodeURIComponent(sc)).then(function (r) {
+      if (!r || r.error) { el.innerHTML = '<p class="note">Leaderboard unavailable.</p>'; return; }
+      var me = (store.get("envoy-name") || "").toLowerCase();
+      el.innerHTML = (r.rows.length ? '<table class="lb"><thead><tr><th>#</th><th>Envoy</th><th>Result</th><th class="r">Score</th></tr></thead><tbody>' + r.rows.map(function (x, i) {
+        return "<tr" + (me && x.n.toLowerCase() === me ? ' style="font-weight:700"' : "") + "><td>" + (i + 1) + "</td><td>" + esc(x.n) + "</td><td>" + (x.o === "deal" ? "Deal" : x.o === "war" ? "Escalation" : "No deal") + '</td><td class="r tnum">' + x.s + "</td></tr>";
+      }).join("") + "</tbody></table>" : '<p class="note">No names on the board yet. Be the first.</p>') + '<p class="note" style="margin-top:8px">' + r.games + " games played, " + r.deals + " deals signed.</p>";
+    });
+  }
+
+  $("go").addEventListener("click", function () {
+    var name = $("name").value.trim();
+    store.set("envoy-name", name);
+    $("go").disabled = true;
+    api("/api/envoy/new", { sc: chosenSc(), name: name }).then(function (r) {
+      $("go").disabled = false;
+      if (r.error) { toast("Couldn't start", r.error); return; }
+      ID = r.id; store.set("envoy-game", ID); act("started Envoy: " + chosenSc());
+      enterGame(r.view, null);
+    });
+  });
+  $("resume").addEventListener("click", function () { loadGame(store.get("envoy-game")); });
+  $("quit").addEventListener("click", function () {
+    if (G && !G.ended && !confirmQuit()) return;
+    store.del("envoy-game"); ID = null; G = null; $("game").hidden = true; $("intro").hidden = false; $("resume").hidden = true; loadBoard(lbSc, $("lb")); window.scrollTo(0, 0);
+  });
+  function confirmQuit() { var b = $("quit"); if (b.dataset.sure) return true; b.dataset.sure = "1"; b.textContent = "Tap again to abandon"; setTimeout(function () { delete b.dataset.sure; b.textContent = "New game"; }, 3000); return false; }
+
+  function loadGame(id) {
+    if (!id) return;
+    api("/api/envoy/game?id=" + encodeURIComponent(id)).then(function (r) {
+      if (r.error) { store.del("envoy-game"); $("resume").hidden = true; toast("Game expired", "Start a new one."); return; }
+      ID = id; enterGame(r.view, r.debrief);
+    });
+  }
+
+  /* ---------- Game ---------- */
+  function enterGame(view, debrief) {
+    SC = CAT.scenarios.find(function (s) { return s.id === view.sc; });
+    sel = { move: null, target: null, guarantor: null, variant: "local", clauses: [] };
+    $("intro").hidden = true; $("game").hidden = false; window.scrollTo(0, 0);
+    render(view, debrief);
+  }
+
+  function render(view, debrief) {
+    G = view;
+    $("gTheater").textContent = SC.name;
+    $("gTitle").textContent = SC.title;
+    $("gTurn").textContent = Math.min(G.turn, G.turns) + " / " + G.turns;
+    var cap = ""; for (var i = 0; i < Math.max(G.capital, 6); i++) cap += "<i" + (i < G.capital ? "" : ' class="off"') + "></i>";
+    $("gCap").innerHTML = '<span class="cap" aria-label="' + G.capital + ' capital">' + cap + "</span>";
+    $("gTalks").textContent = G.talks ? "Talks open" : "No talks"; $("gTalks").className = "chip" + (G.talks ? " on" : "");
+    $("endTurn").disabled = G.ended;
+    renderScores(); renderActors(); renderMoves(); renderCfg(); renderFeed();
+    if (G.ended) renderEnd(debrief); else $("endBox").hidden = true;
+  }
+
+  function band(d, v) { var bad = d.lowerIsBetter ? v : 100 - v; return bad >= 66 ? "hi" : bad >= 40 ? "mid" : "lo"; }
+  function renderScores() {
+    $("scores").innerHTML = DIMS.map(function (d) {
+      var v = G.scores[d.id], s = G.start[d.id], dv = v - s, good = d.lowerIsBetter ? dv < 0 : dv > 0;
+      return '<div class="sc"><span class="lbl">' + esc(d.label) + '</span><span class="v tnum">' + v + '</span><div class="meter"><b class="' + band(d, v) + '" style="width:' + v + '%"></b><s style="left:' + s + '%"></s></div><span class="d ' + (dv ? (good ? "good" : "bad") : "") + '">' + (dv ? (dv > 0 ? "+" : "") + dv : "±0") + "</span></div>";
+    }).join("");
+  }
+
+  function cardHtml(a, k) {
+    var c = a.cards[k], cls = "card", tag = "";
+    if (G.ended && c.wasRecon && c.reconOk === false) { cls += " wrong"; tag = "<i>Reconstruction was wrong</i>"; }
+    else if (G.ended && c.wasRecon) tag = "<i style=\"color:var(--ok)\">Reconstruction held</i>";
+    else if (c.state === "recon") { cls += " recon"; tag = "<i>Reconstructed · " + (a.tier === "thin" ? "low" : "medium") + " confidence</i>"; }
+    else if (c.state === "unknown") cls += " unknown";
+    var body = c.state === "unknown" && !G.ended ? "Unknown. Listen to find out." : esc(c.text);
+    var was = G.ended && c.wasRecon && c.reconOk === false && c.reconText ? '<div class="was">' + esc(c.reconText) + "</div>" : "";
+    return '<div class="' + cls + '"><div class="k"><span>' + CARDN[k] + "</span>" + tag + "</div>" + body + was + "</div>";
+  }
+  function renderActors() {
+    $("actors").innerHTML = G.actors.map(function (a) {
+      return '<article class="t actor' + (sel.target === a.id ? " sel" : "") + (a.walked ? " gone" : "") + '" data-actor="' + a.id + '" tabindex="0" aria-label="' + esc(a.name) + '">' +
+        (a.walked ? '<span class="walk">Walked out · ' + a.walked + "</span>" : "") +
+        "<div><h3>" + esc(a.name) + '</h3><p class="role">' + esc(a.role) + "</p></div>" +
+        '<div class="chips">' + (a.veto ? '<span class="chip veto">Veto</span>' : "") + '<span class="chip ' + a.tier + '" title="Documents in this party\'s own voice in the CR-AI dataset">' + TIER[a.tier] + " · " + a.coverage + " docs</span></div>" +
+        '<div class="stat"><span>Trust</span><div class="meter"><b class="tr" style="width:' + a.trust + '%"></b></div><span class="tnum">' + a.trust + "</span></div>" +
+        '<div class="stat"><span>Readiness</span><div class="meter"><b style="width:' + a.stance + '%"></b></div><span class="tnum">' + a.stance + "</span></div>" +
+        '<div class="cards">' + ["goal", "flex", "red"].map(function (k) { return cardHtml(a, k); }).join("") + "</div></article>";
+    }).join("");
+  }
+  function pickActor(id) {
+    if (G.ended) return;
+    sel.target = id;
+    renderActors(); renderCfg();
+  }
+  $("actors").addEventListener("click", function (e) { var c = e.target.closest("[data-actor]"); if (c) pickActor(c.getAttribute("data-actor")); });
+  $("actors").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { var c = e.target.closest("[data-actor]"); if (c) { e.preventDefault(); pickActor(c.getAttribute("data-actor")); } } });
+
+  var MOVES = [];
+  function moveDef(id) { return MOVES.find(function (m) { return m.id === id; }); }
+  function moveName(m) { return (m.id === "aid" && SC.moveLabels.aid) || (m.id === "community" && SC.moveLabels.community) || m.name; }
+  function renderMoves() {
+    $("moves").innerHTML = MOVES.map(function (m) {
+      var v = G.moves.find(function (x) { return x.id === m.id; }) || { ok: false, why: "" };
+      return '<button type="button" class="mv" data-move="' + m.id + '" aria-pressed="' + (sel.move === m.id) + '"' + (v.ok ? "" : " disabled") + ' title="' + esc(v.why) + '"><b>' + esc(moveName(m)) + "</b><small>" + esc(v.ok ? m.text : v.why) + '</small><span class="c">' + m.cost + "</span></button>";
+    }).join("");
+  }
+  $("moves").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-move]"); if (!b || b.disabled) return;
+    var id = b.getAttribute("data-move"); sel.move = sel.move === id ? null : id;
+    renderMoves(); renderCfg();
+    if (sel.move) setTimeout(function () { var c = $("cfg"); if (c && !c.hidden && window.innerWidth < 1020) c.scrollIntoView({ behavior: "smooth", block: "center" }); }, 50);
+  });
+
+  function actorOpts(allowGone) {
+    return '<div class="opts">' + G.actors.map(function (a) { return '<button type="button" data-t="' + a.id + '" aria-pressed="' + (sel.target === a.id) + '"' + (a.walked && !allowGone ? " disabled" : "") + ">" + esc(a.short) + "</button>"; }).join("") + "</div>";
+  }
+  function renderCfg() {
+    var box = $("cfg"), m = sel.move && moveDef(sel.move);
+    if (!m || G.ended) { box.hidden = true; box.innerHTML = ""; return; }
+    var h = "";
+    if (m.target === true) h += '<span class="lbl">Who</span>' + actorOpts(m.id === "listen");
+    if (m.id === "listen") { var a = G.actors.find(function (x) { return x.id === sel.target; }); var next = a && ["red", "goal", "flex"].find(function (k) { return a.cards[k].state !== "known"; }); h += '<p class="note">' + (a ? (next ? "Reveals " + esc(a.short) + "'s " + CARDN[next].toLowerCase() + "." : esc(a.short) + " has no hidden cards left.") : "Pick a party. Red lines are revealed first.") + "</p>"; }
+    if (m.id === "backchannel") h += '<label class="lbl" for="pitch">Your private message</label><textarea id="pitch" maxlength="600" placeholder="Make an offer that speaks to what they actually want. Be concrete."></textarea><p class="note">One back-channel per party per month. ' + (CAT.live ? "Claude voices the reply and grades it; the rules engine caps the effect." : "Replies are scripted until the AI layer is switched on.") + "</p>";
+    if (m.id === "incentive") h += '<p class="note">Rivals of the target lose a little trust in you.</p>';
+    if (m.id === "guarantor") h += '<span class="lbl">Guarantor</span><div class="opts">' + SC.guarantors.map(function (g) { var used = G.guarantors.indexOf(g.id) >= 0; return '<button type="button" data-g="' + g.id + '" aria-pressed="' + (sel.guarantor === g.id) + '"' + (used ? " disabled" : "") + ' title="' + esc(g.text) + '">' + esc(g.name) + "</button>"; }).join("") + "</div>" + (sel.guarantor ? '<p class="note">' + esc(SC.guarantors.find(function (g) { return g.id === sel.guarantor; }).text) + "</p>" : "");
+    if (m.id === "monitors" && SC.monitorVariants.length > 1) h += '<span class="lbl">Which monitors</span><div class="opts">' + SC.monitorVariants.map(function (v) { return '<button type="button" data-v="' + v.id + '" aria-pressed="' + (sel.variant === v.id) + '">' + esc(v.name) + "</button>"; }).join("") + "</div>";
+    if (m.id === "summit") h += '<p class="note">Parties at trust 45+ come to the table. Talks stay open for the rest of the game.</p>';
+    if (m.id === "deal") h += '<span class="lbl">Clauses (' + sel.clauses.length + " of 4)</span><div class=\"clauses\">" + SC.clauses.map(function (c) { var on = sel.clauses.indexOf(c.id) >= 0; return '<label><input type="checkbox" data-c="' + c.id + '"' + (on ? " checked" : "") + (!on && sel.clauses.length >= 4 ? " disabled" : "") + "><div>" + esc(c.name) + "<span>" + esc(c.text) + "</span></div></label>"; }).join("") + "</div>";
+    var ready = (m.target !== true || sel.target) && (m.id !== "guarantor" || sel.guarantor) && (m.id !== "deal" || sel.clauses.length);
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="doMove"' + (ready ? "" : " disabled") + ">" + (m.id === "deal" ? "Put it to a vote" : m.id === "backchannel" ? "Send" : "Do it") + " · " + m.cost + '</button><button type="button" class="btn ghost sm" id="cancelMove">Cancel</button></div>';
+    box.innerHTML = h; box.hidden = false;
+    var p = $("pitch"); if (p) { p.value = renderCfg.draft || ""; p.addEventListener("input", function () { renderCfg.draft = p.value; }); }
+  }
+  $("cfg").addEventListener("click", function (e) {
+    var t = e.target.closest("[data-t]"), g = e.target.closest("[data-g]"), v = e.target.closest("[data-v]");
+    if (t && !t.disabled) { sel.target = t.getAttribute("data-t"); renderActors(); renderCfg(); }
+    if (g && !g.disabled) { sel.guarantor = g.getAttribute("data-g"); renderCfg(); }
+    if (v) { sel.variant = v.getAttribute("data-v"); renderCfg(); }
+    if (e.target.id === "cancelMove") { sel.move = null; renderMoves(); renderCfg(); }
+    if (e.target.id === "doMove") doMove();
+  });
+  $("cfg").addEventListener("change", function (e) {
+    var c = e.target.closest("[data-c]"); if (!c) return;
+    var id = c.getAttribute("data-c"), i = sel.clauses.indexOf(id);
+    if (c.checked && i < 0 && sel.clauses.length < 4) sel.clauses.push(id); else if (!c.checked && i >= 0) sel.clauses.splice(i, 1);
+    renderCfg();
+  });
+
+  function doMove() {
+    var m = moveDef(sel.move), body = { id: ID, move: sel.move };
+    if (m.target === true) body.target = sel.target;
+    if (m.id === "guarantor") body.guarantor = sel.guarantor;
+    if (m.id === "monitors") body.variant = sel.variant;
+    if (m.id === "deal") body.clauses = sel.clauses.slice();
+    if (m.id === "backchannel") { body.pitch = ($("pitch") || {}).value || ""; }
+    $("game").classList.add("busy"); var btn = $("doMove"); if (btn) btn.textContent = m.id === "backchannel" ? "Waiting for a reply..." : "Working...";
+    api("/api/envoy/move", body).then(function (r) {
+      $("game").classList.remove("busy");
+      if (r.error) { toast("Not possible", r.error); renderCfg(); return; }
+      if (m.id === "backchannel") renderCfg.draft = "";
+      if (m.id === "deal") sel.clauses = [];
+      var keep = sel.target; sel.move = null; sel.target = keep;
+      render(r.view, r.debrief);
+      var res = r.res || {};
+      if (res.grade && res.grade.reply) { var tn = G.actors.find(function (x) { return x.id === body.target; }); toast((tn ? tn.short : "Reply") + (res.grade.tone > 0 ? " · received well" : res.grade.tone < 0 ? " · received badly" : ""), res.grade.reply, 7000); }
+      if (res.revealed) toast("Intel", res.revealed.wasRecon ? (res.revealed.reconOk ? "The reconstruction was close." : "The reconstruction was wrong. Good thing you checked.") : "A hidden card is now known.");
+      if (res.deal && !res.deal.passed) toast("No deal yet", res.deal.vetoed.length ? "A veto party said no." : "Not enough parties signed.");
+      if (r.view.ended && r.view.outcome === "deal") act("signed a framework in Envoy");
+    });
+  }
+
+  $("endTurn").addEventListener("click", function () {
+    if (!G || G.ended) return;
+    if (G.capital >= 3 && !$("endTurn").dataset.sure) { $("endTurn").dataset.sure = "1"; $("endTurn").textContent = G.capital + " capital left. End?"; setTimeout(function () { delete $("endTurn").dataset.sure; $("endTurn").textContent = "End month"; }, 3000); return; }
+    delete $("endTurn").dataset.sure; $("endTurn").textContent = "End month";
+    $("game").classList.add("busy");
+    api("/api/envoy/end-turn", { id: ID }).then(function (r) {
+      $("game").classList.remove("busy");
+      if (r.error) { toast("Not possible", r.error); return; }
+      sel.move = null; render(r.view, r.debrief);
+      var ev = (r.out && r.out.events) || [];
+      if (ev.length) toast((ev[0].spill ? "Spillover · " : "") + ev[0].title, ev[0].text + (ev[1] ? " Also: " + ev[1].title + "." : ""), 5200);
+    });
+  });
+
+  var KIND = { start: "Briefing", move: "Move", intel: "Intel", backchannel: "Back-channel", event: "Event", spill: "Spillover", walkout: "Walkout", "return": "Return", deal: "Vote", end: "Result" };
+  function renderFeed() {
+    var names = {}; G.actors.forEach(function (a) { names[a.id] = a.short; });
+    $("feed").innerHTML = G.log.slice().reverse().map(function (l) {
+      var h = '<div class="ev ' + l.kind + '"><div class="tt">Month ' + l.t + " · " + (KIND[l.kind] || l.kind) + (l.kind === "backchannel" && typeof l.tone === "number" ? ' · <span class="tone ' + (l.tone > 0 ? "p" : l.tone < 0 ? "n" : "") + '">received ' + ["very badly", "badly", "neutrally", "well", "very well"][l.tone + 2] + "</span>" : "") + "</div>" + esc(l.text);
+      if (l.detail) h += '<div class="detail">' + esc(l.detail) + "</div>";
+      if (l.reply) h += '<div class="quote">' + esc(l.reply) + "<small>Simulated response · " + esc(names[l.actor] || "") + "</small></div>";
+      if (l.votes) h += '<div class="votes">' + l.votes.map(function (v) { var why = { accepts: "Accepts", absent: "Absent", red_line: "Red line crossed", nothing_for_us: "Nothing in it for them", not_ready: "Not ready yet" }[v.reason] || v.reason; return "<div><span>" + esc(names[v.actor]) + '</span><span class="' + (v.accept ? "y" : "no") + '">' + why + "</span></div>"; }).join("") + "</div>";
+      return h + "</div>";
+    }).join("");
+  }
+
+  function renderEnd(debrief) {
+    var win = G.outcome === "deal", box = $("endBox");
+    var wrong = 0; G.actors.forEach(function (a) { ["goal", "flex", "red"].forEach(function (k) { if (a.cards[k].wasRecon && a.cards[k].reconOk === false) wrong++; }); });
+    box.innerHTML = '<span class="lbl">' + esc(SC.title) + '</span><p class="ko ' + (win ? "w" : "l") + '">' + (win ? "Deal signed." : G.outcome === "war" ? "It escalated." : "No deal.") + '</p><div class="kpis"><div><b class="tnum">' + G.score + '</b><span>Score</span></div><div><b class="tnum">' + Math.min(G.turn, G.turns) + '</b><span>Months</span></div><div><b class="tnum">' + wrong + '</b><span>Wrong reconstructions</span></div></div>' +
+      '<div class="debrief-h"><span class="lbl">CR-AI debrief</span></div><p class="debrief">' + esc(debrief || "") + "</p>" +
+      '<p class="note">Every hidden card is now face up. Red-bordered cards are where CR-AI\'s reconstruction from thin sources was wrong. That gap is the reason CR-AI labels reconstructions and never treats them as evidence.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="again">Play again</button><button type="button" class="btn ghost" id="share">Share</button><a class="btn ghost" href="/#t-contact" style="text-decoration:none">Talk to Omar</a></div><div><span class="lbl">Leaderboard · ' + esc(SC.name) + '</span><div id="endLb"></div></div>';
+    box.hidden = false;
+    loadBoard(G.sc, $("endLb"));
+    $("again").addEventListener("click", function () { store.del("envoy-game"); ID = null; $("game").hidden = true; $("intro").hidden = false; $("resume").hidden = true; window.scrollTo(0, 0); loadBoard(lbSc, $("lb")); });
+    $("share").addEventListener("click", function () {
+      var txt = (win ? "I brokered a deal in Envoy (" + SC.name + ") with a score of " + G.score + "." : "Envoy beat me (" + SC.name + "). Score " + G.score + ".") + " Can you do better? https://omarnabi.com/envoy";
+      if (navigator.share) navigator.share({ text: txt }).catch(function () {}); else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { toast("Copied", "Paste it anywhere."); });
+    });
+    store.del("envoy-game");
+    setTimeout(function () { box.scrollIntoView({ behavior: "smooth", block: "start" }); }, 200);
+  }
+
+  /* ---------- Boot ---------- */
+  api("/api/envoy/scenarios").then(function (r) {
+    if (!r || r.error || !r.scenarios) { $("picks").innerHTML = '<p class="note">Envoy is offline right now. Try again in a minute.</p>'; $("go").disabled = true; return; }
+    CAT = r; DIMS = r.dimensions;
+    MOVES = [
+      { id: "listen", name: "Quiet listening", cost: 1, target: true, text: "Reveal one hidden card about a party." },
+      { id: "backchannel", name: "Back-channel", cost: 2, target: true, text: "Write a private message. What you say matters." },
+      { id: "aid", name: "Humanitarian package", cost: 2, target: false, text: "Ease civilian suffering; builds goodwill." },
+      { id: "incentive", name: "Economic incentive", cost: 3, target: true, text: "Big trust gain for one party. Rivals notice." },
+      { id: "guarantor", name: "Bring in a guarantor", cost: 3, target: "guarantor", text: "A trusted third party lifts everyone's readiness." },
+      { id: "community", name: "Engage communities", cost: 2, target: false, text: "Work below the elite level; lowers fragility." },
+      { id: "monitors", name: "Monitors", cost: 3, target: false, text: "Cut violence and blunt spoiler attacks." },
+      { id: "summit", name: "Convene talks", cost: 4, target: false, text: "Needs 3 parties at trust 45+." },
+      { id: "deal", name: "Propose a framework", cost: 5, target: "deal", text: "Up to 4 clauses. Veto parties plus 5 of 6 must accept." }
+    ];
+    lbSc = store.get("envoy-sc") || "afghanistan";
+    renderPicks(); renderBoardTabs(); loadBoard(lbSc, $("lb"));
+    $("name").value = store.get("envoy-name") || "";
+    $("liveNote").textContent = r.live ? "Parties are voiced live by Claude. Their replies are simulated, not statements by real people." : "Parties use scripted replies for now. Their replies are simulated, not statements by real people.";
+    var saved = store.get("envoy-game"); if (saved) $("resume").hidden = false;
+    if (/[?&]resume/.test(location.search) && saved) loadGame(saved);
+  });
+})();
+</script>
+</body>
+</html>
