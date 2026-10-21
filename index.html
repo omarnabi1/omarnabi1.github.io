@@ -649,7 +649,9 @@ main.wrap, footer { position: relative; z-index: 1; }
 .t:hover::before { opacity: 1; }
 .t.pre { transform: translate(var(--px, 0px), 26px) scale(.985); }
 /* Convergence: on load, the first tiles start pushed out and get reeled into place */
-body { overflow-x: clip; }
+html { overflow-x: hidden; overscroll-behavior-x: none; }
+@media (hover: none) { .cur { display: none !important; } }
+body { overflow-x: clip; max-width: 100vw; }
 .t.scat { translate: var(--sx, 0px) var(--sy, 0px); rotate: var(--sr, 0deg); }
 .t.gather { transition: translate 1s cubic-bezier(.2,.9,.25,1.12), rotate 1s cubic-bezier(.2,.9,.25,1.12), opacity .35s, filter .35s, transform .35s, border-color .25s, box-shadow .35s; }
 .t.tug { animation: tug .7s cubic-bezier(.3,1.6,.5,1); }
@@ -1751,7 +1753,7 @@ button.gcard:hover { border-color: var(--ink); }
     var wr = w.getBoundingClientRect(), wx = wr.left + wr.width / 2, wy = wr.top + wr.height / 2, m = innerWidth < 700 ? 26 : 70;
     tiles.forEach(function (t, i) {
       var r = t.getBoundingClientRect(), dx = r.left + r.width / 2 - wx, dy = r.top + r.height / 2 - wy, L = Math.sqrt(dx * dx + dy * dy) || 1;
-      t.style.setProperty("--sx", f1(dx / L * m) + "px"); t.style.setProperty("--sy", f1(dy / L * m) + "px"); t.style.setProperty("--sr", ((i % 2 ? 1 : -1) * (1.2 + (i % 3) * .8)).toFixed(1) + "deg");
+      t.style.setProperty("--sx", (innerWidth < 700 ? 0 : dx / L * m).toFixed(1) + "px"); t.style.setProperty("--sy", f1(dy / L * m) + "px"); t.style.setProperty("--sr", (innerWidth < 700 ? 0 : (i % 2 ? 1 : -1) * (1.2 + (i % 3) * .8)).toFixed(1) + "deg");
       t.classList.add("scat");
     });
     setTimeout(function () {
