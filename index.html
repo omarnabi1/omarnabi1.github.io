@@ -282,6 +282,50 @@ input[type="range"] { width: 100%; accent-color: var(--acc); height: 28px; margi
 .flip .b { transform: rotateY(180deg); background: var(--ink); color: var(--bg); font-size: .86rem; line-height: 1.4; }
 .flip .b .lbl { color: var(--bg); opacity: .65; }
 .nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* Numbers: stats on the left, a receipt printer on the right */
+.rc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 16px; align-items: start; }
+.rc-stats { display: grid; gap: 8px; }
+.stat { text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 3px 12px; align-items: center; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--tile2); cursor: pointer; transition: border-color .2s, background .25s, color .25s, transform .15s; }
+.stat:hover { border-color: var(--ink); }
+.stat:active { transform: scale(.98); }
+.stat[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.stat .n { font-size: clamp(1.6rem, 2.4vw, 2.1rem); font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+.stat .n sup { color: var(--acc); font-size: .5em; vertical-align: top; position: relative; top: .2em; }
+.stat .d { grid-column: 1; font-size: .8rem; color: var(--muted); line-height: 1.3; }
+.stat[aria-selected="true"] .d { color: var(--bg); opacity: .72; }
+.stat .viz { grid-column: 2; grid-row: 1 / span 2; width: 64px; height: 34px; overflow: visible; }
+.viz .vz-bg { fill: var(--line); }
+.viz .vz-a { fill: var(--acc); transform-origin: 0 0; transform: scaleX(.05); }
+.stat[aria-selected="true"] .vz-a { animation: vzShrink 1.4s cubic-bezier(.6,0,.2,1) both; }
+@keyframes vzShrink { from { transform: scaleX(1); } 40% { transform: scaleX(1); } to { transform: scaleX(.05); } }
+.v65 rect { fill: var(--line); }
+.stat[aria-selected="true"] .v65 rect { animation: vzOn .3s ease both; }
+@keyframes vzOn { to { fill: var(--acc); } }
+.v3 rect, .v3 circle { fill: none; stroke: currentColor; stroke-width: 2; opacity: .55; }
+.stat[aria-selected="true"] .v3 * { stroke: var(--acc); opacity: 1; }
+.vt path { fill: none; stroke: currentColor; stroke-width: 2; opacity: .4; }
+.vt-dot { fill: var(--acc); }
+.stat[aria-selected="true"] .vt-dot { animation: vtGo 1.6s cubic-bezier(.5,0,.2,1) both; }
+@keyframes vtGo { to { transform: translateX(60px); } }
+.printer { position: relative; padding-top: 8px; min-width: 0; }
+.printer::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 14px; border-radius: 8px; background: var(--ink); z-index: 2; }
+.paper { position: relative; z-index: 1; margin: 0 12px 14px; background: #FBFBF6; color: #1D1D1B; font-family: var(--mono); font-size: .66rem; line-height: 1.55; padding: 18px 14px 18px; box-shadow: 0 14px 26px -16px rgba(0,0,0,.45); min-height: 120px; }
+.paper.feed { animation: feed .55s cubic-bezier(.2,.8,.2,1); }
+@keyframes feed { from { transform: translateY(-24px); clip-path: inset(24px 0 0 0); } }
+.paper::after { content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px; background: linear-gradient(45deg, transparent 33.33%, #FBFBF6 33.33%, #FBFBF6 66.66%, transparent 66.66%), linear-gradient(-45deg, transparent 33.33%, #FBFBF6 33.33%, #FBFBF6 66.66%, transparent 66.66%); background-size: 10px 20px; background-position: 0 -10px; }
+.rl { display: flex; gap: 6px; align-items: baseline; animation: rlIn .22s steps(4) both; }
+.rl .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rl .dt { flex: 1; min-width: 8px; border-bottom: 1px dotted #A3A3A0; transform: translateY(-3px); }
+.rl .v { font-weight: 700; white-space: nowrap; }
+.rl.sub .k { color: #6A6A66; padding-left: 10px; }
+.rh { text-align: center; font-weight: 800; font-size: .8rem; letter-spacing: .04em; animation: rlIn .22s steps(4) both; }
+.rs { text-align: center; color: #6A6A66; animation: rlIn .22s steps(4) both; }
+.rsep { border-top: 1px dashed #A3A3A0; margin: 7px 0; animation: rlIn .22s steps(4) both; }
+.rl.tot { font-size: .8rem; }
+.rbar { height: 30px; margin-top: 12px; animation: rlIn .22s steps(4) both; }
+.rft { text-align: center; margin-top: 6px; font-weight: 700; letter-spacing: .06em; animation: rlIn .22s steps(4) both; }
+@keyframes rlIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (max-width: 680px) { .rc { grid-template-columns: minmax(0, 1fr); } }
 .nums .flip { min-height: 170px; height: 170px; }
 .nums .n { font-size: clamp(2rem, 3.4vw, 2.7rem); font-weight: 800; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
 .nums .n sup { font-size: .45em; color: var(--acc); vertical-align: top; position: relative; top: .25em; }
@@ -814,12 +858,15 @@ button.gcard:hover { border-color: var(--ink); }
 
     <section class="t w2" id="t-nums" data-sk="unify build" aria-label="Numbers">
       <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Numbers with receipts</span><span class="hint">Tap a card</span></div>
-      <div class="nums">
-        <button type="button" class="flip" aria-pressed="false"><span class="in"><span class="f"><span class="n tnum"><span class="cnt" data-n="10000">10,000</span><sup>+</sup></span><span class="d">users moved to automated identity at Vroom</span></span><span class="b"><span class="lbl">Receipt</span>Onboarding went from about a week to 8 hours, and offboarding to 2 hours. Rolled out in three phases: BPO pilot, contractors, then company-wide.</span></span></button>
-        <button type="button" class="flip" aria-pressed="false"><span class="in"><span class="f"><span class="n tnum"><span class="cnt" data-n="65">65</span><sup>+</sup></span><span class="d">products in the portfolio I design from</span></span><span class="b"><span class="lbl">Receipt</span>I map an organization's tools and controls to the right mix across ManageEngine's portfolio, so they end up with fewer consoles and one picture.</span></span></button>
-        <button type="button" class="flip" aria-pressed="false"><span class="in"><span class="f"><span class="n tnum"><span class="cnt" data-n="3">3</span></span><span class="d">products built from zero</span></span><span class="b"><span class="lbl">Receipt</span>Ridey (iOS, shipped), Carvenience (two-sided marketplace), and CR-AI (a fine-tuned forecasting model).</span></span></button>
-        <button type="button" class="flip" aria-pressed="false"><span class="in"><span class="f"><span class="n tnum"><span class="cnt" data-n="2018">2018</span></span><span class="d">the year I got my first computer</span></span><span class="b"><span class="lbl">Receipt</span>I was in college, working at a law firm. Everything on this page happened after that.</span></span></button>
+      <div class="t-h"><span class="lbl">Numbers with receipts</span><span class="hint">Pick one to print</span></div>
+      <div class="rc">
+        <div class="rc-stats" role="tablist" aria-label="Pick a number to print its receipt">
+          <button type="button" class="stat" role="tab" data-r="vroom" aria-selected="true"><span class="n tnum"><span class="cnt" data-n="10000">10,000</span><sup>+</sup></span><span class="d">users moved to automated identity at Vroom</span><svg class="viz" viewBox="0 0 64 34" aria-hidden="true"><rect class="vz-bg" x="0" y="5" width="64" height="9" rx="2"/><rect class="vz-a" x="0" y="20" width="64" height="9" rx="2"/></svg></button>
+          <button type="button" class="stat" role="tab" data-r="me" aria-selected="false"><span class="n tnum"><span class="cnt" data-n="65">65</span><sup>+</sup></span><span class="d">products in the portfolio I design from</span><svg class="viz v65" viewBox="0 0 64 34" aria-hidden="true"><rect x="1" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.00s"/><rect x="5" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.01s"/><rect x="10" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.02s"/><rect x="15" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.04s"/><rect x="20" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.05s"/><rect x="25" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.06s"/><rect x="30" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.07s"/><rect x="35" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.08s"/><rect x="40" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.10s"/><rect x="45" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.11s"/><rect x="50" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.12s"/><rect x="54" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.13s"/><rect x="59" y="3" width="3.4" height="3.4" rx=".6" style="animation-delay:0.14s"/><rect x="1" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.16s"/><rect x="5" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.17s"/><rect x="10" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.18s"/><rect x="15" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.19s"/><rect x="20" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.20s"/><rect x="25" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.22s"/><rect x="30" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.23s"/><rect x="35" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.24s"/><rect x="40" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.25s"/><rect x="45" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.26s"/><rect x="50" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.28s"/><rect x="54" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.29s"/><rect x="59" y="9" width="3.4" height="3.4" rx=".6" style="animation-delay:0.30s"/><rect x="1" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.31s"/><rect x="5" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.32s"/><rect x="10" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.34s"/><rect x="15" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.35s"/><rect x="20" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.36s"/><rect x="25" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.37s"/><rect x="30" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.38s"/><rect x="35" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.40s"/><rect x="40" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.41s"/><rect x="45" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.42s"/><rect x="50" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.43s"/><rect x="54" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.44s"/><rect x="59" y="15" width="3.4" height="3.4" rx=".6" style="animation-delay:0.46s"/><rect x="1" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.47s"/><rect x="5" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.48s"/><rect x="10" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.49s"/><rect x="15" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.50s"/><rect x="20" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.52s"/><rect x="25" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.53s"/><rect x="30" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.54s"/><rect x="35" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.55s"/><rect x="40" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.56s"/><rect x="45" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.58s"/><rect x="50" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.59s"/><rect x="54" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.60s"/><rect x="59" y="21" width="3.4" height="3.4" rx=".6" style="animation-delay:0.61s"/><rect x="1" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.62s"/><rect x="5" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.64s"/><rect x="10" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.65s"/><rect x="15" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.66s"/><rect x="20" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.67s"/><rect x="25" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.68s"/><rect x="30" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.70s"/><rect x="35" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.71s"/><rect x="40" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.72s"/><rect x="45" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.73s"/><rect x="50" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.74s"/><rect x="54" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.76s"/><rect x="59" y="27" width="3.4" height="3.4" rx=".6" style="animation-delay:0.77s"/></svg></button>
+          <button type="button" class="stat" role="tab" data-r="built" aria-selected="false"><span class="n tnum"><span class="cnt" data-n="3">3</span></span><span class="d">products built from zero</span><svg class="viz v3" viewBox="0 0 64 34" aria-hidden="true"><rect x="2" y="7" width="16" height="22" rx="4"/><rect x="24" y="11" width="16" height="18" rx="3"/><circle cx="54" cy="18" r="8"/></svg></button>
+          <button type="button" class="stat" role="tab" data-r="first" aria-selected="false"><span class="n tnum"><span class="cnt" data-n="2018">2018</span></span><span class="d">the year I got my first computer</span><svg class="viz vt" viewBox="0 0 64 34" aria-hidden="true"><path d="M2 22 H62"/><path d="M2 18 V26 M17 19 V25 M32 19 V25 M47 19 V25 M62 18 V26"/><circle class="vt-dot" cx="2" cy="22" r="3.4"/></svg></button>
+        </div>
+        <div class="printer"><div class="paper" id="paper" aria-live="polite"></div></div>
       </div>
     </section>
 
@@ -1117,6 +1164,32 @@ button.gcard:hover { border-color: var(--ink); }
 
   /* Generic flips */
   document.addEventListener("click", function (e) { var f = e.target.closest(".flip"); if (!f || f.id === "deckCard") return; var on = !f.classList.contains("on"); f.classList.toggle("on", on); f.setAttribute("aria-pressed", on ? "true" : "false"); });
+
+  /* Receipt printer */
+  (function () {
+    var yrs = new Date().getFullYear() - 2018;
+    var RC = {
+      vroom: { h: "VROOM · IT LEAD", s: "AUG 2020 - JAN 2024", l: [["USERS AUTOMATED", "10,000+"], ["ROLLOUT PHASES", "3"], ["BPO PILOT", "", 1], ["CONTRACTORS", "", 1], ["COMPANY-WIDE", "", 1], 0, ["ONBOARDING, BEFORE", "~1 WEEK"], ["ONBOARDING, AFTER", "8 HRS"], ["OFFBOARDING, BEFORE", "~1 WEEK"], ["OFFBOARDING, AFTER", "2 HRS"], 0, ["ONBOARDING SPEEDUP", "15X+"], ["OFFBOARDING SPEEDUP", "60X+"], 0, ["TOTAL", "ONE WORKFLOW", 2]], f: "THANK YOU FOR UNIFYING" },
+      me: { h: "MANAGEENGINE · SOLUTIONS ENG.", s: "FEB 2025 - NOW", l: [["ENDPOINT CENTRAL", "ENDPOINTS"], ["PAM360", "PRIVILEGED ACCESS"], ["LOG360", "SIEM"], ["SERVICEDESK PLUS", "ITSM"], ["OPMANAGER NEXUS", "NETWORK"], ["AD360", "IDENTITY"], ["NCM", "CONFIG"], ["+ 58 MORE", "...", 1], 0, ["CONSOLES YOU WANT", "FEWER"], ["PICTURES YOU GET", "ONE"], 0, ["PORTFOLIO", "65+ PRODUCTS", 2]], f: "MERGE WHAT OVERLAPS. CONNECT THE REST." },
+      built: { h: "BUILT FROM ZERO", s: "NIGHTS AND WEEKENDS", l: [["RIDEY", "iOS · SHIPPED"], ["CARVENIENCE", "MARKETPLACE"], ["CR-AI", "MISTRAL-7B · QLORA"], 0, ["BOOTCAMP PROJECTS", "4"], ["THIS SITE", "LIVE"], 0, ["TOTAL", "3 PRODUCTS", 2]], f: "BUILD IT. SHIP IT. AGAIN." },
+      first: { h: "FIRST COMPUTER", s: "COLLEGE · WORKING AT A LAW FIRM", l: [["FIRST COMPUTER", "2018"], ["APPLE · GENIUS TEAM", "2018"], ["FLATIRON BOOTCAMP", "2020"], ["IT LEAD · VROOM", "2020"], ["ENTERPRISE SE", "2025"], 0, ["YEARS SINCE", String(yrs)], ["COMPUTERS OWNED BEFORE", "0"], 0, ["TOTAL", "ALL OF THIS PAGE", 2]], f: "EVERYTHING HERE CAME AFTER" }
+    };
+    var paper = $("paper"), tabs = document.querySelectorAll(".rc-stats .stat"), timers = [], n = 0;
+    function bars() { var g = "", x = 0; while (x < 100) { var w = 1 + Math.floor(Math.random() * 3), gap = 1 + Math.floor(Math.random() * 2); g += "#1D1D1B " + x + "%," + "#1D1D1B " + (x + w * .6) + "%,transparent " + (x + w * .6) + "%,transparent " + (x + (w + gap) * .6) + "%,"; x += (w + gap) * .6; } return "linear-gradient(90deg," + g.slice(0, -1) + ")"; }
+    function print(k) {
+      timers.forEach(clearTimeout); timers = []; var r = RC[k]; n++;
+      var no = "NO. " + String(1000 + n * 37 + Math.floor(Math.random() * 30)).slice(-4) + " · " + new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" });
+      var rows = ['<p class="rh">' + esc(r.h) + "</p>", '<p class="rs">' + esc(r.s) + "</p>", '<p class="rs">' + no + "</p>", '<div class="rsep"></div>'];
+      r.l.forEach(function (it) { rows.push(it === 0 ? '<div class="rsep"></div>' : '<p class="rl' + (it[2] === 1 ? " sub" : it[2] === 2 ? " tot" : "") + '"><span class="k">' + esc(it[0]) + '</span><span class="dt"></span><span class="v">' + esc(it[1]) + "</span></p>"); });
+      rows.push('<div class="rbar" style="background:' + bars() + '"></div>', '<p class="rft">' + esc(r.f) + "</p>");
+      paper.innerHTML = ""; paper.classList.remove("feed"); void paper.offsetWidth; paper.classList.add("feed");
+      rows.forEach(function (h, i) { if (RM) { paper.insertAdjacentHTML("beforeend", h); return; } timers.push(setTimeout(function () { paper.insertAdjacentHTML("beforeend", h); }, 120 + i * 85)); });
+      tabs.forEach(function (t) { t.setAttribute("aria-selected", t.getAttribute("data-r") === k ? "true" : "false"); });
+    }
+    tabs.forEach(function (t) { t.addEventListener("click", function () { print(t.getAttribute("data-r")); window.__act && window.__act("printed the " + t.getAttribute("data-r") + " receipt"); }); });
+    if (RM || !("IntersectionObserver" in window)) print("vroom");
+    else { var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); print("vroom"); } }, { threshold: .4 }); io.observe(paper); }
+  })();
 
   /* Count-up */
   document.querySelectorAll(".cnt").forEach(function (el) {
@@ -1787,7 +1860,7 @@ button.gcard:hover { border-color: var(--ink); }
   })();
 
   /* =========== v12: x-ray mode =========== */
-  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine", "t-term": "Command parser · history · tab-complete", "t-nums": "CSS 3D flips · IntersectionObserver count-up", "t-game": "Brier scoring · localStorage high score", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "Animated SVG stroke-dashoffset", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
+  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "Animated SVG stroke-dashoffset", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
   grid.querySelectorAll(".t").forEach(function (t) {
     var id = t.id || (t.classList.contains("intro") ? "intro" : ""), lab = XR[id];
     if (!lab) { var a = t.getAttribute("aria-label") || "Tile"; lab = a === "Skills" ? "Live SVG paths between DOM rects" : a === "Journey" ? "Range input · stepped timeline" : a === "Things you wouldn't guess" ? "Pointer events · swipe physics" : a === "Toolkit" ? "CSS marquee · pause on hover" : a === "Local time and contact" ? "Intl time zone clock" : a + " · HTML + CSS"; }
