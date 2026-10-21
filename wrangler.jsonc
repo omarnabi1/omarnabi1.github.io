@@ -36,8 +36,7 @@
   // Secrets (set with `npx wrangler secret put NAME`, never committed):
   //   OWNER_KEY   your private key; open https://omarnabi.com/#owner=KEY once per device
   //   NTFY_TOPIC  a long random ntfy.sh topic name for phone alerts
-  //   ANTHROPIC_API_KEY  powers Envoy's actors; without it they use scripted replies
-  // Optional Envoy limits (vars): ENVOY_DAILY_PITCHES (default 1500), ENVOY_DAILY_DEBRIEFS (default 200)
+  // Optional Envoy limits (vars): ENVOY_DAILY_MESSAGES (default 250), ENVOY_DAILY_BUILDS (default 8)
 
   // omarnabi.com is served by this Worker (the zone lives on Cloudflare).
   // Also keep the direct address (omarnabi.<subdomain>.workers.dev) for testing.
@@ -46,6 +45,9 @@
     { "pattern": "omarnabi.com", "custom_domain": true },
     { "pattern": "www.omarnabi.com", "custom_domain": true }
   ],
+
+  // Workers AI powers Envoy's typed messages and live-built scenarios inside the free daily allocation.
+  "ai": { "binding": "AI" },
 
   "observability": { "enabled": true }
 }

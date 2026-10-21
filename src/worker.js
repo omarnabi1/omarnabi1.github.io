@@ -17,7 +17,6 @@ const NOTIFY_RULES = [
   { match: "built a plan", title: "Someone built a plan for their team", tags: "clipboard" },
   { match: "sudo hire omar", title: "sudo hire omar", tags: "computer" },
   { match: "beat CR-AI", title: "Someone beat CR-AI", tags: "trophy" },
-  { match: "signed a framework in Envoy", title: "Someone brokered a deal in Envoy", tags: "dove" },
 ];
 
 function brier(ps, os) {
@@ -113,18 +112,20 @@ async function readJson(req, max = 4000) {
   }
 }
 
-/* ---------- Envoy: the CR-AI mediation game ---------- */
+/* ---------- Envoy: the CR-AI world-map strategy game ---------- */
 async function envoyApi(req, env, ctx, url, path) {
   const hub = envoy(env);
   const gid = (v) => (typeof v === "string" && /^[a-f0-9]{32}$/.test(v) ? v : null);
-  if (path === "/api/envoy/scenarios" && req.method === "GET") return json(await hub.catalog(), 200, { "cache-control": "public, max-age=60" });
+  const cid = (v) => (typeof v === "string" && /^[a-z0-9]{1,24}$/.test(v) ? v : null);
+  if (path === "/api/envoy/catalog" && req.method === "GET") return json(await hub.catalog(), 200, { "cache-control": "public, max-age=20" });
   if (path === "/api/envoy/leaderboard" && req.method === "GET") {
-    return json(await hub.board(String(url.searchParams.get("sc") || "")), 200, { "cache-control": "public, max-age=15" });
+    const c = cid(url.searchParams.get("c"));
+    return json(c ? await hub.board(c) : { rows: [] }, 200, { "cache-control": "public, max-age=15" });
   }
   if (path === "/api/envoy/game" && req.method === "GET") {
     const id = gid(url.searchParams.get("id"));
     if (!id) return json({ error: "bad id" }, 400);
-    const r = await hub.view(id);
+    const r = await hub.get(id);
     return json(r, r.error ? 404 : 200);
   }
   if (req.method !== "POST") return json({ error: "not found" }, 404);
@@ -132,24 +133,32 @@ async function envoyApi(req, env, ctx, url, path) {
   const d = await readJson(req);
   if (d.error) return json(d, 400);
   const iph = await ipHash(req, env);
+  if (path === "/api/envoy/build") {
+    const r = await hub.build(typeof d.prompt === "string" ? d.prompt : "", iph);
+    return json(r, r.error ? 400 : 200);
+  }
   if (path === "/api/envoy/new") {
     let name = cleanText(d.name, 20) || "";
     if (name && looksLikeOmar(name)) name = "Visitor";
-    const r = await hub.create(String(d.sc || ""), name, iph);
+    const r = await hub.create(cid(d.c) || "", cleanId(d.twist) || "asis", name, iph);
     return json(r, r.error ? 400 : 200);
   }
-  const id = gid(d.id);
-  if (!id) return json({ error: "bad id" }, 400);
   if (path === "/api/envoy/move") {
-    const clauses = Array.isArray(d.clauses) ? d.clauses.filter((c) => cleanId(c)).slice(0, 6) : undefined;
-    const r = await hub.move(id, { move: cleanId(d.move), target: cleanId(d.target), guarantor: cleanId(d.guarantor), variant: cleanId(d.variant), clauses, pitch: d.pitch }, iph);
-    if (r.view && r.view.ended && r.view.outcome === "deal") {
-      ctx.waitUntil(lobby(env).notify("Someone brokered a deal in Envoy", `Score ${r.view.score} in ${r.view.sc}.`, "dove").catch(() => {}));
+    const id = gid(d.id);
+    if (!id) return json({ error: "bad id" }, 400);
+    const body = {
+      a: cleanId(d.a),
+      hs: cleanId(d.hs),
+      party: cleanId(d.party),
+      clause: cleanId(d.clause),
+      clauses: Array.isArray(d.clauses) ? d.clauses.filter((c) => cleanId(c)).slice(0, 3) : undefined,
+      choice: d.choice === 1 ? 1 : 0,
+      text: typeof d.text === "string" ? d.text.slice(0, 400) : "",
+    };
+    const r = await hub.move(id, body, iph);
+    if (r.view && r.view.ended && r.view.outcome === "win" && body.a !== "end") {
+      ctx.waitUntil(lobby(env).notify("Someone won Envoy", `${r.view.title}: score ${r.view.score}.`, "dove").catch(() => {}));
     }
-    return json(r, r.error ? 400 : 200);
-  }
-  if (path === "/api/envoy/end-turn") {
-    const r = await hub.endTurn(id);
     return json(r, r.error ? 400 : 200);
   }
   return json({ error: "not found" }, 404);

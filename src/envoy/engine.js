@@ -1,464 +1,522 @@
-// Envoy rules engine. Pure functions over a plain state object, so it runs the same in the
-// Worker and in Node tests. The LLM never touches these numbers directly: it only returns a
-// bounded grade for a back-channel pitch, which this file turns into capped effects.
+// Envoy v2 rules engine: a world-map strategy game over linked hotspots.
+// Pure functions over a plain state object, so the Worker and Node tests run the same code.
+// AI layers (typed messages, generated campaigns) only ever feed bounded inputs into this file.
 
-import { SCENARIOS, DIMENSIONS, MOVES } from "./scenarios.js";
-
-export const CAPITAL_PER_TURN = 6;
-export const CAPITAL_CARRY = 2;
-export const MAX_GUARANTORS = 2;
-export const WALKOUT_TURNS = 2;
-const CARD_ORDER = ["red", "goal", "flex"];
+import { CAMPAIGNS, CAMPAIGN_BY_ID } from "./campaigns.js";
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, Math.round(v)));
+const CARD_ORDER = ["red", "goal", "flex"];
+export const COST = { listen: 1, message: 1, aid: 1, keepers: 2, summit: 2, deal: 2 };
+export const SUMMIT_MOOD = 50;
+export const WALKOUT = 2;
 
-/* ---------- seeded RNG (state carries its own seed so replays are deterministic) ---------- */
-function rand(state) {
-  let t = (state.seed = (state.seed + 0x6d2b79f5) >>> 0);
+/* ---------- seeded RNG ---------- */
+function rand(st) {
+  let t = (st.seed = (st.seed + 0x6d2b79f5) >>> 0);
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
-/* ---------- evidence tiers ---------- */
-export function tierOf(coverage) {
-  if (coverage >= 50) return "documented";
-  if (coverage >= 10) return "partial";
-  return "thin";
+export function campaignOf(st) {
+  return st.camp || CAMPAIGN_BY_ID[st.c];
 }
+const hsDef = (camp, id) => camp.hotspots.find((h) => h.id === id);
+const partyDef = (h, id) => h.parties.find((p) => p.id === id);
 
-function initialCardState(actor, key) {
-  const tier = tierOf(actor.coverage);
-  const card = actor.cards[key];
-  if (tier === "documented") return "known";
-  if (tier === "partial" && key === "goal") return "known";
-  return card.recon ? "recon" : "unknown";
-}
-
-/* ---------- new game ---------- */
-export function newGame(scenarioId, seed) {
-  const sc = SCENARIOS[scenarioId];
-  if (!sc) throw new Error("unknown scenario");
-  const actors = {};
-  for (const a of sc.actors) {
-    actors[a.id] = {
-      trust: a.trust,
-      stance: a.stance,
-      walked: 0,
-      cards: Object.fromEntries(CARD_ORDER.map((k) => [k, initialCardState(a, k)])),
-    };
+/* ---------- tags, weights, red lines ---------- */
+export function weight(p, clause) {
+  let w = 0;
+  for (const t of clause.tags) {
+    if (p.wants.includes(t)) w += 2;
+    if (p.dislikes.includes(t)) w -= 2;
   }
-  const state = {
-    v: 1,
-    sc: sc.id,
-    seed: seed >>> 0,
-    turn: 1,
-    capital: CAPITAL_PER_TURN,
-    scores: { ...sc.scores },
-    start: { ...sc.scores },
-    actors,
-    talks: false,
-    monitors: false,
-    guarantors: [],
-    used: [],
-    walkouts: 0,
-    deals: 0,
-    ended: false,
-    outcome: null,
-    log: [{ t: 1, kind: "start", text: sc.blurb }],
-  };
-  state.scores.alignment = alignmentOf(state);
-  state.start.alignment = state.scores.alignment;
-  return state;
+  return w;
 }
-
-function alignmentOf(state) {
-  const s = Object.values(state.actors).map((a) => (a.walked ? a.stance * 0.5 : a.stance));
-  const mean = s.reduce((x, y) => x + y, 0) / s.length;
-  const sd = Math.sqrt(s.reduce((x, y) => x + (y - mean) * (y - mean), 0) / s.length);
-  return clamp(mean - sd * 0.6);
+function redTags(p) {
+  return [...new Set([...(p.red || []), ...Object.keys(p.redUnless || {})])];
 }
-
-function actorDef(sc, id) {
-  return sc.actors.find((a) => a.id === id);
-}
-
-function addLog(state, kind, text, extra = {}) {
-  state.log.push({ t: state.turn, kind, text, ...extra });
-  if (state.log.length > 80) state.log.splice(1, state.log.length - 80);
-}
-
-function applyScores(state, delta, factor = 1) {
-  for (const [k, v] of Object.entries(delta || {})) {
-    if (k in state.scores && k !== "alignment") state.scores[k] = clamp(state.scores[k] + v * factor);
-  }
-}
-
-function applyActorDelta(state, field, delta, factor = 1) {
-  for (const [id, v] of Object.entries(delta || {})) {
-    const a = state.actors[id];
-    if (a) a[field] = clamp(a[field] + v * factor);
-  }
-}
-
-/* ---------- red lines ---------- */
-// A red line fires when any of its tags is present, unless every "unless" tag is also present.
-export function crossesRedLine(actor, tags) {
-  const red = actor.cards.red;
-  if (!red.tags || !red.tags.length) return false;
+// A red line fires when its tag is present, unless every "unless" tag for it is also present.
+export function crossesRed(p, tags) {
   const set = new Set(tags);
-  if (!red.tags.some((t) => set.has(t))) return false;
-  if (red.unless && red.unless.length && red.unless.every((t) => set.has(t))) return false;
-  return true;
-}
-
-function walkOut(state, sc, id, why) {
-  const a = state.actors[id];
-  const def = actorDef(sc, id);
-  if (!a || a.walked) return;
-  a.walked = WALKOUT_TURNS;
-  a.trust = clamp(a.trust - 15);
-  a.stance = clamp(a.stance - 8);
-  a.cards.red = "known";
-  state.walkouts += 1;
-  addLog(state, "walkout", `${def.short} walked out. ${why}`, { actor: id });
-}
-
-/* ---------- moves ---------- */
-export function validMoves(state) {
-  const sc = SCENARIOS[state.sc];
-  return MOVES.map((m) => {
-    let ok = !state.ended && state.capital >= m.cost;
-    let why = ok ? "" : state.ended ? "Game over" : "Not enough capital";
-    if (ok && m.id === "summit" && state.talks) [ok, why] = [false, "Talks already convened"];
-    if (ok && m.id === "summit" && eligibleForTalks(state).length < 3) [ok, why] = [false, "Needs 3 actors at trust 45+"];
-    if (ok && m.id === "deal" && !state.talks) [ok, why] = [false, "Convene talks first"];
-    if (ok && m.id === "guarantor" && state.guarantors.length >= Math.min(MAX_GUARANTORS, sc.guarantors.length)) [ok, why] = [false, "No more guarantors"];
-    if (ok && m.id === "monitors" && state.monitors) [ok, why] = [false, "Monitors already deployed"];
-    return { id: m.id, ok, why };
+  return redTags(p).some((t) => {
+    if (!set.has(t)) return false;
+    const unless = (p.redUnless || {})[t] || [];
+    return !(unless.length && unless.every((u) => set.has(u)));
   });
 }
 
-function eligibleForTalks(state) {
-  return Object.entries(state.actors).filter(([, a]) => !a.walked && a.trust >= 45).map(([id]) => id);
+/* ---------- setup ---------- */
+function cardState(p, k) {
+  const tier = p.tier || "documented";
+  const c = (p.cards || {})[k] || {};
+  if (tier === "documented") return "known";
+  if (tier === "partial" && k === "goal") return "known";
+  return c.r ? "recon" : "unknown";
 }
 
-// Apply a move. `grade` is only used for back-channels: { tone: -2..2, addresses: [tags], crosses: bool, reply }.
-export function applyMove(state, move, opts = {}, grade = null) {
-  const sc = SCENARIOS[state.sc];
-  const m = MOVES.find((x) => x.id === move);
-  if (!m) return { error: "Unknown move." };
-  const v = validMoves(state).find((x) => x.id === move);
-  if (!v.ok) return { error: v.why };
+export function newGame(campId, seed, twistId, customCamp) {
+  const camp = customCamp || CAMPAIGN_BY_ID[campId];
+  if (!camp) throw new Error("unknown campaign");
+  const st = {
+    v: 2,
+    c: camp.id,
+    camp: customCamp || undefined,
+    seed: seed >>> 0,
+    month: 1,
+    envoys: camp.envoys,
+    global: camp.globalStart,
+    flareups: 0,
+    deals: [],
+    ended: false,
+    outcome: null,
+    twist: null,
+    crisis: null,
+    hs: {},
+    log: [],
+  };
+  for (const h of camp.hotspots) {
+    st.hs[h.id] = {
+      tension: h.tension,
+      peace: 0,
+      talks: false,
+      done: false,
+      shield: 0,
+      offered: [],
+      clauses: null,
+      parties: Object.fromEntries(h.parties.map((p) => [p.id, { mood: p.mood, walked: 0, cards: Object.fromEntries(CARD_ORDER.map((k) => [k, cardState(p, k)])) }])),
+    };
+  }
+  const tw = (camp.twists || []).find((t) => t.id === twistId);
+  if (tw) {
+    if (tw.fx) applyFx(st, tw.fx);
+    st.twist = tw.id;
+  }
+  log(st, "start", camp.tagline);
+  return st;
+}
 
-  const target = opts.target && sc.actors.some((a) => a.id === opts.target) ? opts.target : null;
-  if (m.target === true && !target) return { error: "Pick an actor." };
-  if (m.target === true && state.actors[target].walked && move !== "listen") return { error: "That actor has walked out. Wait for them to come back." };
-  if (move === "backchannel" && (state.pitched || []).includes(target)) return { error: "One back-channel per actor per turn." };
+function log(st, kind, text, extra = {}) {
+  st.log.push({ m: st.month, kind, text, ...extra });
+  if (st.log.length > 60) st.log.splice(0, st.log.length - 60);
+}
 
-  const fx = sc.moveFx || {};
-  const res = { move, events: [] };
+function applyFx(st, fx) {
+  const fl = [];
+  for (const [hid, d] of Object.entries(fx.tension || {})) {
+    const h = st.hs[hid];
+    if (h && !h.done) {
+      h.tension = clamp(h.tension + d);
+      fl.push({ hs: hid, k: "tension", d });
+    }
+  }
+  for (const [key, d] of Object.entries(fx.mood || {})) {
+    const [hid, pid] = key.split(".");
+    const p = st.hs[hid] && st.hs[hid].parties[pid];
+    if (p) {
+      p.mood = clamp(p.mood + d);
+      fl.push({ hs: hid, party: pid, k: "mood", d });
+    }
+  }
+  if (fx.global) {
+    st.global = clamp(st.global + fx.global);
+    fl.push({ k: "global", d: fx.global });
+  }
+  if (fx.envoys) st.envoys = Math.max(0, st.envoys + fx.envoys);
+  return fl;
+}
 
-  switch (move) {
+/* ---------- availability ---------- */
+function summitNeed(n) {
+  return Math.min(n, Math.max(2, Math.ceil(n * 0.6)));
+}
+export function canDo(st, a, hid) {
+  if (st.ended) return "Game over";
+  if (st.crisis) return "Resolve the crisis first";
+  const h = st.hs[hid];
+  if (!h) return "Pick a hotspot";
+  if (h.done) return "Deal already signed here";
+  if (!(a in COST)) return "Unknown move";
+  if (st.envoys < COST[a]) return "Not enough envoys";
+  if (a === "summit" && h.talks) return "Talks already open";
+  if (a === "summit") {
+    const n = Object.keys(h.parties).length;
+    const ready = Object.values(h.parties).filter((p) => !p.walked && p.mood >= SUMMIT_MOOD).length;
+    if (ready < summitNeed(n)) return `Needs ${summitNeed(n)} parties at ${SUMMIT_MOOD}+ mood`;
+  }
+  if (a === "deal" && !h.talks) return "Open talks first";
+  if (a === "keepers" && h.shield) return "Peacekeepers already there";
+  return "";
+}
+
+/* ---------- actions ---------- */
+// For typed messages the AI supplies { clauses: [ids], tone: -2..2, reply }. Everything else is rules.
+export function act(st, a, hid, opts = {}, ai = null) {
+  const why = canDo(st, a, hid);
+  if (why) return { error: why };
+  const camp = campaignOf(st);
+  const H = hsDef(camp, hid);
+  const h = st.hs[hid];
+  const out = { act: a, hs: hid, fx: [] };
+  const pd = opts.party ? partyDef(H, opts.party) : null;
+  const ps = pd ? h.parties[pd.id] : null;
+  if ((a === "listen" || a === "message") && !pd) return { error: "Pick a party" };
+  if (a === "message" && ps.walked) return { error: `${pd.short} walked out` };
+
+  switch (a) {
     case "listen": {
-      const a = state.actors[target];
-      const key = CARD_ORDER.find((k) => a.cards[k] !== "known");
-      if (!key) return { error: "You already know everything about this actor." };
-      const def = actorDef(sc, target);
-      const card = def.cards[key];
-      const was = a.cards[key];
-      a.cards[key] = "known";
-      a.trust = clamp(a.trust + 2);
-      const label = { red: "red line", goal: "real goal", flex: "flexibility" }[key];
-      let text = `Listening to ${def.short}: their ${label} is now known.`;
-      if (was === "recon") text += card.reconOk ? " The reconstruction was close." : " The reconstruction was wrong.";
-      addLog(state, "intel", text, { actor: target, card: key, reconOk: was === "recon" ? !!card.reconOk : null });
-      res.revealed = { actor: target, card: key, wasRecon: was === "recon", reconOk: card.reconOk };
+      const key = CARD_ORDER.find((k) => ps.cards[k] !== "known");
+      if (!key) return { error: `You already know ${pd.short}'s hand` };
+      const was = ps.cards[key];
+      ps.cards[key] = "known";
+      ps.mood = clamp(ps.mood + 2);
+      const c = (pd.cards || {})[key] || {};
+      out.reveal = { party: pd.id, card: key, wasRecon: was === "recon", wrong: was === "recon" && c.ok === false };
+      log(st, "intel", `${pd.short}: ${cardName(key)} revealed${out.reveal.wrong ? ". The reconstruction was wrong!" : "."}`, { hs: hid, party: pd.id });
       break;
     }
-    case "backchannel": {
-      const a = state.actors[target];
-      const def = actorDef(sc, target);
-      const g = normalizeGrade(grade);
-      if (g.crosses) {
-        a.trust = clamp(a.trust - 10);
-        a.stance = clamp(a.stance - 5);
-        if (a.cards.red !== "known") a.cards.red = "known";
-        addLog(state, "backchannel", `${def.short} bristled: your message touched a red line.`, { actor: target, reply: g.reply, tone: -2 });
-      } else {
-        const hits = g.addresses.filter((t) => def.interests.includes(t)).length;
-        const dt = Math.max(-10, Math.min(10, g.tone * 4 + Math.min(2, hits) * 2));
-        const ds = Math.max(-5, Math.min(6, g.tone * 2 + (hits ? 1 : 0)));
-        a.trust = clamp(a.trust + dt);
-        a.stance = clamp(a.stance + ds);
-        if (g.tone >= 2 && a.cards.flex !== "known") a.cards.flex = "known";
-        if (g.tone >= 1) state.scores.resolution = clamp(state.scores.resolution + 2);
-        addLog(state, "backchannel", `Back-channel with ${def.short}.`, { actor: target, reply: g.reply, tone: g.tone, dt });
+    case "message": {
+      if (h.offered.includes(pd.id)) return { error: `One message to ${pd.short} per ${camp.unit.toLowerCase()}` };
+      const clauseIds = (ai ? ai.clauses || [] : [opts.clause]).filter((id) => H.clauses.some((c) => c.id === id)).slice(0, 2);
+      if (!ai && !clauseIds.length) return { error: "Pick something to offer" };
+      const tone = ai ? Math.max(-2, Math.min(2, Math.round(Number(ai.tone) || 0))) : 0;
+      let d = tone * 3;
+      let verdict = tone > 0 ? "love" : tone < 0 ? "hate" : "neutral";
+      const tags = clauseIds.flatMap((id) => H.clauses.find((c) => c.id === id).tags);
+      if (tags.length && crossesRed(pd, tags)) {
+        d = -15;
+        verdict = "red";
+        ps.cards.red = "known";
+      } else if (clauseIds.length) {
+        const w = clauseIds.reduce((s, id) => s + weight(pd, H.clauses.find((c) => c.id === id)), 0);
+        if (w > 0) { d += 8 + Math.min(w, 4) * 2; verdict = "love"; }
+        else if (w < 0) { d -= 6; verdict = "hate"; }
+        else d += 1;
       }
-      state.pitched = (state.pitched || []).concat(target);
-      res.grade = g;
+      d = Math.max(-15, Math.min(18, d));
+      ps.mood = clamp(ps.mood + d);
+      h.offered.push(pd.id);
+      out.fx.push({ hs: hid, party: pd.id, k: "mood", d });
+      out.verdict = verdict;
+      out.reply = (ai && ai.reply) || bark(pd, verdict, st.month);
+      log(st, "msg", `${pd.short}: "${out.reply}"`, { hs: hid, party: pd.id, d, verdict });
       break;
     }
     case "aid": {
-      const f = fx.aid || {};
-      applyScores(state, f.scores || { humanitarian: -7 });
-      applyActorDelta(state, "trust", f.trust);
-      addLog(state, "move", `${f.label || "Humanitarian package"} delivered.`);
+      h.tension = clamp(h.tension - 10);
+      for (const p of Object.values(h.parties)) p.mood = clamp(p.mood + 2);
+      out.fx.push({ hs: hid, k: "tension", d: -10 });
+      log(st, "act", `Aid lands in ${H.name}.`, { hs: hid });
       break;
     }
-    case "incentive": {
-      const def = actorDef(sc, target);
-      const a = state.actors[target];
-      a.trust = clamp(a.trust + 12);
-      a.stance = clamp(a.stance + 6);
-      const jealous = sc.actors.filter((x) => x.rivals.includes(target) || def.rivals.includes(x.id)).map((x) => x.id);
-      for (const id of jealous) state.actors[id].trust = clamp(state.actors[id].trust - 4);
-      state.scores.economic = clamp(state.scores.economic - 2);
-      addLog(state, "move", `Economic incentive to ${def.short}.` + (jealous.length ? ` ${jealous.map((id) => actorDef(sc, id).short).join(", ")} noticed.` : ""));
-      break;
-    }
-    case "guarantor": {
-      const g = sc.guarantors.find((x) => x.id === opts.guarantor && !state.guarantors.includes(x.id));
-      if (!g) return { error: "Pick a guarantor." };
-      state.guarantors.push(g.id);
-      applyActorDelta(state, "trust", g.boost);
-      for (const a of Object.values(state.actors)) a.stance = clamp(a.stance + 3);
-      addLog(state, "move", `${g.name} joins as guarantor.`);
-      break;
-    }
-    case "community": {
-      const f = fx.community || {};
-      applyScores(state, f.scores || { stability: -5 });
-      applyActorDelta(state, "trust", f.trust);
-      addLog(state, "move", `${f.label || "Community engagement"}.`);
-      break;
-    }
-    case "monitors": {
-      const f = opts.variant === "foreign" && fx.monitorsForeign ? fx.monitorsForeign : fx.monitors || {};
-      const tags = f.tags || [];
-      applyScores(state, f.scores || { intensity: -8 });
-      applyActorDelta(state, "trust", f.trust);
-      state.monitors = true;
-      addLog(state, "move", `${f.label || "Monitors"} deployed.`);
-      for (const def of sc.actors) {
-        if (!state.actors[def.id].walked && crossesRedLine(def, tags)) walkOut(state, sc, def.id, "Monitors crossed a red line.");
+    case "keepers": {
+      h.tension = clamp(h.tension - 18);
+      h.shield = 2;
+      out.fx.push({ hs: hid, k: "tension", d: -18 });
+      log(st, "act", `Peacekeepers deploy to ${H.name}.`, { hs: hid });
+      for (const p of H.parties) {
+        if (!h.parties[p.id].walked && crossesRed(p, ["foreign_troops"])) walkOut(st, H, p, "Foreign troops are their red line.", out);
       }
       break;
     }
     case "summit": {
-      const who = eligibleForTalks(state);
-      state.talks = true;
-      state.scores.resolution = clamp(state.scores.resolution + 10);
-      for (const id of who) state.actors[id].stance = clamp(state.actors[id].stance + 4);
-      addLog(state, "move", `Talks convened with ${who.map((id) => actorDef(sc, id).short).join(", ")}.`);
+      h.talks = true;
+      h.peace = clamp(h.peace + 25);
+      for (const p of Object.values(h.parties)) if (!p.walked) p.mood = clamp(p.mood + 4);
+      log(st, "act", `Talks open on ${H.name}.`, { hs: hid });
       break;
     }
     case "deal": {
-      const r = evaluateDeal(state, opts.clauses);
-      if (r.error) return r;
-      state.deals += 1;
-      res.deal = r;
-      for (const v of r.votes) {
-        if (v.reason === "red_line") walkOut(state, sc, v.actor, "Your framework crossed their red line.");
-        else if (!v.accept) state.actors[v.actor].stance = clamp(state.actors[v.actor].stance - 3);
-        else state.actors[v.actor].stance = clamp(state.actors[v.actor].stance + 3);
+      const ids = [...new Set(opts.clauses || [])].filter((id) => H.clauses.some((c) => c.id === id));
+      if (ids.length < 1 || ids.length > 3) return { error: "Pick 1 to 3 terms" };
+      const tags = ["deal", ...ids.flatMap((id) => H.clauses.find((c) => c.id === id).tags)];
+      const votes = H.parties.map((p) => {
+        const s = h.parties[p.id];
+        if (s.walked) return { party: p.id, yes: false, why: "absent" };
+        if (crossesRed(p, tags)) return { party: p.id, yes: false, why: "red" };
+        const v = ids.reduce((x, id) => x + weight(p, H.clauses.find((c) => c.id === id)), 0) + (s.mood - 50) / 10;
+        return { party: p.id, yes: v >= 2, why: v >= 2 ? "yes" : "no" };
+      });
+      const yes = votes.filter((v) => v.yes).length;
+      const vetoNo = H.parties.filter((p) => p.veto && !votes.find((v) => v.party === p.id).yes);
+      const need = H.parties.length >= 3 ? H.parties.length - 1 : H.parties.length;
+      const passed = vetoNo.length === 0 && yes >= need;
+      out.votes = votes;
+      out.passed = passed;
+      out.need = need;
+      for (const v of votes) if (v.why === "red") walkOut(st, H, partyDef(H, v.party), "Your terms crossed their red line.", out);
+      st.envoys -= COST.deal;
+      if (passed) {
+        h.done = true;
+        h.clauses = ids;
+        h.peace = 100;
+        h.tension = 8;
+        st.deals.push(hid);
+        st.global = clamp(st.global - 12);
+        for (const [x, y, w] of camp.links || []) {
+          const other = x === hid ? y : y === hid ? x : null;
+          if (other && !st.hs[other].done) st.hs[other].tension = clamp(st.hs[other].tension - Math.round(10 * w));
+        }
+        // A party that also sits at another table remembers what it won here.
+        for (const p of H.parties) {
+          for (const H2 of camp.hotspots) {
+            if (H2.id === hid || st.hs[H2.id].done) continue;
+            const p2 = H2.parties.find((x) => x.id === p.id);
+            if (p2 && tags.some((t) => p2.wants.includes(t))) st.hs[H2.id].parties[p.id].mood = clamp(st.hs[H2.id].parties[p.id].mood + 12);
+          }
+        }
+        log(st, "deal", `Deal signed in ${H.name}!`, { hs: hid, votes });
+        if (st.deals.length >= camp.goal) finish(st, "win");
+        return out;
       }
-      const yes = r.votes.filter((x) => x.accept).length;
-      if (r.passed) {
-        state.scores.resolution = clamp(Math.max(state.scores.resolution + 30, 75));
-        state.scores.intensity = clamp(state.scores.intensity - 15);
-        state.scores.contagion = clamp(state.scores.contagion - 10);
-        addLog(state, "deal", `Framework agreed by ${yes} of ${r.votes.length}.`, { votes: r.votes });
-        state.capital -= m.cost;
-        finish(state, "deal");
-        res.ended = true;
-        return res;
-      }
-      state.scores.resolution = clamp(state.scores.resolution + yes * 2);
-      addLog(state, "deal", `Framework failed: ${yes} of ${r.votes.length} accepted.` + (r.vetoed.length ? ` Vetoed by ${r.vetoed.map((id) => actorDef(sc, id).short).join(", ")}.` : ""), { votes: r.votes });
-      break;
+      h.peace = clamp(h.peace + yes * 4);
+      for (const v of votes) if (v.why === "no") h.parties[v.party].mood = clamp(h.parties[v.party].mood - 3);
+      log(st, "vote", `Vote failed in ${H.name}: ${yes} of ${H.parties.length} said yes.`, { hs: hid, votes });
+      return out;
     }
   }
-
-  state.capital -= m.cost;
-  state.scores.alignment = alignmentOf(state);
-  return res;
-}
-
-function normalizeGrade(g) {
-  g = g || {};
-  const tone = Math.max(-2, Math.min(2, Math.round(Number(g.tone) || 0)));
-  const addresses = Array.isArray(g.addresses) ? g.addresses.filter((t) => typeof t === "string").slice(0, 6) : [];
-  return { tone, addresses, crosses: !!g.crosses, reply: typeof g.reply === "string" ? g.reply.slice(0, 600) : "", source: g.source || "" };
-}
-
-/* ---------- deals ---------- */
-export function evaluateDeal(state, clauseIds) {
-  const sc = SCENARIOS[state.sc];
-  if (!Array.isArray(clauseIds)) return { error: "Pick clauses." };
-  const ids = [...new Set(clauseIds)].filter((id) => sc.clauses.some((c) => c.id === id));
-  if (ids.length < 1 || ids.length > 4) return { error: "Pick between 1 and 4 clauses." };
-  const tags = ["deal", ...ids.flatMap((id) => sc.clauses.find((c) => c.id === id).tags)];
-  const votes = sc.actors.map((def) => {
-    const a = state.actors[def.id];
-    if (a.walked) return { actor: def.id, accept: false, reason: "absent", value: null };
-    if (crossesRedLine(def, tags)) return { actor: def.id, accept: false, reason: "red_line", value: null };
-    const clauseValue = ids.reduce((s, id) => s + (def.weights[id] || 0), 0);
-    const value = clauseValue + (a.trust - 50) / 12 + (a.stance - 50) / 12;
-    const accept = value >= 3;
-    return { actor: def.id, accept, reason: accept ? "accepts" : clauseValue < 1 ? "nothing_for_us" : "not_ready", value: +value.toFixed(1) };
-  });
-  const vetoed = sc.veto.filter((id) => !votes.find((v) => v.actor === id).accept);
-  const yes = votes.filter((v) => v.accept).length;
-  return { clauses: ids, votes, vetoed, passed: vetoed.length === 0 && yes >= 5 };
-}
-
-/* ---------- end of turn ---------- */
-export function endTurn(state) {
-  const sc = SCENARIOS[state.sc];
-  if (state.ended) return { error: "Game over." };
-  const out = { events: [] };
-
-  // 1. A world event.
-  const pool = sc.events.filter((e) => !state.used.includes(e.id));
-  const ev = pool[Math.floor(rand(state) * pool.length)] || sc.events[Math.floor(rand(state) * sc.events.length)];
-  state.used.push(ev.id);
-  const blunted = ev.mitigatedBy === "monitors" && state.monitors;
-  const f = blunted ? 0.4 : 1;
-  applyScores(state, ev.scores, f);
-  applyActorDelta(state, "trust", ev.trust, f);
-  applyActorDelta(state, "stance", ev.stance, f);
-  addLog(state, "event", ev.title + (blunted ? " Monitors limited the damage." : ""), { detail: ev.text });
-  out.events.push({ title: ev.title, text: ev.text, blunted });
-
-  // 2. Spillover from connected conflicts, weighted by the contagion score.
-  for (const n of sc.neighbors) {
-    const p = (state.scores.contagion / 100) * n.weight * 0.3;
-    if (rand(state) < p) {
-      const sp = sc.spill.find((s) => s.from === n.id);
-      if (sp) {
-        applyScores(state, sp.scores);
-        applyActorDelta(state, "trust", sp.trust);
-        applyActorDelta(state, "stance", sp.stance);
-        addLog(state, "spill", `Spillover from ${n.name}: ${sp.title}`, { detail: sp.text });
-        out.events.push({ title: sp.title, text: sp.text, spill: n.name });
-        break;
-      }
-    }
-  }
-
-  // 3. Drift: open talks build momentum, high violence erodes trust, walkouts count down.
-  if (state.talks) state.scores.resolution = clamp(state.scores.resolution + 2);
-  if (state.scores.intensity >= 75) for (const a of Object.values(state.actors)) a.trust = clamp(a.trust - 2);
-  for (const [id, a] of Object.entries(state.actors)) {
-    if (a.walked) {
-      a.walked -= 1;
-      if (!a.walked) addLog(state, "return", `${actorDef(sc, id).short} is back at the table.`, { actor: id });
-    }
-  }
-  state.scores.alignment = alignmentOf(state);
-
-  // 4. Lose conditions, then the next turn.
-  if (state.scores.intensity >= 95) {
-    finish(state, "war");
-  } else if (state.turn >= sc.turns) {
-    finish(state, "timeout");
-  } else {
-    state.turn += 1;
-    state.pitched = [];
-    state.capital = CAPITAL_PER_TURN + Math.min(CAPITAL_CARRY, state.capital);
-  }
-  out.ended = state.ended;
+  st.envoys -= COST[a];
   return out;
 }
 
-function finish(state, outcome) {
-  state.ended = true;
-  state.outcome = outcome;
-  state.score = scoreOf(state);
-  const msg = { deal: "A framework is signed.", war: "Violence spiraled out of control.", timeout: "Time ran out without a deal." }[outcome];
-  addLog(state, "end", msg);
+const cardName = (k) => ({ red: "red line", goal: "real goal", flex: "flexibility" })[k];
+
+function walkOut(st, H, p, why, out) {
+  const s = st.hs[H.id].parties[p.id];
+  if (s.walked) return;
+  s.walked = WALKOUT;
+  s.mood = clamp(s.mood - 15);
+  s.cards.red = "known";
+  log(st, "walk", `${p.short} walked out. ${why}`, { hs: H.id, party: p.id });
+  if (out) (out.walkouts = out.walkouts || []).push(p.id);
 }
 
-export function scoreOf(state) {
-  let s = 0;
-  for (const d of DIMENSIONS) {
-    const delta = state.scores[d.id] - state.start[d.id];
-    s += (d.lowerIsBetter ? -delta : delta) * 4;
+const BARKS = {
+  love: ["Now we're talking.", "This, we can work with.", "Put that in writing.", "Finally, someone listens."],
+  neutral: ["We'll consider it.", "Words are cheap.", "What else is on the table?", "Not enough."],
+  hate: ["Not that.", "You're not helping.", "That costs us too much.", "Whose side are you on?"],
+  red: ["Absolutely not.", "That is a line we don't cross.", "Never raise that again."],
+};
+function bark(p, verdict, m) {
+  const list = BARKS[verdict] || BARKS.neutral;
+  return list[(p.id.length + m) % list.length];
+}
+
+/* ---------- crisis cards ---------- */
+export function resolveCrisis(st, choice) {
+  if (st.ended) return { error: "Game over" };
+  if (!st.crisis) return { error: "No crisis to resolve" };
+  const ev = st.crisis;
+  const c = ev.choices[choice === 1 ? 1 : 0];
+  const fx = applyFx(st, c.fx || {});
+  log(st, "crisis", `${ev.title}: you chose "${c.label}".`, { hs: ev.hs });
+  st.crisis = null;
+  if (st.global >= 100) finish(st, "war");
+  return { fx };
+}
+
+function drawCrisis(st) {
+  const camp = campaignOf(st);
+  const ok = (e) => !e.hs || (st.hs[e.hs] && !st.hs[e.hs].done);
+  st.usedEv = st.usedEv || [];
+  let pool = camp.events.map((e, i) => ({ e, i })).filter(({ e, i }) => !st.usedEv.includes(i) && ok(e));
+  if (!pool.length) {
+    st.usedEv = [];
+    pool = camp.events.map((e, i) => ({ e, i })).filter(({ e }) => ok(e));
   }
-  if (state.outcome === "deal") s += 600 + (SCENARIOS[state.sc].turns - state.turn) * 50;
-  if (state.outcome === "war") s -= 200;
-  s -= state.walkouts * 25;
-  return Math.max(0, Math.round(s));
+  if (!pool.length) return;
+  const pick = pool[Math.floor(rand(st) * pool.length)];
+  st.usedEv.push(pick.i);
+  st.crisis = { hs: pick.e.hs || null, title: pick.e.title, choices: pick.e.choices.slice(0, 2).map((c) => ({ label: c.label, fx: c.fx || {} })) };
+}
+
+/* ---------- end of month ---------- */
+export function endMonth(st) {
+  if (st.ended) return { error: "Game over" };
+  if (st.crisis) return { error: "Resolve the crisis first" };
+  const camp = campaignOf(st);
+  const out = { drift: {}, flares: [] };
+  const before = st.global;
+
+  for (const H of camp.hotspots) {
+    const h = st.hs[H.id];
+    if (h.done) continue;
+    if (h.shield) {
+      h.shield -= 1;
+      out.drift[H.id] = 0;
+      continue;
+    }
+    const d = 3 + Math.floor(rand(st) * 6) - (h.talks ? 3 : 0);
+    h.tension = clamp(h.tension + d);
+    out.drift[H.id] = d;
+  }
+  // Flare-ups chain across links like an outbreak. Each hotspot flares at most once a turn.
+  const flared = new Set();
+  const queue = camp.hotspots.filter((H) => !st.hs[H.id].done && st.hs[H.id].tension >= 100).map((H) => H.id);
+  while (queue.length) {
+    const id = queue.shift();
+    if (flared.has(id)) continue;
+    flared.add(id);
+    const h = st.hs[id];
+    h.tension = 72;
+    h.peace = clamp(h.peace - 20);
+    st.global = clamp(st.global + 8);
+    st.flareups += 1;
+    out.flares.push(id);
+    log(st, "flare", `${hsDef(camp, id).name} flares up!`, { hs: id });
+    for (const [a, b, w] of camp.links || []) {
+      const o = a === id ? b : b === id ? a : null;
+      if (!o || st.hs[o].done) continue;
+      st.hs[o].tension = clamp(st.hs[o].tension + Math.round(14 * w));
+      if (st.hs[o].tension >= 100 && !flared.has(o)) queue.push(o);
+    }
+  }
+  const pressure = camp.hotspots.reduce((s, H) => s + (st.hs[H.id].done ? 0 : Math.max(0, st.hs[H.id].tension - 70)), 0);
+  st.global = clamp(st.global + Math.round(pressure / 12));
+  out.globalDelta = st.global - before;
+
+  for (const H of camp.hotspots) {
+    const h = st.hs[H.id];
+    h.offered = [];
+    for (const p of H.parties) {
+      const s = h.parties[p.id];
+      if (s.walked) {
+        s.walked -= 1;
+        if (!s.walked) log(st, "back", `${p.short} is back at the table.`, { hs: H.id, party: p.id });
+      }
+    }
+  }
+
+  if (st.global >= 100) {
+    finish(st, "war");
+    return out;
+  }
+  if (st.month >= camp.months) {
+    finish(st, st.deals.length >= camp.goal ? "win" : "timeout");
+    return out;
+  }
+  st.month += 1;
+  st.envoys = camp.envoys;
+  drawCrisis(st);
+  return out;
+}
+
+function finish(st, outcome) {
+  st.ended = true;
+  st.outcome = outcome;
+  st.crisis = null;
+  const camp = campaignOf(st);
+  let s = st.deals.length * 400 + (100 - st.global) * 4 - st.flareups * 40;
+  for (const H of camp.hotspots) s += Math.round(st.hs[H.id].peace / 2);
+  if (outcome === "win") s += 500 + (camp.months - st.month) * 60;
+  st.score = Math.max(0, Math.round(s));
+  log(st, "end", { win: "You did it.", war: "The world tipped into war.", timeout: "Time ran out." }[outcome]);
 }
 
 /* ---------- views ---------- */
-// What the player is allowed to see. Hidden truths never leave the server until the game ends.
-export function publicView(state) {
-  const sc = SCENARIOS[state.sc];
-  const reveal = state.ended;
+export function view(st) {
+  const camp = campaignOf(st);
+  const over = st.ended;
   return {
-    sc: sc.id,
-    turn: state.turn,
-    turns: sc.turns,
-    capital: state.capital,
-    scores: state.scores,
-    start: state.start,
-    talks: state.talks,
-    monitors: state.monitors,
-    guarantors: state.guarantors,
-    ended: state.ended,
-    outcome: state.outcome,
-    score: state.ended ? state.score : null,
-    moves: validMoves(state),
-    log: state.log.slice(-40),
-    actors: sc.actors.map((def) => {
-      const a = state.actors[def.id];
-      const cards = {};
-      for (const k of CARD_ORDER) {
-        const st = reveal ? "known" : a.cards[k];
-        const c = def.cards[k];
-        cards[k] = {
-          state: st,
-          text: st === "known" ? c.truth : st === "recon" ? c.recon : null,
-          wasRecon: reveal && !!c.recon && tierOf(def.coverage) !== "documented" && !(tierOf(def.coverage) === "partial" && k === "goal"),
-          reconText: reveal ? c.recon || null : null,
-          reconOk: reveal ? c.reconOk !== false : null,
-        };
-      }
+    c: camp.id,
+    custom: !!st.camp,
+    era: camp.era,
+    year: camp.year,
+    title: camp.title,
+    tagline: camp.tagline,
+    unit: camp.unit,
+    months: camp.months,
+    maxEnvoys: camp.envoys,
+    goal: camp.goal,
+    note: camp.note,
+    twist: st.twist,
+    month: st.month,
+    envoys: st.envoys,
+    global: st.global,
+    flareups: st.flareups,
+    deals: st.deals,
+    ended: st.ended,
+    outcome: st.outcome,
+    score: st.ended ? st.score : null,
+    crisis: st.crisis ? { hs: st.crisis.hs, title: st.crisis.title, choices: st.crisis.choices.map((c) => ({ label: c.label, hint: fxHint(camp, c.fx) })) } : null,
+    links: camp.links || [],
+    log: st.log.slice(-30),
+    hotspots: camp.hotspots.map((H) => {
+      const h = st.hs[H.id];
       return {
-        id: def.id,
-        name: def.name,
-        short: def.short,
-        role: def.role,
-        coverage: def.coverage,
-        tier: tierOf(def.coverage),
-        veto: sc.veto.includes(def.id),
-        trust: a.trust,
-        stance: a.stance,
-        walked: a.walked,
-        cards,
+        id: H.id,
+        name: H.name,
+        lat: H.lat,
+        lon: H.lon,
+        flavor: H.flavor,
+        tension: h.tension,
+        peace: h.peace,
+        talks: h.talks,
+        done: h.done,
+        shield: h.shield,
+        signed: h.clauses,
+        need: summitNeed(H.parties.length),
+        clauses: H.clauses.map((c) => ({ id: c.id, name: c.name })),
+        history: over && H.history ? H.history : null,
+        offered: h.offered,
+        parties: H.parties.map((p) => {
+          const s = h.parties[p.id];
+          const cards = {};
+          for (const k of CARD_ORDER) {
+            const stt = over ? "known" : s.cards[k];
+            const c = (p.cards || {})[k] || {};
+            cards[k] = { s: stt, t: stt === "known" ? c.t || null : stt === "recon" ? c.r : null, wrong: over && c.r && c.ok === false && cardState(p, k) === "recon" ? c.r : null };
+          }
+          const goalKnown = over || s.cards.goal === "known";
+          const redKnown = over || s.cards.red === "known";
+          return {
+            id: p.id,
+            name: p.name,
+            short: p.short,
+            icon: p.icon,
+            veto: !!p.veto,
+            tier: p.tier || "documented",
+            docs: p.docs ?? null,
+            mood: s.mood,
+            walked: s.walked,
+            cards,
+            lean: goalKnown ? Object.fromEntries(H.clauses.map((c) => [c.id, Math.sign(weight(p, c))])) : null,
+            redOn: redKnown ? H.clauses.filter((c) => crossesRed(p, c.tags)).map((c) => c.id) : null,
+          };
+        }),
       };
     }),
   };
 }
 
-export function scenarioCatalog() {
-  return Object.values(SCENARIOS).map((sc) => ({
-    id: sc.id,
-    name: sc.name,
-    title: sc.title,
-    blurb: sc.blurb,
-    baseline: sc.baseline,
-    turns: sc.turns,
-    clauses: sc.clauses.map(({ id, name, text }) => ({ id, name, text })),
-    guarantors: sc.guarantors.map(({ id, name, text }) => ({ id, name, text })),
-    neighbors: sc.neighbors.map(({ name, weight }) => ({ name, weight })),
-    monitorVariants: sc.moveFx && sc.moveFx.monitorsForeign
-      ? [{ id: "local", name: sc.moveFx.monitors.label }, { id: "foreign", name: sc.moveFx.monitorsForeign.label }]
-      : [{ id: "local", name: (sc.moveFx && sc.moveFx.monitors && sc.moveFx.monitors.label) || "Monitors" }],
-    moveLabels: { aid: sc.moveFx?.aid?.label, community: sc.moveFx?.community?.label },
-  }));
+function fxHint(camp, fx) {
+  const parts = [];
+  for (const [hid, d] of Object.entries(fx.tension || {})) parts.push(`${(hsDef(camp, hid) || {}).name || hid} ${d > 0 ? "🔥+" + d : "💧" + d}`);
+  for (const [key, d] of Object.entries(fx.mood || {})) {
+    const [hid, pid] = key.split(".");
+    const H = hsDef(camp, hid);
+    const p = H && partyDef(H, pid);
+    parts.push(`${p ? p.short : pid} ${d > 0 ? "🙂" : "😠"}`);
+  }
+  if (fx.global) parts.push(`World ${fx.global > 0 ? "🔥+" + fx.global : "💧" + fx.global}`);
+  if (fx.envoys) parts.push(`${fx.envoys} envoy`);
+  return parts.join(" · ");
 }
 
-export { DIMENSIONS, MOVES };
+export function catalog() {
+  return CAMPAIGNS.map(summaryOf);
+}
+export function summaryOf(c) {
+  return {
+    id: c.id,
+    era: c.era,
+    year: c.year,
+    title: c.title,
+    tagline: c.tagline,
+    months: c.months,
+    unit: c.unit,
+    goal: c.goal,
+    hotspots: c.hotspots.map((h) => ({ id: h.id, name: h.name, lat: h.lat, lon: h.lon })),
+    twists: (c.twists || []).map(({ id, name, text }) => ({ id, name, text })),
+  };
+}
