@@ -96,6 +96,20 @@ em.s { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .nav-ind.show { opacity: 1; }
 .nav-ind i { position: absolute; left: 10px; right: 10px; bottom: 3px; height: 2px; border-radius: 2px; background: var(--acc); transform-origin: 0 50%; transform: scaleX(var(--np, 0)); }
 /* Chapters: full-width headers that structure the grid and match the nav */
+.mnav { display: none; }
+@media (max-width: 680px) {
+  .top nav.mnav, .mnav { display: block; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .35s ease, opacity .3s; }
+  .top nav.mnav.on { max-height: 60px; opacity: 1; }
+  .mnav .wrap { padding-block: 0 9px; display: grid; gap: 6px; }
+  .mseg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .top nav.mnav .mseg a { display: block; padding: 7px 0; border-radius: 0; background: none; }
+  .mseg i { display: block; height: 3px; border-radius: 2px; background: var(--line); position: relative; overflow: hidden; }
+  .mseg i::after { content: ""; position: absolute; inset: 0; background: var(--acc); transform-origin: 0 50%; transform: scaleX(var(--mf, 0)); transition: transform .3s; }
+  .mlbl { display: flex; align-items: baseline; gap: 8px; font-size: .8rem; font-weight: 700; margin-top: -4px; }
+  .mlbl b { font-family: var(--mono); font-size: .66rem; color: var(--acc); }
+  .mlbl .mhint { margin-left: auto; font-family: var(--mono); font-size: .58rem; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .chap { scroll-margin-top: 104px; }
+}
 .chap { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: 18px; row-gap: 6px; padding: clamp(40px, 7vw, 84px) 4px 4px; scroll-margin-top: 64px; position: relative; }
 .chap-n { font-family: var(--mono); font-size: .8rem; font-weight: 600; letter-spacing: .1em; color: var(--acc); align-self: start; padding-top: .9em; }
 .chap-h { font-size: clamp(2.6rem, 6.4vw, 5rem); font-weight: 800; letter-spacing: -.045em; line-height: .95; overflow: hidden; padding-bottom: .06em; }
@@ -155,6 +169,13 @@ em.s { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .uf .nd.hot { stroke: var(--acc); stroke-width: 3; fill: var(--acc-soft); }
 .uf .nd-t { fill: var(--ink); font-family: var(--mono); font-size: 10px; font-weight: 600; }
 .uf .nd-s { fill: var(--muted); font-family: var(--mono); font-size: 8.5px; }
+.uf svg.sm .nd-t { font-size: 17px; font-weight: 700; letter-spacing: -.5px; }
+.uf svg.sm .nd-s, .uf svg.sm .view-s { display: none; }
+.uf svg.sm .chip-t { font-size: 15px; }
+.uf svg.sm .band-t { font-size: 15px; }
+.uf svg.sm .view-t { font-size: 30px; transform: translateY(8px); }
+.uf svg.sm .nd { stroke-width: 2.4; }
+.uf svg.sm .edge, .uf svg.sm .conn { stroke-width: 2.6; }
 .uf .band { fill: var(--blue-soft); stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .uf .band-t { fill: var(--blue); font-family: var(--mono); font-size: 9px; letter-spacing: .5px; }
 .uf .chip-r { fill: var(--tile); stroke: var(--blue); stroke-width: 1.4; }
@@ -619,7 +640,7 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
 }
 
 /* ---------- v11: motion + interaction ---------- */
-main.wrap, .top, footer { position: relative; z-index: 1; }
+main.wrap, footer { position: relative; z-index: 1; }
 #dots { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 #confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none; }
 .prog { position: fixed; left: 0; top: env(safe-area-inset-top, 0px); height: 3px; width: 100%; z-index: 31; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); background: linear-gradient(90deg, var(--blue), var(--acc)); }
@@ -972,6 +993,7 @@ button.gcard:hover { border-color: var(--ink); }
       <button type="button" class="pill dark" id="cvBtn">30-sec version</button>
     </div>
   </div>
+  <nav class="mnav" id="mnav" aria-label="Chapters"><div class="wrap"><div class="mseg" id="mseg"><a href="#ch-work" data-ch="work" aria-label="Work"><i></i></a><a href="#ch-builds" data-ch="builds" aria-label="Builds"><i></i></a><a href="#ch-play" data-ch="play" aria-label="Play"><i></i></a><a href="#ch-about" data-ch="about" aria-label="About"><i></i></a><a href="#ch-contact" data-ch="contact" aria-label="Contact"><i></i></a></div><p class="mlbl"><b id="mnum">01</b> <span id="mname">Work</span><span class="mhint">tap a bar to jump</span></p></div></nav>
 </header>
 
 <main class="wrap" id="top">
@@ -1527,8 +1549,20 @@ button.gcard:hover { border-color: var(--ink); }
   var SVGNS = "http://www.w3.org/2000/svg", linksSvg = $("links"), mainSet = null, feelSet = null, demoSet = null, LENS_OUT = "Each skill lights up the tiles on this page that prove it.";
   function f1(n) { return n.toFixed(1); }
   function sizeLinks() { var g = grid.getBoundingClientRect(); linksSvg.setAttribute("viewBox", "0 0 " + g.width.toFixed(0) + " " + g.height.toFixed(0)); return g; }
-  function curve(sx, sy, r, g) {
+  function oneCol() { return grid.getBoundingClientRect().width < 700; }
+  function curve(sx, sy, r, g, i) {
     var cx = r.left + r.width / 2 - g.left, cy = r.top + r.height / 2 - g.top, tx, ty, a, d;
+    if (oneCol() && r.width > g.width * .8) {
+      var right = (i || 0) % 2 === 1, gx = right ? r.right - g.left + 9 : r.left - g.left - 9, down = cy > sy, k = down ? 1 : -1;
+      ty = Math.max(r.top - g.top + 26, Math.min(r.bottom - g.top - 26, (r.top - g.top) + Math.min(70, r.height / 2)));
+      if (!down) ty = Math.min(r.bottom - g.top - 26, ty + r.height / 2);
+      tx = right ? r.right - g.left - 3 : r.left - g.left + 3; a = right ? 180 : 0;
+      var y1 = sy + k * 46, y2 = ty - k * 34;
+      if ((y2 - y1) * k < 0) y2 = y1;
+      d = "M" + f1(sx) + " " + f1(sy) + " C" + f1(sx) + " " + f1(sy + k * 30) + " " + f1(gx) + " " + f1(sy + k * 14) + " " + f1(gx) + " " + f1(y1) +
+        " L" + f1(gx) + " " + f1(y2) + " C" + f1(gx) + " " + f1(ty - k * 8) + " " + f1(gx) + " " + f1(ty) + " " + f1(tx) + " " + f1(ty);
+      return { d: d, tx: tx, ty: ty, a: a };
+    }
     if (Math.abs(cy - sy) < r.height / 2 && Math.abs(cx - sx) > 40) {
       var right = cx > sx; tx = (right ? r.left + 4 : r.right - 4) - g.left; ty = cy; a = right ? 0 : 180;
       var mx = (sx + tx) / 2; d = "M" + f1(sx) + " " + f1(sy) + " C" + f1(mx) + " " + f1(sy) + " " + f1(mx) + " " + f1(ty) + " " + f1(tx) + " " + f1(ty);
@@ -1543,7 +1577,7 @@ button.gcard:hover { border-color: var(--ink); }
   function buildClaws(srcEl, tiles, anim) {
     var g = sizeLinks(), s0 = srcPoint(srcEl, g), h = "", list = [], go = anim && !RM;
     tiles.forEach(function (t, i) {
-      var c = curve(s0.x, s0.y, t.getBoundingClientRect(), g), dl = go ? i * .09 : 0;
+      var c = curve(s0.x, s0.y, t.getBoundingClientRect(), g, i), dl = go ? i * .09 : 0;
       var st = go ? 'style="animation-delay:' + dl.toFixed(2) + 's"' : 'style="animation:none;stroke-dashoffset:0"';
       list.push({ t: t, dl: dl });
       h += '<g class="arm" data-dl="' + dl.toFixed(2) + '"><path class="glow" pathLength="1" d="' + c.d + '" ' + st + '/><path class="ln" pathLength="1" d="' + c.d + '" ' + st + '/>' +
@@ -1563,6 +1597,7 @@ button.gcard:hover { border-color: var(--ink); }
         var dx = s0.x - (b.left + b.width / 2 - g.left), dy = s0.y - (b.top + b.height / 2 - g.top), L = Math.sqrt(dx * dx + dy * dy) || 1;
         it.t.style.setProperty("--tx", f1(dx / L * 8) + "px"); it.t.style.setProperty("--ty", f1(dy / L * 8) + "px");
         it.t.classList.remove("tug"); void it.t.offsetWidth; it.t.classList.add("tug");
+        if (navigator.vibrate && oneCol() && it.t.getBoundingClientRect().top < innerHeight && it.t.getBoundingClientRect().bottom > 0) { try { navigator.vibrate(8); } catch (e) {} }
       }, (it.dl + .9) * 1000);
     });
   }
@@ -1639,7 +1674,7 @@ button.gcard:hover { border-color: var(--ink); }
       (function follow(now) {
         var g = sizeLinks(), s0 = srcPoint(w, g);
         r.list.forEach(function (it, i) {
-          var c = curve(s0.x, s0.y, it.t.getBoundingClientRect(), g), a = arms[i];
+          var c = curve(s0.x, s0.y, it.t.getBoundingClientRect(), g, i), a = arms[i];
           a.querySelector(".ln").setAttribute("d", c.d); a.querySelector(".glow").setAttribute("d", c.d); a.querySelector(".clw").setAttribute("transform", clawT(c));
         });
         var sc = set.querySelector(".src"); sc.setAttribute("cx", f1(s0.x)); sc.setAttribute("cy", f1(s0.y));
@@ -1681,6 +1716,13 @@ button.gcard:hover { border-color: var(--ink); }
         if (a && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: Math.max(0, a.offsetLeft - nav.clientWidth / 2 + a.offsetWidth / 2), behavior: RM ? "auto" : "smooth" });
       }
       moveInd(links[act], np);
+      var mn = $("mnav"); if (mn) {
+        var started = chaps.length && chaps[0].getBoundingClientRect().top < vh * .9; mn.classList.toggle("on", started);
+        chaps.forEach(function (ch, i) { var a2 = mn.querySelectorAll("a")[i]; if (!a2) return; var id = ch.getAttribute("data-ch"), idx = chaps.map(function (c) { return c.getAttribute("data-ch"); }).indexOf(act);
+          a2.style.setProperty("--mf", (i < idx ? 1 : i === idx ? Math.max(.04, np) : 0).toFixed(3)); a2.classList.toggle("on", id === act); });
+        var ca = chaps.filter(function (c) { return c.getAttribute("data-ch") === act; })[0];
+        if (ca) { $("mnum").textContent = ca.querySelector(".chap-n").textContent; $("mname").textContent = ca.querySelector(".chap-h").textContent; }
+      }
     }
     function req() { if (!raf) raf = requestAnimationFrame(tick); }
     addEventListener("scroll", req, { passive: true }); addEventListener("resize", req);
@@ -1875,7 +1917,9 @@ button.gcard:hover { border-color: var(--ink); }
     };
     var cur = 0, hi = {}, anim = 0, run = null;
     function clamp(x) { return Math.max(0, Math.min(1, x)); }
+    var SM = false;
     function draw(t) {
+      SM = $("ufSvg").getBoundingClientRect().width < 520; $("ufSvg").classList.toggle("sm", SM);
       var p1 = ease(clamp(t / .5)), p2 = ease(clamp((t - .5) / .5)), h = "";
       var pos = TOOLS.map(function (tl) { return [tl.b[0] + (tl.a[0] - tl.b[0]) * p1, tl.b[1] + (tl.a[1] - tl.b[1]) * p1]; });
       EDGES.forEach(function (e, i) { var a = pos[IDX[e[0]]], b = pos[IDX[e[1]]], bend = (i % 2 ? 46 : -46) * (1 - p1); h += '<path class="edge" style="opacity:' + (1 - p1).toFixed(2) + '" d="M' + a[0].toFixed(1) + " " + a[1].toFixed(1) + " Q" + ((a[0] + b[0]) / 2 + bend).toFixed(1) + " " + ((a[1] + b[1]) / 2 - bend * .6).toFixed(1) + " " + b[0].toFixed(1) + " " + b[1].toFixed(1) + '"/>'; });
@@ -1884,11 +1928,11 @@ button.gcard:hover { border-color: var(--ink); }
         TOOLS.forEach(function (tl) { if (!tl.merge) h += '<line class="conn" x1="' + tl.a[0] + '" y1="' + (TY - TH / 2) + '" x2="' + tl.a[0] + '" y2="' + (BAND_Y + BAND_H) + '"/>'; });
         [250, 350, 450].forEach(function (x) { h += '<line class="conn" x1="' + x + '" y1="' + BAND_Y + '" x2="' + x + '" y2="' + (VIEW.y + 28) + '"/>'; });
         h += '<rect class="band" x="24" y="' + BAND_Y + '" width="652" height="' + BAND_H + '" rx="12"/><text class="band-t" x="36" y="' + (BAND_Y + 14) + '">' + (plain ? "SHARED CONNECTION LAYER" : "INTEGRATION LAYER") + '</text>';
-        Object.keys(CHIPS).forEach(function (k) { var c = { x: CHIPS[k].x, t: plain ? PCHIPS[k] : CHIPS[k].t }, w = c.t.length * 6.3 + 22, on = hi[k]; h += '<rect class="chip-r' + (on ? " hot" : "") + '" x="' + (c.x - w / 2).toFixed(1) + '" y="' + (BAND_Y + 20) + '" width="' + w.toFixed(1) + '" height="26" rx="13"/><text class="chip-t' + (on ? " hot" : "") + '" x="' + c.x + '" y="' + (BAND_Y + 37) + '" text-anchor="middle">' + c.t + "</text>"; });
+        Object.keys(CHIPS).forEach(function (k) { var c = { x: CHIPS[k].x, t: plain ? PCHIPS[k] : CHIPS[k].t }; if (SM) c.t = { c1: plain ? "One login" : "Identity", c2: plain ? "One device list" : "Inventory", c3: plain ? "Handoffs" : "Workflows" }[k]; var w = c.t.length * (SM ? 9.6 : 6.3) + 22, on = hi[k]; h += '<rect class="chip-r' + (on ? " hot" : "") + '" x="' + (c.x - w / 2).toFixed(1) + '" y="' + (BAND_Y + 20) + '" width="' + w.toFixed(1) + '" height="26" rx="13"/><text class="chip-t' + (on ? " hot" : "") + '" x="' + c.x + '" y="' + (BAND_Y + 37) + '" text-anchor="middle">' + c.t + "</text>"; });
         h += '<rect class="view' + (hi.view ? " hot" : "") + '" x="170" y="' + (VIEW.y - 28) + '" width="360" height="56" rx="14"/><text class="view-t" x="' + VIEW.x + '" y="' + (VIEW.y + 2) + '" text-anchor="middle">One view across all of it</text><text class="view-s" x="' + VIEW.x + '" y="' + (VIEW.y + 18) + '" text-anchor="middle">' + (plain ? "one screen · one alert · one report" : "dashboards · alerts · audit reports") + '</text></g>';
       }
       TOOLS.forEach(function (tl, i) { var op = tl.merge ? 1 - clamp((p1 - .55) / .4) : 1; if (op <= 0) return; var L3 = lb(tl), l2 = L3[2] && p1 > .7 ? L3[2] : L3[1];
-        h += '<g style="opacity:' + op.toFixed(2) + '" transform="translate(' + pos[i][0].toFixed(1) + " " + pos[i][1].toFixed(1) + ')"><rect class="nd' + (hi[tl.k] ? " hot" : "") + '" x="' + (-TW / 2) + '" y="' + (-TH / 2) + '" width="' + TW + '" height="' + TH + '" rx="10"/><text class="nd-t" x="0" y="-2" text-anchor="middle">' + L3[0] + '</text><text class="nd-s" x="0" y="12" text-anchor="middle">' + l2 + "</text></g>"; });
+        h += '<g style="opacity:' + op.toFixed(2) + '" transform="translate(' + pos[i][0].toFixed(1) + " " + pos[i][1].toFixed(1) + ')"><rect class="nd' + (hi[tl.k] ? " hot" : "") + '" x="' + (-TW / 2) + '" y="' + (-TH / 2) + '" width="' + TW + '" height="' + TH + '" rx="10"/><text class="nd-t" x="0" y="' + (SM ? 6 : -2) + '" text-anchor="middle">' + L3[0] + '</text><text class="nd-s" x="0" y="12" text-anchor="middle">' + l2 + "</text></g>"; });
       $("ufScene").innerHTML = h;
       $("dsLinks").textContent = Math.round(14 * (1 - p1)); $("dsAgents").textContent = Math.round(3 - 2 * p1); $("dsView").textContent = Math.round(8 - 7 * p2);
       var ci = t < .34 ? 0 : t < .8 ? 1 : 2, ct = CAP[plain ? "plain" : "it"][ci]; if ($("ufCap").textContent !== ct && !run) $("ufCap").textContent = ct;
