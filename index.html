@@ -322,7 +322,7 @@ input[type="range"] { width: 100%; accent-color: var(--acc); height: 28px; margi
 .rs { text-align: center; color: #6A6A66; animation: rlIn .22s steps(4) both; }
 .rsep { border-top: 1px dashed #A3A3A0; margin: 7px 0; animation: rlIn .22s steps(4) both; }
 .rl.tot { font-size: .8rem; }
-.rbar { height: 30px; margin-top: 12px; animation: rlIn .22s steps(4) both; }
+.rcode { height: 30px; margin-top: 12px; animation: rlIn .22s steps(4) both; }
 .rft { text-align: center; margin-top: 6px; font-weight: 700; letter-spacing: .06em; animation: rlIn .22s steps(4) both; }
 @keyframes rlIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @media (max-width: 680px) { .rc { grid-template-columns: minmax(0, 1fr); } }
@@ -551,6 +551,17 @@ body { overflow-x: clip; }
 .term-in input:focus { outline: none; }
 .term-win:focus-within { border-color: #FF7A45; }
 .term-sug { margin-top: 2px; }
+.term-pill { font-family: var(--mono); font-weight: 700; }
+.term-pill kbd { font-family: var(--mono); font-size: .62rem; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 1px 4px; }
+@media (max-width: 680px) { .term-pill kbd { display: none; } }
+.qterm { position: fixed; z-index: 46; left: 0; right: 0; top: env(safe-area-inset-top, 0px); padding: 10px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); transform: translateY(-110%); transition: transform .32s cubic-bezier(.2,.9,.25,1.05); pointer-events: none; }
+.qterm.on { transform: none; }
+.qterm-in { max-width: 880px; margin: 0 auto; pointer-events: auto; display: grid; gap: 8px; filter: drop-shadow(0 30px 50px rgba(0,0,0,.45)); }
+.qterm .term-out { height: min(46vh, 380px); }
+.qterm-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px 0 14px; color: #8A93A6; font-family: var(--mono); font-size: .7rem; background: #0B0D12; border-radius: 16px 16px 0 0; margin-bottom: -10px; position: relative; z-index: 1; }
+.qterm-h button { background: none; border: 1px solid #2A3140; color: #D7DCE6; border-radius: 999px; font: inherit; padding: 3px 10px; cursor: pointer; }
+.term-ph { font-size: .9rem; color: var(--muted); padding: 30px 10px; text-align: center; border: 1px dashed var(--line); border-radius: 16px; }
+.term-ph button { font: inherit; color: var(--acc); background: none; border: 0; cursor: pointer; text-decoration: underline; }
 .term-sug button { font-family: var(--mono); font-size: .68rem; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile2); color: var(--ink); cursor: pointer; }
 .term-sug button:hover { border-color: var(--acc); color: var(--acc); }
 /* toolkit marquee */
@@ -807,6 +818,7 @@ button.gcard:hover { border-color: var(--ink); }
       <span id="omarHere"></span>
       <div class="here" id="here" hidden><button type="button" class="here-btn" id="hereBtn" aria-expanded="false"><span class="live-dot" aria-hidden="true"></span><span class="here-dots" id="hereDots"></span><span id="hereTxt">1</span><span class="lbl-txt">here now</span></button><div class="here-pop" id="herePop" hidden></div></div>
       <button type="button" class="pill" id="liveBtn" hidden>Live now</button>
+      <button type="button" class="pill term-pill" id="termBtn" aria-label="Open the terminal" title="Terminal (press ` or Ctrl+K)"><span class="mono">&gt;_</span><kbd>⌘K</kbd></button>
       <button type="button" class="pill" id="themeBtn" aria-label="Switch light or dark">◐</button>
       <button type="button" class="pill dark" id="cvBtn">30-sec version</button>
     </div>
@@ -1181,7 +1193,7 @@ button.gcard:hover { border-color: var(--ink); }
       var no = "NO. " + String(1000 + n * 37 + Math.floor(Math.random() * 30)).slice(-4) + " · " + new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" });
       var rows = ['<p class="rh">' + esc(r.h) + "</p>", '<p class="rs">' + esc(r.s) + "</p>", '<p class="rs">' + no + "</p>", '<div class="rsep"></div>'];
       r.l.forEach(function (it) { rows.push(it === 0 ? '<div class="rsep"></div>' : '<p class="rl' + (it[2] === 1 ? " sub" : it[2] === 2 ? " tot" : "") + '"><span class="k">' + esc(it[0]) + '</span><span class="dt"></span><span class="v">' + esc(it[1]) + "</span></p>"); });
-      rows.push('<div class="rbar" style="background:' + bars() + '"></div>', '<p class="rft">' + esc(r.f) + "</p>");
+      rows.push('<div class="rcode" style="background:' + bars() + '"></div>', '<p class="rft">' + esc(r.f) + "</p>");
       paper.innerHTML = ""; paper.classList.remove("feed"); void paper.offsetWidth; paper.classList.add("feed");
       rows.forEach(function (h, i) { if (RM) { paper.insertAdjacentHTML("beforeend", h); return; } timers.push(setTimeout(function () { paper.insertAdjacentHTML("beforeend", h); }, 120 + i * 85)); });
       tabs.forEach(function (t) { t.setAttribute("aria-selected", t.getAttribute("data-r") === k ? "true" : "false"); });
@@ -1761,7 +1773,7 @@ button.gcard:hover { border-color: var(--ink); }
     function line(html, cls) { var d = document.createElement("div"); if (cls) d.className = cls; d.innerHTML = html; out.appendChild(d); out.scrollTop = out.scrollHeight; }
     function goTile(id) { var el = $(id); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "center" }); }
     var CMD = {
-      help: function () { return ['<span class="acc">Commands</span>', "whoami     who I am", "skills     what I'm good at", "builds     things I've made", "now        what I'm working on", "journey    how I got here", "unify      watch a stack untangle", "play       try to beat my AI", "contact    get in touch", "plan       build a plan for your team", "hoops      draft an all-time starting five", "race       the offboarding race", "calibrate  test your confidence", "xray       see how this site is built", "theme      flip light and dark", "clear      clear the screen", '<span class="dim">Psst: try "sudo hire omar"</span>']; },
+      help: function () { return ['<span class="acc">Commands</span>', "whoami     who I am", "skills     what I'm good at", "builds     things I've made", "now        what I'm working on", "journey    how I got here", "unify      watch a stack untangle", "play       try to beat my AI", "contact    get in touch", "plan       build a plan for your team", "lakers     run my first program (2020)", "flatiron   my bootcamp projects", "hoops      draft an all-time starting five", "race       the offboarding race", "calibrate  test your confidence", "xray       see how this site is built", "theme      flip light and dark", "clear      clear the screen", '<span class="dim">Psst: try "sudo hire omar"</span>']; },
       whoami: function () { return ['<span class="ok">Omar Nabi</span>', "Enterprise Solutions Engineer at ManageEngine.", "I make complicated systems work as one,", "and build what runs on top of them.", '<span class="dim">Irvine, CA</span>']; },
       skills: function () { return ['<span class="blu">unify</span>      integration and consolidation', '<span class="acc">build</span>      apps, pipelines, applied AI', '<span class="dim">translate</span>  people and risk into plans', '<span class="dim">Tip: tap a skill in the Skills tile to see the proof.</span>']; },
       builds: function () { return ["CR-AI        forecasting model, Mistral-7B + QLoRA", "Ridey        native iOS app, shipped", "Carvenience  two-sided auto services marketplace", "this site    you're in it"]; },
@@ -1783,9 +1795,30 @@ button.gcard:hover { border-color: var(--ink); }
     CMD["cat about.txt"] = CMD.whoami; CMD["cat journey.log"] = CMD.journey; CMD["cat resume.txt"] = function () { $("cvBtn").click(); return ['<span class="ok">Opening the 30-second version...</span>']; };
     CMD.resume = CMD["cat resume.txt"]; CMD["?"] = CMD.help; CMD.hire = function () { return ['<span class="dim">Permission denied. Try: sudo hire omar</span>']; };
     CMD["sudo hire omar"] = function () { var el = $("emailAddr"); try { navigator.clipboard.writeText(el.textContent).catch(function () {}); } catch (e) {} var r = out.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top + 40, 90); window.__act("ran sudo hire omar in the terminal"); return ['<span class="ok">[sudo] access granted.</span>', "Email copied: " + esc(el.textContent), "Looking forward to it."]; };
+    /* Interactive programs: the 2020 Lakers CLI gem, rebuilt */
+    var prog = null;
+    var LAL = [["LeBron James", "23", "F", "6-9", "St. Vincent-St. Mary HS"], ["Anthony Davis", "3", "F-C", "6-10", "Kentucky"], ["Kyle Kuzma", "0", "F", "6-9", "Utah"], ["Danny Green", "14", "G-F", "6-6", "North Carolina"],
+      ["Kentavious Caldwell-Pope", "1", "G", "6-5", "Georgia"], ["Dwight Howard", "39", "C", "6-10", "SW Atlanta Christian Academy"], ["JaVale McGee", "7", "C", "7-0", "Nevada"], ["Rajon Rondo", "9", "G", "6-1", "Kentucky"],
+      ["Alex Caruso", "4", "G", "6-5", "Texas A&M"], ["Avery Bradley", "11", "G", "6-3", "Texas"], ["Markieff Morris", "88", "F", "6-8", "Kansas"], ["Quinn Cook", "28", "G", "6-1", "Duke"], ["Dion Waiters", "18", "G", "6-3", "Syracuse"], ["Talen Horton-Tucker", "5", "G", "6-4", "Iowa State"], ["Jared Dudley", "10", "F", "6-6", "Boston College"]];
+    function lakers() {
+      var out2 = ['<span class="dim">$ ruby bin/lakers_cli</span>', '<span class="acc">Welcome to the Lakers CLI!</span> <span class="dim">(my first Flatiron project, May 2020, rebuilt here)</span>', "", "2019-20 Los Angeles Lakers roster:"];
+      LAL.forEach(function (p, i) { out2.push(("  " + (i + 1) + ".").slice(-4) + " " + esc(p[0])); });
+      out2.push("", 'Pick a player by number, or type <span class="acc">exit</span>.');
+      prog = function (v) {
+        var t = v.trim().toLowerCase();
+        if (t === "exit" || t === "quit" || t === "q") { prog = null; line('<span class="ok">Thanks for checking out the Lakers CLI. Go Lakers!</span>'); line('<span class="dim">Back in the main terminal. The original scraped LakersNation with Nokogiri.</span>'); return; }
+        var n = parseInt(t, 10), pl = LAL[n - 1];
+        if (!pl) { line('<span class="dim">Please enter a number from 1 to ' + LAL.length + ', or exit.</span>'); return; }
+        ["", '<span class="acc">' + esc(pl[0]) + "</span>", "  Number:    #" + pl[1], "  Position:  " + pl[2], "  Height:    " + pl[3], "  From:      " + esc(pl[4]), "", 'Pick another number, or type <span class="acc">exit</span>.'].forEach(function (l) { line(l); });
+      };
+      return out2;
+    }
+    CMD.lakers = lakers; CMD["ruby bin/lakers_cli"] = lakers; CMD["ruby lakers_cli.rb"] = lakers;
+    CMD.flatiron = function () { var el = $("t-evo"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "center" }); return ['<span class="ok">Flatiron School, 2020 to 2021</span>', "v0.1  Lakers CLI         Ruby, scraping     try: lakers", "v0.2  Workout tracker   Sinatra, CRUD", "v0.3  Client manager    Rails, nested forms", "v0.4  OmarsNotes        JavaScript SPA", '<span class="dim">The Builds chapter lets you use all four.</span>']; };
     function run(raw) {
       var c = raw.trim(), k = c.toLowerCase().replace(/\s+/g, " ");
       line(esc(c), "cmd"); if (!k) return;
+      if (prog) { hist.push(c); hi = hist.length; prog(c); return; }
       hist.push(c); hi = hist.length;
       if (k === "clear") { out.innerHTML = ""; return; }
       if (k.indexOf("echo ") === 0) { line(esc(c.slice(5))); return; }
@@ -1796,7 +1829,25 @@ button.gcard:hover { border-color: var(--ink); }
     inp.addEventListener("keydown", function (e) { if (e.key === "ArrowUp" && hist.length) { e.preventDefault(); hi = Math.max(0, hi - 1); inp.value = hist[hi]; } else if (e.key === "ArrowDown" && hist.length) { e.preventDefault(); hi = Math.min(hist.length, hi + 1); inp.value = hist[hi] || ""; } else if (e.key === "Tab") { var m = Object.keys(CMD).filter(function (k) { return k.indexOf(inp.value.toLowerCase()) === 0; }); if (m.length && inp.value) { e.preventDefault(); inp.value = m[0]; } } });
     $("termSug").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) { run(b.textContent); } });
     $("t-term").querySelector(".term-win").addEventListener("click", function () { inp.focus({ preventScroll: true }); });
-    line('<span class="dim">Welcome. This is a real (tiny) terminal.</span>');
+    line('<span class="dim">Welcome. This is a real (tiny) terminal. Open it from anywhere with ` or Ctrl+K.</span>');
+    /* Drop-down console: the same terminal, reachable from anywhere */
+    (function () {
+      var win = $("t-term").querySelector(".term-win"), home = win.parentNode, qt = document.createElement("div"), ph = document.createElement("p");
+      qt.className = "qterm"; qt.hidden = true; qt.setAttribute("role", "dialog"); qt.setAttribute("aria-label", "Terminal");
+      qt.innerHTML = '<div class="qterm-in"><div class="qterm-h"><span>` or Ctrl+K toggles · Esc closes</span><button type="button">Close</button></div></div>';
+      document.body.appendChild(qt);
+      ph.className = "term-ph"; ph.innerHTML = 'The terminal is open at the top of the screen. <button type="button">Bring it back here</button>';
+      function open() { if (!qt.hidden) { inp.focus(); return; } home.insertBefore(ph, win); qt.firstChild.appendChild(win); qt.hidden = false; requestAnimationFrame(function () { qt.classList.add("on"); }); inp.focus({ preventScroll: true }); out.scrollTop = out.scrollHeight; window.__act && window.__act("opened the terminal"); }
+      function close() { if (qt.hidden) return; qt.classList.remove("on"); setTimeout(function () { qt.hidden = true; if (ph.parentNode) ph.parentNode.replaceChild(win, ph); }, RM ? 0 : 300); }
+      qt.querySelector("button").addEventListener("click", close); ph.querySelector("button").addEventListener("click", close);
+      $("termBtn").addEventListener("click", function () { if (qt.hidden) open(); else close(); });
+      addEventListener("keydown", function (e) {
+        var t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) && t !== inp;
+        if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); if (qt.hidden) open(); else close(); return; }
+        if (e.key === "`" && !typing && !e.metaKey && !e.ctrlKey) { e.preventDefault(); if (qt.hidden) open(); else close(); return; }
+        if (e.key === "Escape" && !qt.hidden) { e.stopImmediatePropagation(); close(); }
+      }, true);
+    })();
     var started = false;
     function auto() { if (started) return; started = true; var w = "whoami", i = 0; if (RM) { run(w); return; } var tl = document.createElement("div"); tl.className = "cmd"; out.appendChild(tl); (function ty() { tl.textContent = w.slice(0, ++i); if (i < w.length) setTimeout(ty, 90); else setTimeout(function () { tl.remove(); run(w); line('<span class="dim">Type help to see what else it can do.</span>'); }, 250); })(); }
     if ("IntersectionObserver" in window) new IntersectionObserver(function (es) { if (es[0].isIntersecting) auto(); }, { threshold: .5 }).observe($("t-term")); else auto();
