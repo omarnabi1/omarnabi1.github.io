@@ -1107,8 +1107,8 @@ button.gcard:hover { border-color: var(--ink); }
       <span class="lit-tag">Proof</span>
       <div class="t-h"><span class="lbl">Build · applied AI</span><span class="hint">Toggle sources</span></div>
       <h2>CR-AI</h2>
-      <p>An AI system that reads world events and forecasts them. Six sources are translated, transcribed, and scored, then feed a Mistral-7B model I fine-tuned with QLoRA.</p>
-      <svg class="pipe" id="pipe" viewBox="0 0 560 230" role="img" aria-label="Six sources flow into a fine-tuned Mistral-7B model, which outputs a forecast"></svg>
+      <p>An AI system for understanding why conflicts start and how they end. Daily collectors pull from six kinds of sources, 11,000+ documents so far in English, Persian and a dozen other languages, each mapped to a 23-category conflict taxonomy. Now building the reasoning engine, and Envoy, a strategy game you play against it.</p>
+      <svg class="pipe" id="pipe" viewBox="0 0 560 230" role="img" aria-label="Six sources flow into the CR-AI engine, which outputs a forecast"></svg>
       <div class="toggles" id="srcToggles"></div>
       <p class="note">Switch sources off and watch the forecast move. Sample question: Brent crude above $90? Illustrative weights.</p>
     </section>
@@ -1261,7 +1261,7 @@ button.gcard:hover { border-color: var(--ink); }
       <ul class="posts">
         <li><div><h3>Fewer tools is a security strategy</h3><p>What changes when an organization consolidates.</p></div><span class="soon">Soon</span></li>
         <li><div><h3>From the customer counter to the codebase</h3><p>What retail and a law firm taught me about solving problems.</p></div><span class="soon">Soon</span></li>
-        <li><div><h3>Fine-tuning a small model to read the news</h3><p>QLoRA on Mistral-7B, and how it compares to frontier models.</p></div><span class="soon">Soon</span></li>
+        <li><div><h3>Distilling a small model to read the news</h3><p>QLoRA on a 7B model, measured against frontier models.</p></div><span class="soon">Soon</span></li>
       </ul>
     </section>
 
@@ -1321,7 +1321,7 @@ button.gcard:hover { border-color: var(--ink); }
   <h3>Experience</h3>
   <ul><li>ManageEngine (Zoho), Enterprise Solutions Engineer, 2025 to now</li><li>Royal Business Bank, banking app support, compliance, vendors</li><li>Ridey, co-founder, shipped a native iOS app</li><li>Carvenience, founder, two-sided marketplace for mobile auto services</li><li>Vroom, IT Lead, 2020 to 2024: identity automation for 10,000+ users, onboarding cut from about a week to 8 hours and offboarding to 2 hours</li><li>Apple, Tech Expert to Genius team</li><li>The Judge Law Firm, while completing a B.A. in Sociology at CSULA (2016)</li></ul>
   <h3>Builds</h3>
-  <ul><li>CR-AI: forecasting system, Mistral-7B fine-tuned with QLoRA</li><li>Ridey: native iOS app</li><li>Carvenience: two-sided auto services marketplace</li></ul>
+  <ul><li>CR-AI: conflict analysis and forecasting system, multilingual data pipeline and LLM engine</li><li>Ridey: native iOS app</li><li>Carvenience: two-sided auto services marketplace</li></ul>
   <h3>Strengths</h3>
   <ul><li>Unify: integration and consolidation of complex environments</li><li>Build: apps, data pipelines, applied AI</li><li>Translate: turning people, risk, and requirements into plans</li></ul>
   <h3>Contact</h3>
@@ -1396,7 +1396,7 @@ button.gcard:hover { border-color: var(--ink); }
       { v: "v0.4", d: "Jul 2021", n: "OmarsNotes", t: ["JavaScript", "Single-page app", "Rails API"], k: "notes", l: "Four classes and two promises between clicking New Note and seeing it on screen. No password, just a name, so notes could be shared later." },
       { v: "v1.0", d: "Startup", n: "Ridey", t: ["Native iOS", "Co-founder"], k: "ridey", go: "t-ridey", l: "The jump from class projects to an app people download: co-founded and shipped to the App Store." },
       { v: "v1.5", d: "Startup", n: "Carvenience", t: ["Two-sided marketplace", "Founder"], k: "carv", go: "t-carv", l: "Two kinds of users, customers and providers, on one platform for mobile auto services." },
-      { v: "v2.0", d: "Now", n: "CR-AI", t: ["Mistral-7B", "QLoRA", "Fine-tuning"], k: "crai", go: "t-builds", l: "A fine-tuned model that reads world news from six sources and forecasts what happens next. You can play against it." },
+      { v: "v2.0", d: "Now", n: "CR-AI", t: ["LLMs", "Data pipelines", "Evals"], k: "crai", go: "t-builds", l: "An AI system that reads world news from six kinds of sources to explain conflicts and forecast what happens next. You can play against it." },
       { v: "v3.0", d: "2026", n: "This site", t: ["Cloudflare Workers", "Durable Objects", "WebSockets"], k: "site", go: "top", l: "Live cursors, chat, a real leaderboard, and everything you're clicking. From a Lakers roster in a terminal to this, in six years." }
     ];
     var rail = $("evoRail"), stage = $("evoStage"), side = $("evoSide"), cur = 0;
@@ -1502,7 +1502,7 @@ button.gcard:hover { border-color: var(--ink); }
     var RC = {
       vroom: { h: "VROOM · IT LEAD", s: "AUG 2020 - JAN 2024", l: [["USERS AUTOMATED", "10,000+"], ["ROLLOUT PHASES", "3"], ["BPO PILOT", "", 1], ["CONTRACTORS", "", 1], ["COMPANY-WIDE", "", 1], 0, ["ONBOARDING, BEFORE", "~1 WEEK"], ["ONBOARDING, AFTER", "8 HRS"], ["OFFBOARDING, BEFORE", "~1 WEEK"], ["OFFBOARDING, AFTER", "2 HRS"], 0, ["ONBOARDING SPEEDUP", "15X+"], ["OFFBOARDING SPEEDUP", "60X+"], 0, ["TOTAL", "ONE WORKFLOW", 2]], f: "THANK YOU FOR UNIFYING" },
       me: { h: "MANAGEENGINE · SOLUTIONS ENG.", s: "FEB 2025 - NOW", l: [["ENDPOINT CENTRAL", "ENDPOINTS"], ["PAM360", "PRIVILEGED ACCESS"], ["LOG360", "SIEM"], ["SERVICEDESK PLUS", "ITSM"], ["OPMANAGER NEXUS", "NETWORK"], ["AD360", "IDENTITY"], ["NCM", "CONFIG"], ["+ 58 MORE", "...", 1], 0, ["CONSOLES YOU WANT", "FEWER"], ["PICTURES YOU GET", "ONE"], 0, ["PORTFOLIO", "65+ PRODUCTS", 2]], f: "MERGE WHAT OVERLAPS. CONNECT THE REST." },
-      built: { h: "BUILT FROM ZERO", s: "NIGHTS AND WEEKENDS", l: [["RIDEY", "iOS · SHIPPED"], ["CARVENIENCE", "MARKETPLACE"], ["CR-AI", "MISTRAL-7B · QLORA"], 0, ["BOOTCAMP PROJECTS", "4"], ["THIS SITE", "LIVE"], 0, ["TOTAL", "3 PRODUCTS", 2]], f: "BUILD IT. SHIP IT. AGAIN." },
+      built: { h: "BUILT FROM ZERO", s: "NIGHTS AND WEEKENDS", l: [["RIDEY", "iOS · SHIPPED"], ["CARVENIENCE", "MARKETPLACE"], ["CR-AI", "LLM · DATA PIPELINE"], 0, ["BOOTCAMP PROJECTS", "4"], ["THIS SITE", "LIVE"], 0, ["TOTAL", "3 PRODUCTS", 2]], f: "BUILD IT. SHIP IT. AGAIN." },
       first: { h: "FIRST COMPUTER", s: "COLLEGE · WORKING AT A LAW FIRM", l: [["FIRST COMPUTER", "2018"], ["APPLE · GENIUS TEAM", "2018"], ["FLATIRON BOOTCAMP", "2020"], ["IT LEAD · VROOM", "2020"], ["ENTERPRISE SE", "2025"], 0, ["YEARS SINCE", String(yrs)], ["COMPUTERS OWNED BEFORE", "0"], 0, ["TOTAL", "ALL OF THIS PAGE", 2]], f: "EVERYTHING HERE CAME AFTER" }
     };
     var paper = $("paper"), tabs = document.querySelectorAll(".rc-stats .stat"), timers = [], n = 0;
@@ -1836,7 +1836,7 @@ button.gcard:hover { border-color: var(--ink); }
     { y: "2020", t: "The break", s: "Vroom said yes. As IT Lead I automated identity for 10,000+ users, cutting onboarding from a week to 8 hours and offboarding to 2." },
     { y: "Then", t: "Ship it", s: "Co-founded Ridey and shipped an iOS app. Supported core banking, compliance, and vendors at Royal Business Bank." },
     { y: "2025", t: "Unify", s: "Joined ManageEngine as an Enterprise Solutions Engineer, helping organizations make complicated environments work as one." },
-    { y: "Now", t: "Building", s: "CR-AI, a fine-tuned forecasting model, and whatever comes next. I've never loved this work more." }
+    { y: "Now", t: "Building", s: "CR-AI, an AI system for understanding conflicts, and whatever comes next. I've never loved this work more." }
   ];
   var ji = 0, jPlay = 0;
   var ERAS = [{ n: "Finding my footing", a: 0, b: 4 }, { n: "Falling for tech", a: 5, b: 8 }, { n: "Unify and build", a: 9, b: 11 }];
@@ -1924,7 +1924,7 @@ button.gcard:hover { border-color: var(--ink); }
         { c: "Royal Business Bank", r: "Banking Application Support", y: "Banking", o: "Supported core banking applications and carried a large share of IT compliance, contracts, renewals, and vendors.", k: ["comp", "vend", "cust"] },
         { c: "Vroom", r: "IT Lead", y: "Aug 2020 to Jan 2024", o: "Automated identity for 10,000+ users in three phases. Onboarding went from about a week to 8 hours, offboarding to 2.", k: ["id", "auto", "teach", "vend"], star: 1 } ] },
       { g: "Building", d: "Ideas taken all the way to shipped", r: [
-        { c: "CR-AI", r: "Builder", y: "Now", o: "Fine-tuned Mistral-7B with QLoRA to forecast world events from six kinds of sources.", k: ["ship", "auto"] },
+        { c: "CR-AI", r: "Builder", y: "Now", o: "Built daily collectors and an 11,000+ document multilingual dataset, mapped to a 23-category conflict taxonomy, for an AI that analyzes and forecasts world events.", k: ["ship", "auto"] },
         { c: "Carvenience", r: "Founder", y: "Startup", o: "A two-sided marketplace for mobile auto services: customers on one side, providers on the other.", k: ["ship", "sol"] },
         { c: "Ridey", r: "Co-founder", y: "Startup", o: "Co-founded a native iOS app and shipped it to the App Store.", k: ["ship"] },
         { c: "Flatiron School", r: "Software engineering", y: "2020 to 2021", o: "Ruby, Sinatra, Rails, and JavaScript, one shipped project per phase. You can use all four in Builds.", k: ["ship"] } ] },
@@ -1964,7 +1964,7 @@ button.gcard:hover { border-color: var(--ink); }
     var NAMES = ["NEWS", "GOV", "SOCIAL", "BROADCAST", "MARKETS", "THINK TANKS"], W = [-.03, -.02, .06, -.02, -.07, -.02], BASE = .48, onS = [1, 1, 1, 1, 1, 1], svg = $("pipe"), box = $("srcToggles");
     svg.innerHTML = NAMES.map(function (n, i) { return '<text class="src-t" data-i="' + i + '" x="0" y="' + (29 + i * 36) + '">' + n + "</text>"; }).join("") +
       [25, 61, 97, 133, 169, 205].map(function (y, i) { return '<path class="ln" data-i="' + i + '" d="M112 ' + y + " C 190 " + y + ', 190 115, 250 115"/>'; }).join("") +
-      '<rect class="node" x="250" y="82" width="150" height="66" rx="14"/><text class="node-t" x="325" y="113" text-anchor="middle">Mistral-7B</text><text class="node-s" x="325" y="131" text-anchor="middle">QLORA FINE-TUNE</text><path class="ln hot" d="M400 115 L 470 115"/><circle class="out" cx="510" cy="115" r="40"/><text class="out-t" id="pipeP" x="510" y="117" text-anchor="middle">38%</text><text class="out-s" x="510" y="132" text-anchor="middle">P(YES)</text>';
+      '<rect class="node" x="250" y="82" width="150" height="66" rx="14"/><text class="node-t" x="325" y="113" text-anchor="middle">CR-AI</text><text class="node-s" x="325" y="131" text-anchor="middle">TAXONOMY + LLM</text><path class="ln hot" d="M400 115 L 470 115"/><circle class="out" cx="510" cy="115" r="40"/><text class="out-t" id="pipeP" x="510" y="117" text-anchor="middle">38%</text><text class="out-s" x="510" y="132" text-anchor="middle">P(YES)</text>';
     box.innerHTML = ["News", "Gov", "Social", "Broadcast", "Markets", "Think tanks"].map(function (n, i) { return '<button type="button" aria-pressed="true" data-i="' + i + '">' + n + "</button>"; }).join("");
     function upd() { var p = BASE, any = false; onS.forEach(function (v, i) { if (v) { p += W[i]; any = true; } }); $("pipeP").textContent = any ? Math.round(Math.max(.02, Math.min(.98, p)) * 100) + "%" : "?"; svg.querySelectorAll("[data-i]").forEach(function (el) { el.classList.toggle("off", !onS[+el.getAttribute("data-i")]); }); box.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", onS[+b.getAttribute("data-i")] ? "true" : "false"); }); }
     function flip(i) { onS[i] = onS[i] ? 0 : 1; upd(); }
@@ -2080,7 +2080,7 @@ button.gcard:hover { border-color: var(--ink); }
     var best = store.get("crai-best"); if (best && (typeof best.brier !== "number" || !best.name)) best = null;
     var S = { scr: "intro", handle: (best && best.name) || "", i: 0, picks: [], cur: 50 }, gm = $("gm");
     function intro() {
-      gm.innerHTML = '<p class="qtitle">Can you out-forecast a fine-tuned model?</p><ol class="rules"><li>Read five real-world questions.</li><li>Set your chance that each answer is yes. CR-AI\'s forecast stays sealed until you lock in.</li><li>Confidence counts: 90% sure and wrong costs far more than 60% sure and wrong.</li></ol><div class="field"><label for="handle">Your name</label><input type="text" id="handle" maxlength="20" placeholder="your name" value="' + esc(S.handle) + '"></div><div class="btns"><button type="button" class="btn" id="gGo">Start</button></div>' + (best ? '<p class="note">Your best: Brier ' + f3(best.brier) + (best.brier < CRAI ? ", ahead of CR-AI." : ".") + "</p>" : "");
+      gm.innerHTML = '<p class="qtitle">Can you out-forecast CR-AI?</p><ol class="rules"><li>Read five real-world questions.</li><li>Set your chance that each answer is yes. CR-AI\'s forecast stays sealed until you lock in.</li><li>Confidence counts: 90% sure and wrong costs far more than 60% sure and wrong.</li></ol><div class="field"><label for="handle">Your name</label><input type="text" id="handle" maxlength="20" placeholder="your name" value="' + esc(S.handle) + '"></div><div class="btns"><button type="button" class="btn" id="gGo">Start</button></div>' + (best ? '<p class="note">Your best: Brier ' + f3(best.brier) + (best.brier < CRAI ? ", ahead of CR-AI." : ".") + "</p>" : "");
       $("gGo").onclick = function () { S.handle = $("handle").value.trim() || "you"; S.i = 0; S.picks = []; S.cur = 50; S.scr = "q"; render(); };
     }
     function question() {
@@ -2201,7 +2201,7 @@ button.gcard:hover { border-color: var(--ink); }
   (function () {
     var ROWS = [
       [["Identity and access", "u"], ["Endpoint management", "u"], ["Privileged access", "u"], ["SIEM and logs", "u"], ["Service management", "u"], ["Network monitoring", "u"], ["Active Directory", "u"], ["Solution architecture", "u"]],
-      [["Python", "b"], ["Swift", "b"], ["LLM fine-tuning", "b"], ["QLoRA", "b"], ["Hugging Face", "b"], ["Whisper", "b"], ["GitHub Actions", "b"], ["Model evaluation", "b"], ["Data pipelines", "b"]],
+      [["Python", "b"], ["Swift", "b"], ["LLM apps", "b"], ["Multilingual data", "b"], ["Hugging Face", "b"], ["Whisper", "b"], ["GitHub Actions", "b"], ["Model evaluation", "b"], ["Data pipelines", "b"]],
       [["Technical demos", "t"], ["Compliance", "t"], ["Contracts and renewals", "t"], ["Vendor management", "t"], ["Training teams", "t"], ["Change management", "t"], ["Customer empathy", "t"]]
     ];
     $("mq").innerHTML = ROWS.map(function (r, i) { var items = r.map(function (it) { return '<span class="k-' + it[1] + '">' + esc(it[0]) + "</span>"; }).join(""); return '<div class="mq-row' + (i === 1 ? " rev" : i === 2 ? " slow" : "") + '">' + items + (RM ? "" : '<span aria-hidden="true" style="display:contents">' + items + "</span>") + "</div>"; }).join("");
@@ -2216,7 +2216,7 @@ button.gcard:hover { border-color: var(--ink); }
       help: function () { return ['<span class="acc">Commands</span>', "whoami     who I am", "skills     what I'm good at", "builds     things I've made", "now        what I'm working on", "journey    how I got here", "unify      watch a stack untangle", "play       try to beat my AI", "contact    get in touch", "plan       build a plan for your team", "lakers     run my first program (2020)", "flatiron   my bootcamp projects", "hoops      draft an all-time starting five", "race       the offboarding race", "calibrate  test your confidence", "xray       see how this site is built", "theme      flip light and dark", "clear      clear the screen", '<span class="dim">Psst: try "sudo hire omar"</span>']; },
       whoami: function () { return ['<span class="ok">Omar Nabi</span>', "Enterprise Solutions Engineer at ManageEngine.", "I make complicated systems work as one,", "and build what runs on top of them.", '<span class="dim">Irvine, CA</span>']; },
       skills: function () { return ['<span class="blu">unify</span>      integration and consolidation', '<span class="acc">build</span>      apps, pipelines, applied AI', '<span class="dim">translate</span>  people and risk into plans', '<span class="dim">Tip: tap a skill in the Skills tile to see the proof.</span>']; },
-      builds: function () { return ["CR-AI        forecasting model, Mistral-7B + QLoRA", "Ridey        native iOS app, shipped", "Carvenience  two-sided auto services marketplace", "this site    you're in it"]; },
+      builds: function () { return ["CR-AI        conflict analysis + forecasting, LLM engine", "Ridey        native iOS app, shipped", "Carvenience  two-sided auto services marketplace", "this site    you're in it"]; },
       now: function () { return ["Unifying complex IT environments at ManageEngine", "Building CR-AI and the game on this page", "Writing about consolidation and applied AI"]; },
       journey: function () { return ["2001  arrived in America, barely spoke English", "2008  California, pizza counters and retail", "2016  CSULA, Sociology with a law focus", "2018  first computer. then Apple, cybersecurity", "2020  Vroom, IT Lead: onboarding 1 week to 8 hrs", "2025  ManageEngine", '<span class="dim">Drag the journey tile for the full story.</span>']; },
       unify: function () { goTile("t-unify"); setTimeout(function () { var r = $("ufRange"); r.value = 0; r.dispatchEvent(new Event("input")); var b = document.querySelector('#scenBtns [data-s="hire"]'); if (b) b.click(); }, 500); return ['<span class="ok">Running the new-hire scenario...</span>']; },
