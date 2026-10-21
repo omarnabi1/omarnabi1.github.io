@@ -120,8 +120,6 @@ em.s { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .chap-line i { position: absolute; inset: 0; background: linear-gradient(90deg, var(--acc), var(--blue)); transform-origin: 0 50%; transform: scaleX(var(--cp, 0)); }
 @media (max-width: 680px) { .chap { grid-template-columns: minmax(0, 1fr); } .chap-p { grid-column: 1; } .chap-n { padding-top: 0; } }
 @media (prefers-reduced-motion: reduce) { .chap-h .w, .chap-p { transform: none; opacity: 1; } .nav-ind { transition: none; } }
-#links .chapclaw .ln { opacity: .55; stroke-width: 1.6; }
-#links .chapclaw .glow { opacity: .08; }
 .top .act { display: flex; gap: 6px; }
 .pill { font-size: .82rem; font-weight: 600; padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .pill:hover { border-color: var(--ink); }
@@ -661,19 +659,17 @@ body { overflow-x: clip; }
 .dec { display: inline-block; }
 .dec .g { color: var(--muted); font-family: var(--mono); font-style: normal; font-size: .62em; vertical-align: .12em; }
 #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; overflow: visible; }
-#links path { fill: none; stroke: var(--acc); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .85; animation: drawL .9s cubic-bezier(.5,0,.2,1) forwards; }
-#links .glow { stroke-width: 8; opacity: .13; }
+#links .tb { fill: var(--acc); opacity: .92; }
+#links .sk { fill: var(--tile); opacity: .75; }
+#links .feel .tb { opacity: .32; }
+#links .chapclaw .tb { opacity: .78; }
 #links .src { fill: var(--tile); stroke: var(--acc); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: popC .4s cubic-bezier(.2,1.6,.4,1) both; }
-#links .cl { animation: clawIn .5s cubic-bezier(.2,1.4,.4,1) both; }
+#links .cl { animation: clawIn .45s cubic-bezier(.2,1.4,.4,1) both; }
 #links .kn { fill: var(--acc); }
 #links .cp { fill: none; stroke: var(--acc); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-#links .c1 { animation: gripT .7s cubic-bezier(.3,1.5,.5,1) both; animation-delay: inherit; }
-#links .c2 { animation: gripB .7s cubic-bezier(.3,1.5,.5,1) both; animation-delay: inherit; }
-#links .pulse { fill: var(--acc); opacity: 0; filter: drop-shadow(0 0 4px var(--acc)); }
-#links .feel .ln { opacity: .4; stroke-width: 1.5; animation-duration: .45s; }
-#links .feel .glow, #links .feel .clw, #links .feel .pulse, #links .feel .src { display: none; }
-#links .ret .ln, #links .ret .glow { animation: retL .45s cubic-bezier(.6,0,.8,.2) forwards !important; animation-delay: 0s !important; }
-#links .ret .clw, #links .ret .pulse, #links .ret .src { opacity: 0; transition: opacity .2s; }
+#links .c1 { animation: gripT .6s cubic-bezier(.3,1.5,.5,1) both; animation-delay: inherit; }
+#links .c2 { animation: gripB .6s cubic-bezier(.3,1.5,.5,1) both; animation-delay: inherit; }
+#links .pulse { fill: #FFF3EA; opacity: 0; filter: drop-shadow(0 0 4px var(--acc)); }
 @keyframes clawIn { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
 @keyframes gripT { 0%, 55% { transform: rotate(-58deg); } 100% { transform: rotate(0deg); } }
 @keyframes gripB { 0%, 55% { transform: rotate(58deg); } 100% { transform: rotate(0deg); } }
@@ -1550,45 +1546,112 @@ button.gcard:hover { border-color: var(--ink); }
   function f1(n) { return n.toFixed(1); }
   function sizeLinks() { var g = grid.getBoundingClientRect(); linksSvg.setAttribute("viewBox", "0 0 " + g.width.toFixed(0) + " " + g.height.toFixed(0)); return g; }
   function oneCol() { return grid.getBoundingClientRect().width < 700; }
-  function curve(sx, sy, r, g, i) {
-    var cx = r.left + r.width / 2 - g.left, cy = r.top + r.height / 2 - g.top, tx, ty, a, d;
+  /* Routes are lists of cubic segments, recomputed every frame so arms follow tiles as they move */
+  function C(x0, y0, x1, y1, x2, y2, x3, y3) { return [x0, y0, x1, y1, x2, y2, x3, y3]; }
+  function Ln(x0, y0, x3, y3) { return C(x0, y0, x0 + (x3 - x0) / 3, y0 + (y3 - y0) / 3, x0 + (x3 - x0) * 2 / 3, y0 + (y3 - y0) * 2 / 3, x3, y3); }
+  function curve(sx, sy, r, g, i, n) {
+    var fan = n > 1 ? Math.max(-1, Math.min(1, ((i || 0) - (n - 1) / 2) / Math.max(1, (n - 1) / 2))) : 0;
+    var cx = r.left + r.width / 2 - g.left, cy = r.top + r.height / 2 - g.top, tx, ty, segs;
     if (oneCol() && r.width > g.width * .8) {
-      var right = (i || 0) % 2 === 1, gx = right ? r.right - g.left + 9 : r.left - g.left - 9, down = cy > sy, k = down ? 1 : -1;
-      ty = Math.max(r.top - g.top + 26, Math.min(r.bottom - g.top - 26, (r.top - g.top) + Math.min(70, r.height / 2)));
-      if (!down) ty = Math.min(r.bottom - g.top - 26, ty + r.height / 2);
-      tx = right ? r.right - g.left - 3 : r.left - g.left + 3; a = right ? 180 : 0;
-      var y1 = sy + k * 46, y2 = ty - k * 34;
-      if ((y2 - y1) * k < 0) y2 = y1;
-      d = "M" + f1(sx) + " " + f1(sy) + " C" + f1(sx) + " " + f1(sy + k * 30) + " " + f1(gx) + " " + f1(sy + k * 14) + " " + f1(gx) + " " + f1(y1) +
-        " L" + f1(gx) + " " + f1(y2) + " C" + f1(gx) + " " + f1(ty - k * 8) + " " + f1(gx) + " " + f1(ty) + " " + f1(tx) + " " + f1(ty);
-      return { d: d, tx: tx, ty: ty, a: a };
+      var right = (i || 0) % 2 === 1, lane = (Math.floor((i || 0) / 2) % 3 - 1) * 3.2, gx = (right ? r.right - g.left + 8 : r.left - g.left - 8) + lane, down = cy > sy, k = down ? 1 : -1;
+      ty = down ? (r.top - g.top) + Math.min(64, r.height / 2) : (r.bottom - g.top) - Math.min(64, r.height / 2);
+      tx = right ? r.right - g.left - 2 : r.left - g.left + 2;
+      var y1 = sy + k * 46, y2 = ty - k * 30; if ((y2 - y1) * k < 0) y2 = y1;
+      segs = [C(sx, sy, sx + (gx - sx) * .2, sy + k * 34, gx, sy + k * 10, gx, y1), Ln(gx, y1, gx, y2), C(gx, y2, gx, ty - k * 6, gx + (tx - gx) * .2, ty, tx, ty)];
+      return { segs: segs, tx: tx, ty: ty };
     }
     if (Math.abs(cy - sy) < r.height / 2 && Math.abs(cx - sx) > 40) {
-      var right = cx > sx; tx = (right ? r.left + 4 : r.right - 4) - g.left; ty = cy; a = right ? 0 : 180;
-      var mx = (sx + tx) / 2; d = "M" + f1(sx) + " " + f1(sy) + " C" + f1(mx) + " " + f1(sy) + " " + f1(mx) + " " + f1(ty) + " " + f1(tx) + " " + f1(ty);
+      var rt = cx > sx; tx = (rt ? r.left + 4 : r.right - 4) - g.left; ty = cy;
+      var mx = (sx + tx) / 2; segs = [C(sx, sy, mx, sy + fan * 70, mx, ty, tx, ty)];
     } else {
-      var above = cy < sy; tx = cx; ty = (above ? r.bottom - 4 : r.top + 4) - g.top; a = above ? -90 : 90;
-      var my = (sy + ty) / 2; d = "M" + f1(sx) + " " + f1(sy) + " C" + f1(sx) + " " + f1(my) + " " + f1(tx) + " " + f1(my) + " " + f1(tx) + " " + f1(ty);
+      var above = cy < sy; tx = cx; ty = (above ? r.bottom - 4 : r.top + 4) - g.top;
+      var my = (sy + ty) / 2, spread = Math.min(260, Math.abs(ty - sy) * .42); segs = [C(sx, sy, sx + fan * spread, sy + (my - sy) * .55, tx, my, tx, ty)];
     }
-    return { d: d, tx: tx, ty: ty, a: a };
+    return { segs: segs, tx: tx, ty: ty };
   }
-  function clawT(c) { return "translate(" + f1(c.tx) + " " + f1(c.ty) + ") rotate(" + c.a + ") translate(-13 0)"; }
+  function bz(q, t) { var u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t; return [a * q[0] + b * q[2] + c * q[4] + d * q[6], a * q[1] + b * q[3] + c * q[5] + d * q[7]]; }
+  function sample(segs, N) {
+    var raw = [], acc = [0], L = 0;
+    segs.forEach(function (q, k) { for (var j = k ? 1 : 0; j <= 24; j++) raw.push(bz(q, j / 24)); });
+    for (var j = 1; j < raw.length; j++) { L += Math.hypot(raw[j][0] - raw[j - 1][0], raw[j][1] - raw[j - 1][1]); acc.push(L); }
+    var out = [], m = 0;
+    for (var n = 0; n < N; n++) {
+      var s2 = L * n / (N - 1); while (m < acc.length - 2 && acc[m + 1] < s2) m++;
+      var span = acc[m + 1] - acc[m] || 1, f = (s2 - acc[m]) / span;
+      out.push([raw[m][0] + (raw[m + 1][0] - raw[m][0]) * f, raw[m][1] + (raw[m + 1][1] - raw[m][1]) * f]);
+    }
+    return { p: out, L: L };
+  }
   function srcPoint(el, g) { var b = el.getBoundingClientRect(); return { x: b.left + b.width / 2 - g.left, y: b.top + b.height / 2 - g.top }; }
+  var CLAW = '<g class="cl"><circle class="kn" r="3.4"/><path class="cp c0" d="M0 0 L13 0"/><path class="cp c1" d="M0 0 C5 -1 8 -7 13 -6"/><path class="cp c2" d="M0 0 C5 1 8 7 13 6"/></g>';
   function buildClaws(srcEl, tiles, anim) {
-    var g = sizeLinks(), s0 = srcPoint(srcEl, g), h = "", list = [], go = anim && !RM;
-    tiles.forEach(function (t, i) {
-      var c = curve(s0.x, s0.y, t.getBoundingClientRect(), g, i), dl = go ? i * .09 : 0;
-      var st = go ? 'style="animation-delay:' + dl.toFixed(2) + 's"' : 'style="animation:none;stroke-dashoffset:0"';
-      list.push({ t: t, dl: dl });
-      h += '<g class="arm" data-dl="' + dl.toFixed(2) + '"><path class="glow" pathLength="1" d="' + c.d + '" ' + st + '/><path class="ln" pathLength="1" d="' + c.d + '" ' + st + '/>' +
-        '<g class="clw" transform="' + clawT(c) + '"><g class="cl" style="animation-delay:' + (go ? (dl + .62).toFixed(2) : "0") + 's' + (go ? "" : ";animation:none") + '"><circle class="kn" r="3.4"/><path class="cp c0" d="M0 0 L13 0"/><path class="cp c1" d="M0 0 C5 -1 8 -7 13 -6"/><path class="cp c2" d="M0 0 C5 1 8 7 13 6"/></g></g>' +
-        '<circle class="pulse" r="3" cx="-99" cy="-99"/></g>';
-    });
-    h += '<circle class="src" cx="' + f1(s0.x) + '" cy="' + f1(s0.y) + '" r="7"/>';
-    return { h: h, list: list, src: srcEl };
+    var go = anim && !RM, list = tiles.map(function (t, i) { return { t: t, dl: go ? i * .09 : 0 }; });
+    var r = { list: list, src: srcEl, anim: go }; r.h = r; return r;
   }
-  function newSet(html, cls) { var el = document.createElementNS(SVGNS, "g"); if (cls) el.setAttribute("class", cls); el.innerHTML = html; linksSvg.appendChild(el); return el; }
-  function retract(set) { if (!set) return; if (RM) { set.remove(); return; } set.classList.add("ret"); setTimeout(function () { set.remove(); }, 480); }
+  /* Tentacle engine */
+  var SETS = [], tRaf = 0, lastF = 0;
+  function newSet(r, cls) {
+    var el = document.createElementNS(SVGNS, "g"); el.setAttribute("class", "tset" + (cls ? " " + cls : ""));
+    var feel = / feel/.test(" " + (cls || "")), chap = /chapclaw/.test(cls || "");
+    el.innerHTML = r.list.map(function (it, i) { return '<g class="arm"><path class="tb"/><path class="sk"/>' + (feel ? "" : '<g class="clw" style="opacity:0">' + CLAW.replace('class="cl"', 'class="cl" style="animation-delay:' + (r.anim ? (it.dl + .5).toFixed(2) : 0) + "s" + (r.anim ? "" : ";animation:none") + '"') + "</g>") + '<circle class="pulse" r="3"/></g>'; }).join("") + (feel ? "" : '<circle class="src" r="7"/>');
+    linksSvg.appendChild(el);
+    var set = { el: el, r: r, arms: el.querySelectorAll(".arm"), born: performance.now(), ret: 0, feel: feel, chap: chap, ph: Math.random() * 6.28 };
+    el._set = set; SETS.push(set); kick(); return el;
+  }
+  function retract(el) { if (!el || !el._set) return; var st = el._set; if (RM) { drop(st); return; } if (!st.ret) st.ret = performance.now(); kick(); }
+  function drop(st) { st.el.remove(); SETS = SETS.filter(function (x) { return x !== st; }); }
+  function kick() { if (!tRaf) tRaf = requestAnimationFrame(frame); }
+  function frame(now) {
+    tRaf = 0; if (!SETS.length) return;
+    var busy = SETS.some(function (st) { return st.ret || now - st.born < 2600; });
+    if (!busy && now - lastF < 32) { tRaf = requestAnimationFrame(frame); return; }
+    lastF = now;
+    var g = sizeLinks(), mob = oneCol();
+    SETS.slice().forEach(function (st) { drawSet(st, now, g, mob); });
+    if (SETS.length && !RM) tRaf = requestAnimationFrame(frame);
+  }
+  function drawSet(st, now, g, mob) {
+    var rr = 1;
+    if (st.ret) { var k = Math.min(1, (now - st.ret) / 380); rr = 1 - k * k; if (k >= 1) { drop(st); return; } }
+    var s0 = srcPoint(st.r.src, g), sc = st.el.querySelector(".src");
+    if (sc) { sc.setAttribute("cx", f1(s0.x)); sc.setAttribute("cy", f1(s0.y)); sc.style.opacity = rr; }
+    st.r.list.forEach(function (it, i) {
+      var arm = st.arms[i], el = now - st.born - it.dl * 1000, tb = arm.firstChild, sk = tb.nextSibling, clw = arm.querySelector(".clw"), pu = arm.querySelector(".pulse");
+      if (el < 0 && st.r.anim) { tb.setAttribute("d", ""); sk.setAttribute("d", ""); return; }
+      var c = curve(s0.x, s0.y, it.t.getBoundingClientRect(), g, i, st.r.list.length), N = 44, sm = sample(c.segs, N), P = sm.p, L = sm.L;
+      var reach = st.r.anim ? Math.min(1, el / (st.feel ? 420 : 640)) : 1; reach = 1 - Math.pow(1 - reach, 3); reach = Math.min(reach, rr);
+      var settle = st.r.anim ? Math.max(0, Math.min(1, (el - 640) / 800)) : 1, free = 1 - settle;
+      var A = RM ? 0 : (mob ? 5 : 8.5) * Math.min(1, L / 200) * (st.feel ? .6 : 1), W0 = st.feel ? 3 : mob ? 3.8 : 6.2, W1 = st.feel ? 1 : 1.3;
+      var Lv = Math.max(1, L * reach), nv = Math.max(2, Math.ceil((N - 1) * reach) + 1), pts = [], nr = [], w = [];
+      for (var j = 0; j < nv; j++) {
+        var fj = Math.min(j, (N - 1) * reach), j0 = Math.floor(fj), j1 = Math.min(N - 1, j0 + 1), f = fj - j0;
+        var x = P[j0][0] + (P[j1][0] - P[j0][0]) * f, y = P[j0][1] + (P[j1][1] - P[j0][1]) * f;
+        var ja = Math.max(0, j0 - 1), jb = Math.min(N - 1, j0 + 1), tx2 = P[jb][0] - P[ja][0], ty2 = P[jb][1] - P[ja][1], tl = Math.hypot(tx2, ty2) || 1, nx = -ty2 / tl, ny = tx2 / tl;
+        var s2 = L * fj / (N - 1), u = s2 / L, v = s2 / Lv;
+        var env = Math.sin(Math.PI * u) * settle + Math.pow(v, .85) * free;
+        var wave = Math.sin(s2 / (mob ? 90 : 115) * 6.283 - now * .0042 * (.55 + 1.1 * free) + st.ph + i * 1.9);
+        var off = A * (.42 + .9 * free) * env * wave;
+        pts.push([x + nx * off, y + ny * off]); nr.push([nx, ny]); w.push(W0 + (W1 - W0) * v);
+      }
+      var lft = "", rgt = "", suck = "";
+      for (j = 0; j < pts.length; j++) {
+        var hw = w[j] / 2, X = pts[j][0], Y = pts[j][1];
+        lft += (j ? "L" : "M") + f1(X + nr[j][0] * hw) + " " + f1(Y + nr[j][1] * hw);
+        rgt = "L" + f1(X - nr[j][0] * hw) + " " + f1(Y - nr[j][1] * hw) + rgt;
+        var vv = j / Math.max(1, pts.length - 1);
+        if (!st.feel && j % 4 === 2 && vv > .12 && vv < .82) { var sr = w[j] * .2, sx2 = X - nr[j][0] * w[j] * .12, sy2 = Y - nr[j][1] * w[j] * .12; suck += "M" + f1(sx2 - sr) + " " + f1(sy2) + "a" + f1(sr) + " " + f1(sr) + " 0 1 0 " + f1(2 * sr) + " 0a" + f1(sr) + " " + f1(sr) + " 0 1 0 " + f1(-2 * sr) + " 0"; }
+      }
+      tb.setAttribute("d", lft + rgt + "Z"); sk.setAttribute("d", suck);
+      var tp = pts[pts.length - 1], bp = pts[Math.max(0, pts.length - 4)], ang = Math.atan2(tp[1] - bp[1], tp[0] - bp[0]) * 57.2958;
+      if (clw) { clw.setAttribute("transform", "translate(" + f1(tp[0]) + " " + f1(tp[1]) + ") rotate(" + ang.toFixed(1) + ") translate(-11 0)"); clw.style.opacity = reach > .8 ? Math.min(1, (reach - .8) * 5 * rr) : 0; }
+      if (pu) {
+        if (settle > 0 && !st.feel && !st.chap && !/reel/.test(st.el.getAttribute("class"))) {
+          var uu = ((now - st.born) / 1700 + i * .17) % 1, q = pts[Math.min(pts.length - 1, Math.round(uu * (pts.length - 1)))];
+          pu.setAttribute("cx", f1(q[0])); pu.setAttribute("cy", f1(q[1])); pu.style.opacity = (Math.sin(uu * Math.PI) * settle * rr).toFixed(2);
+        } else pu.style.opacity = 0;
+      }
+    });
+  }
   function tugLater(r) {
     if (RM) return;
     r.list.forEach(function (it) {
@@ -1597,28 +1660,15 @@ button.gcard:hover { border-color: var(--ink); }
         var dx = s0.x - (b.left + b.width / 2 - g.left), dy = s0.y - (b.top + b.height / 2 - g.top), L = Math.sqrt(dx * dx + dy * dy) || 1;
         it.t.style.setProperty("--tx", f1(dx / L * 8) + "px"); it.t.style.setProperty("--ty", f1(dy / L * 8) + "px");
         it.t.classList.remove("tug"); void it.t.offsetWidth; it.t.classList.add("tug");
-        if (navigator.vibrate && oneCol() && it.t.getBoundingClientRect().top < innerHeight && it.t.getBoundingClientRect().bottom > 0) { try { navigator.vibrate(8); } catch (e) {} }
-      }, (it.dl + .9) * 1000);
+        if (navigator.vibrate && oneCol() && b.top < innerHeight && b.bottom > 0) { try { navigator.vibrate(8); } catch (e) {} }
+      }, (it.dl + .78) * 1000);
     });
   }
-  var pulseRaf = 0;
-  function startPulses() { if (!RM && !pulseRaf) pulseRaf = requestAnimationFrame(pulse); }
-  function pulse(now) {
-    pulseRaf = 0;
-    var arms = linksSvg.querySelectorAll("g:not(.ret):not(.feel):not(.reel) > .arm"); if (!arms.length) return;
-    arms.forEach(function (a) {
-      var ln = a.querySelector(".ln"), p = a.querySelector(".pulse");
-      if (!a._t0) { a._L = ln.getTotalLength(); a._t0 = now + (parseFloat(a.getAttribute("data-dl")) || 0) * 1000 + 950; }
-      var e = now - a._t0; if (e < 0) return;
-      var u = (e / 1500) % 1, pt = ln.getPointAtLength(u * a._L);
-      p.setAttribute("cx", f1(pt.x)); p.setAttribute("cy", f1(pt.y)); p.style.opacity = Math.sin(u * Math.PI).toFixed(2);
-    });
-    pulseRaf = requestAnimationFrame(pulse);
-  }
+  function startPulses() { kick(); }
   function tilesFor(k) { return Array.prototype.slice.call(grid.querySelectorAll(".t")).filter(function (t) { return (t.getAttribute("data-sk") || "").split(" ").indexOf(k) > -1; }); }
   function drawLinks(anim) {
     if (feelSet) { retract(feelSet); feelSet = null; }
-    if (mainSet) { if (anim) retract(mainSet); else mainSet.remove(); mainSet = null; }
+    if (mainSet) { if (anim) retract(mainSet); else if (mainSet._set) drop(mainSet._set); mainSet = null; }
     if (!curLens) return;
     var btn = $("lensBtns").querySelector('[aria-pressed="true"]'); if (!btn) return;
     var r = buildClaws(btn, Array.prototype.slice.call(grid.querySelectorAll(".t.lit")), anim);
@@ -1669,18 +1719,9 @@ button.gcard:hover { border-color: var(--ink); }
       t.classList.add("scat");
     });
     setTimeout(function () {
-      var r = buildClaws(w, tiles, true), set = newSet(r.h, "reel"), arms = set.querySelectorAll(".arm"), t0 = performance.now();
-      r.list.forEach(function (it) { setTimeout(function () { it.t.classList.add("gather"); it.t.classList.remove("scat"); }, (it.dl + .75) * 1000); });
-      (function follow(now) {
-        var g = sizeLinks(), s0 = srcPoint(w, g);
-        r.list.forEach(function (it, i) {
-          var c = curve(s0.x, s0.y, it.t.getBoundingClientRect(), g, i), a = arms[i];
-          a.querySelector(".ln").setAttribute("d", c.d); a.querySelector(".glow").setAttribute("d", c.d); a.querySelector(".clw").setAttribute("transform", clawT(c));
-        });
-        var sc = set.querySelector(".src"); sc.setAttribute("cx", f1(s0.x)); sc.setAttribute("cy", f1(s0.y));
-        if (now - t0 < 2100) requestAnimationFrame(follow);
-        else { retract(set); setTimeout(function () { tiles.forEach(function (t) { t.classList.remove("gather"); }); }, 400); }
-      })(t0);
+      var r = buildClaws(w, tiles, true), set = newSet(r.h, "reel");
+      r.list.forEach(function (it) { setTimeout(function () { it.t.classList.add("gather"); it.t.classList.remove("scat"); }, (it.dl + .7) * 1000); });
+      setTimeout(function () { retract(set); setTimeout(function () { tiles.forEach(function (t) { t.classList.remove("gather"); }); }, 400); }, 2100);
     }, 500);
   })();
   /* Chapters: scroll-linked headline reveals, a nav that tracks where you are, and claws that hand off to each chapter's tiles */
