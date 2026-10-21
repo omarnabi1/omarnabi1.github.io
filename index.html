@@ -527,6 +527,42 @@ table.lb tr.crai td:nth-child(2) { color: var(--blue); font-weight: 700; }
 
 /* Experience */
 .xp { list-style: none; padding: 0; margin: 0; display: grid; }
+/* Experience v2 */
+.xp2.roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; animation: fadeIn .3s ease; }
+.xg { display: grid; gap: 10px; align-content: start; }
+.xg-h { display: grid; gap: 1px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+.xg-h b { font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; }
+.xg-h span { font-size: .8rem; color: var(--muted); }
+.xg-r { display: grid; gap: 8px; }
+.xr { padding: 12px 14px; border-radius: 14px; background: var(--tile2); border: 1px solid var(--line); display: grid; gap: 4px; transition: border-color .2s, transform .2s; }
+.xr:hover { border-color: var(--ink); transform: translateY(-2px); }
+.xr.star { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
+.xr-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.xr-c { font-weight: 800; font-size: .98rem; display: inline-flex; align-items: center; gap: 6px; }
+.now-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+.xr-y { font-family: var(--mono); font-size: .62rem; color: var(--muted); white-space: nowrap; }
+.xr-r { font-size: .82rem; font-weight: 600; color: var(--ink) !important; }
+.xr-o { font-size: .84rem; line-height: 1.4; }
+.xr-k { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.kchip { font-family: var(--mono); font-size: .6rem; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--tile); color: var(--ink); cursor: pointer; }
+.kchip:hover { border-color: var(--acc); color: var(--acc); }
+.xp2.skills { display: grid; gap: 8px; animation: fadeIn .3s ease; }
+.xm-tip { font-size: .85rem; }
+.xm-wrap { overflow-x: auto; scrollbar-width: thin; }
+.xm { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+.xm th, .xm td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+.xm thead th { vertical-align: bottom; border-bottom: 2px solid var(--ink); }
+.xm tbody th { text-align: left; display: grid; gap: 0; padding-right: 12px; }
+.xm tbody th b { font-size: .88rem; } .xm tbody th span { font-size: .7rem; color: var(--muted); font-weight: 400; }
+.xm-k { font-family: var(--mono); font-size: .62rem; line-height: 1.25; color: var(--muted); background: none; border: 0; border-radius: 8px; padding: 6px 4px; cursor: pointer; max-width: 90px; }
+.xm-k:hover { color: var(--ink); }
+.xm-k.on { color: var(--acc-ink); background: var(--acc); }
+.xm td.col { background: var(--acc-soft); }
+.xm tr.lit th b { color: var(--acc); }
+.xm .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); animation: popC .35s cubic-bezier(.2,1.6,.4,1) both; }
+.xm td.col .dot { background: var(--acc); transform: scale(1.2); }
+.xm-out { font-size: .92rem; color: var(--ink) !important; min-height: 1.5em; }
+@media (max-width: 1080px) { .xp2.roles { grid-template-columns: minmax(0, 1fr); } }
 .xp li { border-top: 1px solid var(--line); }
 .xp button.row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto 20px; gap: 10px; align-items: baseline; padding: 11px 2px; background: none; border: 0; cursor: pointer; text-align: left; }
 .xp .role { font-weight: 700; }
@@ -990,10 +1026,10 @@ button.gcard:hover { border-color: var(--ink); }
       <div class="legend"><span><i style="background:var(--blue)"></i>Unify</span><span><i style="background:var(--acc)"></i>Build</span><span><i style="background:var(--muted)"></i>Translate</span></div>
     </section>
 
-    <section class="t w2" id="t-xp" data-sk="unify translate" aria-label="Experience">
+    <section class="t w4" id="t-xp" data-sk="unify translate" aria-label="Experience">
       <span class="lit-tag">Proof</span>
-      <div class="t-h"><span class="lbl">Experience</span><span class="hint">Tap a role</span></div>
-      <ul class="xp" id="xp"></ul>
+      <div class="t-h"><span class="lbl">Experience</span><div class="segs" id="xpView" role="radiogroup" aria-label="View"><button type="button" role="radio" data-v="roles" aria-checked="true">Roles</button><button type="button" role="radio" data-v="skills" aria-checked="false">Skills map</button></div></div>
+      <div class="xp2" id="xp2"></div>
     </section>
 
     <section class="t w2" data-sk="translate" aria-label="Journey">
@@ -1787,8 +1823,49 @@ button.gcard:hover { border-color: var(--ink); }
     { r: "Tech Expert to Genius team", c: "Apple", y: "2018", d: "Moved up quickly while studying cybersecurity at UNO.", b: [] },
     { r: "Legal", c: "The Judge Law Firm", y: "College years", d: "Worked here through college and a B.A. in Sociology with a law focus at CSULA (2016).", b: [] }
   ];
-  $("xp").innerHTML = XP.map(function (x, i) { return '<li><button type="button" class="row" aria-expanded="false" aria-controls="xd' + i + '"><span class="role">' + esc(x.r) + " <span>· " + esc(x.c) + '</span></span><span class="yr">' + esc(x.y) + '</span><span class="pm">+</span></button><div class="det" id="xd' + i + '" hidden>' + esc(x.d) + (x.b.length ? "<ul>" + x.b.map(function (b) { return "<li>" + esc(b) + "</li>"; }).join("") + "</ul>" : "") + "</div></li>"; }).join("");
-  $("xp").addEventListener("click", function (e) { var b = e.target.closest("button.row"); if (!b) return; var o = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", o ? "true" : "false"); b.querySelector(".pm").textContent = o ? "−" : "+"; $(b.getAttribute("aria-controls")).hidden = !o; });
+  /* Experience: grouped roles, and a skills map */
+  (function () {
+    var SK = [["id", "Identity and access"], ["auto", "Automation"], ["comp", "Compliance and audit"], ["vend", "Vendors and contracts"], ["sol", "Solution design"], ["ship", "Shipping product"], ["cust", "Customer-facing"], ["teach", "Training people"]];
+    var G = [
+      { g: "Enterprise IT", d: "Making real environments work as one", r: [
+        { c: "ManageEngine (Zoho)", r: "Enterprise Solutions Engineer", y: "Feb 2025 to now", o: "Design solutions across a 65+ product portfolio and plan each organization's path to fewer consoles.", k: ["sol", "id", "cust", "comp"], cur: 1 },
+        { c: "Royal Business Bank", r: "Banking Application Support", y: "Banking", o: "Supported core banking applications and carried a large share of IT compliance, contracts, renewals, and vendors.", k: ["comp", "vend", "cust"] },
+        { c: "Vroom", r: "IT Lead", y: "Aug 2020 to Jan 2024", o: "Automated identity for 10,000+ users in three phases. Onboarding went from about a week to 8 hours, offboarding to 2.", k: ["id", "auto", "teach", "vend"], star: 1 } ] },
+      { g: "Building", d: "Ideas taken all the way to shipped", r: [
+        { c: "CR-AI", r: "Builder", y: "Now", o: "Fine-tuned Mistral-7B with QLoRA to forecast world events from six kinds of sources.", k: ["ship", "auto"] },
+        { c: "Carvenience", r: "Founder", y: "Startup", o: "A two-sided marketplace for mobile auto services: customers on one side, providers on the other.", k: ["ship", "sol"] },
+        { c: "Ridey", r: "Co-founder", y: "Startup", o: "Co-founded a native iOS app and shipped it to the App Store.", k: ["ship"] },
+        { c: "Flatiron School", r: "Software engineering", y: "2020 to 2021", o: "Ruby, Sinatra, Rails, and JavaScript, one shipped project per phase. You can use all four above.", k: ["ship"] } ] },
+      { g: "Where it started", d: "Learning to translate for people", r: [
+        { c: "Apple", r: "Tech Expert to Genius team", y: "2018", o: "Moved up quickly while studying cybersecurity at UNO.", k: ["cust", "teach"] },
+        { c: "The Judge Law Firm", r: "Legal", y: "College years", o: "Legal analysis while finishing a B.A. in Sociology with a law focus at CSULA (2016).", k: ["comp", "cust"] } ] }
+    ];
+    var NM = {}; SK.forEach(function (x) { NM[x[0]] = x[1]; });
+    var box = $("xp2"), view = "roles", hot = null;
+    function roles() {
+      box.className = "xp2 roles";
+      box.innerHTML = G.map(function (g) {
+        return '<div class="xg"><div class="xg-h"><b>' + esc(g.g) + "</b><span>" + esc(g.d) + '</span></div><div class="xg-r">' + g.r.map(function (r) {
+          return '<article class="xr' + (r.star ? " star" : "") + '"><div class="xr-top"><span class="xr-c">' + esc(r.c) + (r.cur ? ' <i class="now-dot" title="Current"></i>' : "") + '</span><span class="xr-y">' + esc(r.y) + '</span></div><p class="xr-r">' + esc(r.r) + '</p><p class="xr-o">' + esc(r.o) + '</p><div class="xr-k">' + r.k.map(function (k) { return '<button type="button" class="kchip" data-k="' + k + '">' + esc(NM[k]) + "</button>"; }).join("") + "</div></article>";
+        }).join("") + "</div></div>";
+      }).join("");
+    }
+    function matrix() {
+      box.className = "xp2 skills";
+      var rows = []; G.forEach(function (g) { g.r.forEach(function (r) { rows.push(r); }); });
+      box.innerHTML = '<p class="xm-tip">Tap a skill to see where it came from.</p><div class="xm-wrap"><table class="xm"><thead><tr><th></th>' + SK.map(function (k) { return '<th><button type="button" class="xm-k' + (hot === k[0] ? " on" : "") + '" data-k="' + k[0] + '"><span>' + esc(k[1]) + "</span></button></th>"; }).join("") + "</tr></thead><tbody>" +
+        rows.map(function (r, i) { return '<tr class="' + (hot && r.k.indexOf(hot) > -1 ? "lit" : "") + '"><th scope="row"><b>' + esc(r.c) + "</b><span>" + esc(r.r) + "</span></th>" + SK.map(function (k, j) { var on = r.k.indexOf(k[0]) > -1; return '<td class="' + (hot === k[0] ? "col " : "") + '">' + (on ? '<i class="dot" style="animation-delay:' + (RM ? 0 : (i * 40 + j * 25)) + 'ms"></i>' : "") + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>" +
+        '<p class="xm-out" aria-live="polite">' + (hot ? "<b>" + esc(NM[hot]) + ":</b> " + esc(rows.filter(function (r) { return r.k.indexOf(hot) > -1; }).map(function (r) { return r.c; }).join(", ")) : "") + "</p>";
+    }
+    function render() { if (view === "roles") roles(); else matrix(); }
+    $("xpView").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; view = b.getAttribute("data-v"); $("xpView").querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-checked", x === b ? "true" : "false"); }); render(); });
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-k]"); if (!b) return; var k = b.getAttribute("data-k");
+      hot = hot === k && view === "skills" ? null : k; view = "skills";
+      $("xpView").querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-checked", x.getAttribute("data-v") === "skills" ? "true" : "false"); }); render();
+    });
+    render();
+  })();
 
   /* CR-AI pipeline */
   (function () {
@@ -2163,7 +2240,7 @@ button.gcard:hover { border-color: var(--ink); }
   })();
 
   /* =========== v12: x-ray mode =========== */
-  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine · plain-English mode", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-evo": "Four bootcamp apps rebuilt in vanilla JS · localStorage", "t-builds": "SVG pipeline · live weight model", "t-xp": "Accessible accordion", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "CSS phone · animated route", "t-carv": "Two-sided request flow · both apps in one tile", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
+  var XR = { "intro": "h1 + decoding text · rAF glyph scramble", "t-unify": "SVG + rAF · 3-phase tween · scenario engine · plain-English mode", "t-term": "Command parser · history · tab-complete", "t-nums": "Thermal receipt printer · count-up", "t-game": "Brier scoring · localStorage high score", "t-evo": "Four bootcamp apps rebuilt in vanilla JS · localStorage", "t-builds": "SVG pipeline · live weight model", "t-xp": "Grouped roles · skills matrix", "t-plan": "Rule-based plan engine · clipboard API", "t-contact": "Clipboard API · canvas confetti", "t-ridey": "CSS phone · animated route", "t-carv": "Two-sided request flow · both apps in one tile", "t-off": "Press-and-hold · simulated business clock", "t-cal": "Range scoring · animated number line", "t-s5": "Possession-by-possession Monte Carlo sim" };
   grid.querySelectorAll(".t").forEach(function (t) {
     var id = t.id || (t.classList.contains("intro") ? "intro" : ""), lab = XR[id];
     if (!lab) { var a = t.getAttribute("aria-label") || "Tile"; lab = a === "Skills" ? "Live SVG paths between DOM rects" : a === "Journey" ? "Range input · stepped timeline" : a === "Things you wouldn't guess" ? "Pointer events · swipe physics" : a === "Toolkit" ? "CSS marquee · pause on hover" : a === "Local time and contact" ? "Intl time zone clock" : a + " · HTML + CSS"; }
