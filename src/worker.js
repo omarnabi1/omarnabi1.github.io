@@ -122,6 +122,8 @@ async function envoyApi(req, env, ctx, url, path) {
     const c = cid(url.searchParams.get("c"));
     return json(c ? await hub.board(c) : { rows: [] }, 200, { "cache-control": "public, max-age=15" });
   }
+  if (path === "/api/envoy/ontology" && req.method === "GET") return json(await hub.ontology(cid(url.searchParams.get("c")) || ""), 200, { "cache-control": "public, max-age=60" });
+  if (path === "/api/envoy/backtest" && req.method === "GET") return json(await hub.backtest(), 200, { "cache-control": "public, max-age=300" });
   if (path === "/api/envoy/game" && req.method === "GET") {
     const id = gid(url.searchParams.get("id"));
     if (!id) return json({ error: "bad id" }, 400);
@@ -144,6 +146,11 @@ async function envoyApi(req, env, ctx, url, path) {
   const iph = await ipHash(req, env);
   if (path === "/api/envoy/build") {
     const r = await hub.build(typeof d.prompt === "string" ? d.prompt : "", iph);
+    return json(r, r.error ? 400 : 200);
+  }
+  if (path === "/api/envoy/lab") {
+    const ops = Array.isArray(d.ops) ? d.ops.filter((o) => o && typeof o === "object" && typeof o.op === "string").slice(0, 12) : [];
+    const r = await hub.lab(cid(d.c) || "", typeof d.text === "string" ? d.text.slice(0, 300) : "", ops, Number(d.n) || 200, iph);
     return json(r, r.error ? 400 : 200);
   }
   if (path === "/api/envoy/new") {

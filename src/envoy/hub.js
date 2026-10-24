@@ -4,7 +4,10 @@
 import { DurableObject } from "cloudflare:workers";
 import { CAMPAIGN_BY_ID } from "./campaigns.js";
 import { newGame, act, endMonth, resolveCrisis, setDifficulty, view, catalog, summaryOf, campaignOf, DIFFS } from "./engine.js";
-import { readMessage, buildCampaign } from "./llm.js";
+import { readMessage, buildCampaign, readHypothesis } from "./llm.js";
+import { compare, simulate, explain, parseSimple, applyHypothesis, structuralZone, MAX_RUNS } from "./lab.js";
+import { canonicalize, FAMILIES, LEVERS, ACTOR_KINDS } from "./ontology.js";
+import { BACKTESTS } from "./backtests.js";
 
 const GAME_TTL_MS = 7 * 24 * 3600 * 1000;
 const day = () => new Date().toISOString().slice(0, 10);
@@ -134,6 +137,58 @@ export class EnvoyHub extends DurableObject {
     }
     this.save(id, st);
     return { view: view(st), res };
+  }
+
+  /* ----- What-if Lab ----- */
+  // Runs the world N times with and without a hypothesis. text is translated to ops by CR-AI when the AI
+  // budget allows, by rules otherwise; ops passed directly are used as-is (the player edited them).
+  async lab(campId, text, ops, n, iph) {
+    const camp = CAMPAIGN_BY_ID[campId] || this.customById(campId);
+    if (!camp) return { error: "Unknown scenario." };
+    if (this.limited(iph, "lab", 30)) return { error: "Lots of experiments this hour. Try again a little later." };
+    let hyp = null, source = "ops";
+    if (Array.isArray(ops) && ops.length) hyp = { title: text, ops };
+    else {
+      const t = String(text || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 300);
+      if (t.split(/\s+/).length < 3) return { error: "Describe the what-if in a sentence." };
+      const k = "hyp|" + campId + "|" + t.toLowerCase();
+      const hit = this.sql.exec(`SELECT camp FROM custom WHERE k = ?`, k).toArray()[0];
+      if (hit) { hyp = JSON.parse(hit.camp); source = "cached"; }
+      else {
+        const env = this.env.AI && this.spend("msg") ? this.env : { ...this.env, AI: null };
+        const ai = await readHypothesis(env, camp, t);
+        if (ai && ai.error) return ai;
+        if (ai && ai.ops && ai.ops.length) { hyp = { title: ai.title || t, ops: ai.ops }; source = "ai"; }
+        else { const simple = parseSimple(camp, t); if (!simple.length) return { error: "CR-AI couldn't turn that into a change. Name a party or table, e.g. “Tehran drops its red line on missile caps”." }; hyp = { title: t, ops: simple }; source = "rules"; }
+        this.sql.exec(`INSERT OR REPLACE INTO custom (k, id, camp, prompt, at, plays) VALUES (?, ?, ?, ?, ?, 0)`, k, "h" + crypto.randomUUID().replace(/-/g, "").slice(0, 10), JSON.stringify(hyp), t, Date.now());
+      }
+    }
+    const runs = Math.max(50, Math.min(MAX_RUNS, Number(n) || 200));
+    const r = compare(camp, hyp, { n: runs });
+    if (r.error) return r;
+    r.source = source;
+    r.failures = { before: explain(r.base, camp), after: explain(r.after, camp) };
+    return r;
+  }
+  ontology(campId) {
+    const camp = campId ? CAMPAIGN_BY_ID[campId] || this.customById(campId) : null;
+    return { families: FAMILIES, levers: LEVERS, kinds: ACTOR_KINDS, campaign: camp ? canonicalize(camp) : null };
+  }
+  backtest() {
+    if (this._bt && Date.now() - this._bt.at < 3600 * 1000) return this._bt.r;
+    const fams = (H, ids) => [...new Set(ids.flatMap((id) => (H.clauses.find((c) => c.id === id) || { tags: [] }).tags))];
+    const cases = BACKTESTS.map((c) => {
+      const H = c.hotspots[0];
+      const z = structuralZone(c, H, { maxK: Math.max(3, H.history.clauses.length) });
+      const best = z.zone[0] ? z.zone[0].ids : [];
+      const real = canonicalize(c).tables[0].clauses.filter((x) => H.history.clauses.includes(x.id)).flatMap((x) => x.families);
+      const got = canonicalize(c).tables[0].clauses.filter((x) => best.includes(x.id)).flatMap((x) => x.families);
+      const realSet = [...new Set(real)], gotSet = [...new Set(got)];
+      return { id: c.id, title: c.title, name: H.name, year: c.year, type: c.type, signed: H.history.clauses.map((id) => (H.clauses.find((x) => x.id === id) || {}).name), found: best.map((id) => (H.clauses.find((x) => x.id === id) || {}).name), distractors: best.filter((id) => !H.history.clauses.includes(id)).length, recall: Math.round((realSet.filter((f) => gotSet.includes(f)).length / realSet.length) * 100), source: c.source };
+    });
+    const r = { cases, meanRecall: Math.round(cases.reduce((s, c) => s + c.recall, 0) / cases.length), distractors: cases.reduce((s, c) => s + c.distractors, 0), note: "In-sample: positions and ranking rules were written together. Held-out PA-X cases are the next step." };
+    this._bt = { at: Date.now(), r };
+    return r;
   }
 
   // Owner moderation: remove a player-built scenario (bad output or abusive prompt).

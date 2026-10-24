@@ -126,6 +126,33 @@ button { cursor: pointer; }
 .opt .m { font-family: var(--mono); font-size: .62rem; color: var(--acc); }
 .field { display: grid; gap: 6px; }
 .field input { padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile2); width: 100%; }
+.lab .labp { color: var(--muted); font-size: .92rem; margin: -2px 0 2px; }
+.lab .buildrow input { border-radius: 14px; }
+.lab .chip.ex, .ops .chip { white-space: normal; text-align: left; line-height: 1.35; }
+.labr { display: grid; gap: 12px; margin-top: 6px; }
+.verdict { font-weight: 800; font-size: 1.05rem; padding: 12px 14px; border-radius: 12px; background: var(--tile2); border: 1px solid var(--line); }
+.verdict.good { border-color: color-mix(in srgb, var(--blue) 50%, var(--line)); background: var(--blue-soft); }
+.verdict.bad { border-color: color-mix(in srgb, var(--acc) 50%, var(--line)); background: var(--acc-soft); }
+.ops { display: flex; gap: 6px; flex-wrap: wrap; }
+.ops .chip { cursor: pointer; }
+.ops .chip:hover { border-color: var(--acc); color: var(--acc); }
+.bars { display: grid; gap: 7px; }
+.bar { display: grid; grid-template-columns: minmax(90px, 160px) 1fr auto; gap: 10px; align-items: center; font-size: .86rem; }
+.bar .tr { position: relative; height: 10px; border-radius: 999px; background: var(--tile2); border: 1px solid var(--line); overflow: hidden; }
+.bar .tr i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: color-mix(in srgb, var(--muted) 45%, transparent); transition: width .6s; }
+.bar .tr b { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: var(--blue); opacity: .85; transition: width .8s; }
+.bar .d { font-family: var(--mono); font-size: .72rem; min-width: 84px; text-align: right; }
+.bar .d.up { color: var(--blue); } .bar .d.down { color: var(--acc); }
+.lab2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lab2 .box { background: var(--tile2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: .86rem; display: grid; gap: 6px; align-content: start; }
+.lab2 .box ul { margin: 0; padding-left: 16px; color: var(--muted); }
+.bt { margin-top: 4px; } .bt summary { cursor: pointer; list-style: none; } .bt summary::before { content: "▸ "; } .bt[open] summary::before { content: "▾ "; }
+.btw { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.btt { width: 100%; min-width: 520px; border-collapse: collapse; font-size: .82rem; margin-top: 8px; }
+.btt th, .btt td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.btt th { font-family: var(--mono); font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.btt td.num { font-family: var(--mono); white-space: nowrap; }
+@media (max-width: 780px) { .lab2 { grid-template-columns: 1fr; } .bar { grid-template-columns: 1fr; gap: 4px; } .bar .d { text-align: left; } }
 .under { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; margin: 14px 0 60px; }
 .rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .rules li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; color: var(--muted); font-size: .92rem; }
@@ -402,6 +429,16 @@ body.rm .hero h1 .sc path, body.rm .ko .sc path { stroke-dashoffset: 0; }
       </div>
     </section>
 
+    <section class="t lab" id="lab">
+      <div class="t-h"><span class="lbl">What-if Lab</span><span class="hint blue" id="labNote">Pick a world above</span></div>
+      <h3>"If this happened, I bet it would solve that." Test it.</h3>
+      <p class="labp">Describe a change in plain words. CR-AI turns it into concrete changes you can inspect, then plays the world hundreds of times with and without it. Deals are built from a shared vocabulary of interests, so the same lab runs on any conflict.</p>
+      <div class="buildrow"><input id="lq" maxlength="300" placeholder="Tehran drops its red line on missile caps · A lithium consortium funds Afghan schools · Moscow warms up" aria-label="Your what-if"><button class="btn" id="lgo" type="button">Test it</button></div>
+      <div class="chips" id="lex"></div>
+      <div id="labOut"></div>
+      <details class="bt"><summary class="lbl">How much to trust this · backtests on real agreements</summary><div id="btOut"><p style="color:var(--muted);font-size:.88rem">Loading…</p></div></details>
+    </section>
+
     <div class="under">
       <section class="t">
         <div class="t-h"><span class="lbl">How to win</span><span class="hint">60-second read</span></div>
@@ -545,6 +582,7 @@ body.rm .hero h1 .sc path, body.rm .ko .sc path { stroke-dashoffset: 0; }
     renderCamps(); renderDiffs();
     var tw = c.twists && c.twists.length ? c.twists : [];
     $("setupLbl").textContent = c.title + " · " + c.year;
+    $("labNote").textContent = "Testing on " + c.title;
     $("twists").innerHTML = tw.length ? tw.map(function (t) { return '<button type="button" class="opt" data-t="' + t.id + '" aria-pressed="' + (t.id === TWIST) + '"><b>' + esc(t.name) + "</b><small>" + esc(t.text) + "</small></button>"; }).join("") : '<p style="color:var(--muted)">' + esc(c.tagline) + "</p>";
     $("setup").hidden = false;
     $("setup").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -556,6 +594,61 @@ body.rm .hero h1 .sc path, body.rm .ko .sc path { stroke-dashoffset: 0; }
   $("diffs").addEventListener("click", function (e) { var b = e.target.closest("[data-d]"); if (!b) return; DIFF = b.getAttribute("data-d"); store.set("envoy-diff", DIFF); renderDiffs(); });
   $("bex").innerHTML = EXAMPLES.map(function (x) { return '<button type="button" class="chip ex" data-ex="' + esc(x) + '">' + esc(x) + "</button>"; }).join("");
   $("bex").addEventListener("click", function (e) { var b = e.target.closest("[data-ex]"); if (b) { $("bq").value = b.getAttribute("data-ex"); $("bq").focus(); } });
+  /* ================= WHAT-IF LAB ================= */
+  var LAB_EX = ["Tehran drops its red line on missile caps", "A lithium consortium funds Afghan girls' schools", "Moscow warms up", "Israel / Palestine cools down"];
+  var LAB = { ops: null, title: "" };
+  $("lex").innerHTML = LAB_EX.map(function (x) { return '<button type="button" class="chip ex" data-lex="' + esc(x) + '">' + esc(x) + "</button>"; }).join("");
+  $("lex").addEventListener("click", function (e) { var b = e.target.closest("[data-lex]"); if (b) { $("lq").value = b.getAttribute("data-lex"); $("lq").focus(); } });
+  $("lq").addEventListener("keydown", function (e) { if (e.key === "Enter") runLab(null); });
+  $("lgo").addEventListener("click", function () { runLab(null); });
+  function labWorld() { return PICK || (CAT && CAT.campaigns && CAT.campaigns[0]) || null; }
+  function opText(o) {
+    var m = { add_clause: "New term: " + (o.name || o.id), add_party: "New party: " + (o.name || o.id), shift: (o.party || "") + " shifts " + [].concat(o.wants || [], o.dislikes || [], o.red || []).join(" "), remove_red: (o.party || "") + " drops red line: " + o.tag, mood: (o.party || "") + (o.d > 0 ? " warmer +" : " colder ") + o.d, tension: (o.hs || "") + (o.d > 0 ? " heats +" : " cools ") + o.d, link: o.a + "↔" + o.b + " = " + o.w, resource: (o.party || "") + " resources change" };
+    return m[o.op] || o.op;
+  }
+  function runLab(ops) {
+    var c = labWorld(); if (!c) return;
+    var text = $("lq").value.trim();
+    if (!ops && text.split(/\s+/).length < 3) { $("lq").focus(); toast("Describe the what-if in a sentence."); return; }
+    $("lgo").disabled = true; $("lgo").textContent = "Running…";
+    $("labOut").innerHTML = '<p style="color:var(--muted);font-size:.9rem">CR-AI is reading your what-if, then playing <b>' + esc(c.title) + '</b> 200 times with it and 200 times without…</p>';
+    track("lab", { c: c.id });
+    api("/api/envoy/lab", { c: c.id, text: ops ? LAB.title : text, ops: ops || undefined, n: 200 }).then(function (r) {
+      $("lgo").disabled = false; $("lgo").textContent = "Test it";
+      if (r.error) { $("labOut").innerHTML = '<p style="color:var(--acc);font-size:.9rem">' + esc(r.error) + "</p>"; return; }
+      LAB.ops = r.hypothesis.ops; LAB.title = r.hypothesis.title;
+      renderLab(r, c);
+    });
+  }
+  function renderLab(r, c) {
+    var tone = /war odds|^Backfires/.test(r.verdict) ? "bad" : /^Strong|^Helps/.test(r.verdict) ? "good" : "";
+    var bars = r.tables.map(function (t) {
+      var d = t.delta, cls = d >= 5 ? "up" : d <= -5 ? "down" : "";
+      return '<div class="bar"><span>' + esc(t.name) + '</span><span class="tr" title="before ' + t.before + '%, after ' + t.after + '%"><i style="width:' + t.before + '%"></i><b style="width:' + t.after + '%"></b></span><span class="d ' + cls + '">' + t.before + "% → " + t.after + "%</span></div>";
+    }).join("");
+    var world = '<div class="bar"><span><b>World resolves</b></span><span class="tr"><i style="width:' + r.base.odds.win + '%"></i><b style="width:' + r.after.odds.win + '%"></b></span><span class="d ' + (r.delta.win >= 5 ? "up" : r.delta.win <= -5 ? "down" : "") + '">' + r.base.odds.win + "% → " + r.after.odds.win + "%</span></div>" +
+      '<div class="bar"><span><b>Tips into war</b></span><span class="tr"><i style="width:' + r.base.odds.war + '%"></i><b style="width:' + r.after.odds.war + '%"></b></span><span class="d ' + (r.delta.war >= 5 ? "down" : r.delta.war <= -5 ? "up" : "") + '">' + r.base.odds.war + "% → " + r.after.odds.war + "%</span></div>";
+    var H = null; (c.hotspots || []).some(function (h) { if (h.id === r.zone.table) { H = h; return true; } });
+    var name = function (ids) { return ids.join(" + "); };
+    $("labOut").innerHTML = '<div class="labr">' +
+      '<div class="verdict ' + tone + '">' + esc(r.verdict) + "</div>" +
+      '<div><span class="lbl">What CR-AI changed · click a change to drop it and rerun' + (r.source === "rules" ? " · rules-based read (AI offline)" : "") + '</span><div class="ops" style="margin-top:6px">' + r.hypothesis.ops.map(function (o, i) { return '<button type="button" class="chip" data-op="' + i + '" title="Remove this change">' + esc(opText(o)) + " ✕</button>"; }).join("") + "</div></div>" +
+      '<div><span class="lbl">Odds a deal is signed · ' + r.base.n + ' runs each · grey before, blue after</span><div class="bars" style="margin-top:6px">' + world + bars + "</div></div>" +
+      '<div class="lab2"><div class="box"><span class="lbl">Zone of agreement · ' + esc(r.zone.name) + '</span><div>' + r.zone.before + " → <b>" + r.zone.after + "</b> of " + r.zone.total + " possible packages could pass once everyone is at the table.</div>" + (r.zone.best.length ? "<div>Best package now: <b>" + esc(name(r.zone.best[0])) + "</b></div>" : "<div>No package can pass. Something structural has to move.</div>") + "</div>" +
+      '<div class="box"><span class="lbl">How it still fails</span><ul>' + r.failures.after.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>" + (r.sideEffects.length ? '<span class="lbl" style="margin-top:4px">Side effects</span><ul>' + r.sideEffects.map(function (t) { return "<li>" + esc(t.name) + ": " + t.before + "% → " + t.after + "%</li>"; }).join("") + "</ul>" : "") + "</div></div>" +
+      '<p style="color:var(--muted);font-size:.8rem;margin:0">Odds are inside the model: the same rules every scenario uses, with no tuning for this one. Thin-data parties vary run to run, so the spread reflects what CR-AI does not know.</p>' +
+      "</div>";
+    $("labOut").querySelector(".ops").addEventListener("click", function (e) { var b = e.target.closest("[data-op]"); if (!b) return; var ops = LAB.ops.filter(function (_, i) { return i !== +b.getAttribute("data-op"); }); if (!ops.length) { toast("Keep at least one change."); return; } runLab(ops); });
+  }
+  function loadBacktest() {
+    api("/api/envoy/backtest").then(function (r) {
+      if (r.error) { $("btOut").innerHTML = '<p style="color:var(--muted);font-size:.88rem">Backtests unavailable right now.</p>'; return; }
+      $("btOut").innerHTML = '<p style="font-size:.88rem;margin:8px 0 0">Six real agreements, encoded from the positions <b>before</b> each deal. The lab is asked for the best package it can find; we check how many of the real deal\'s interests it recovers and whether it picks any term that was on the table but never signed. Mean recall <b>' + r.meanRecall + '%</b>, wrong picks <b>' + r.distractors + '</b>.</p>' +
+        '<div class="btw"><table class="btt"><thead><tr><th>Agreement</th><th>Type</th><th>Lab\'s best package</th><th>Recall</th></tr></thead><tbody>' + r.cases.map(function (k) { return "<tr><td><b>" + esc(k.title) + "</b> · " + esc(k.name) + " " + k.year + "</td><td>" + esc(k.type) + "</td><td>" + esc(k.found.join(" + ")) + (k.distractors ? ' <span class="chip bad">' + k.distractors + " wrong</span>" : "") + '</td><td class="num">' + k.recall + "%</td></tr>"; }).join("") + "</tbody></table></div>" +
+        '<p style="color:var(--muted);font-size:.8rem;margin:8px 0 0">' + esc(r.note) + "</p>";
+    });
+  }
+  document.querySelector(".bt").addEventListener("toggle", function () { if (this.open && !this.loaded) { this.loaded = true; loadBacktest(); } });
   $("bq").addEventListener("keydown", function (e) { if (e.key === "Enter") buildIt(); });
   $("bgo").addEventListener("click", buildIt);
   function buildIt() {

@@ -3,6 +3,7 @@
 // AI layers (typed messages, generated campaigns) only ever feed bounded inputs into this file.
 
 import { CAMPAIGNS, CAMPAIGN_BY_ID } from "./campaigns.js";
+import { familiesOf } from "./ontology.js";
 
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, Math.round(v)));
 const CARD_ORDER = ["red", "goal", "flex"];
@@ -245,19 +246,9 @@ export function act(st, a, hid, opts = {}, ai = null) {
     case "deal": {
       const ids = [...new Set(opts.clauses || [])].filter((id) => H.clauses.some((c) => c.id === id));
       if (ids.length < 1 || ids.length > 3) return { error: "Pick 1 to 3 terms" };
+      if (contradicts(H, ids)) return { error: "Those terms contradict each other" };
       const tags = ["deal", ...ids.flatMap((id) => H.clauses.find((c) => c.id === id).tags)];
-      const votes = H.parties.map((p) => {
-        const s = h.parties[p.id];
-        if (s.walked) return { party: p.id, yes: false, why: "absent" };
-        if (crossesRed(p, tags)) return { party: p.id, yes: false, why: "red" };
-        const v = ids.reduce((x, id) => x + weight(p, H.clauses.find((c) => c.id === id)), 0) + (s.mood - 50) / 10;
-        const need = 2 - D(st).deal;
-        return { party: p.id, yes: v >= need, why: v >= need ? "yes" : "no" };
-      });
-      const yes = votes.filter((v) => v.yes).length;
-      const vetoNo = H.parties.filter((p) => p.veto && !votes.find((v) => v.party === p.id).yes);
-      const need = H.parties.length >= 3 ? H.parties.length - 1 : H.parties.length;
-      const passed = vetoNo.length === 0 && yes >= need;
+      const { votes, yes, passed, need } = voteOn(st, H, ids);
       out.votes = votes;
       out.passed = passed;
       out.need = need;
@@ -274,12 +265,14 @@ export function act(st, a, hid, opts = {}, ai = null) {
           const other = x === hid ? y : y === hid ? x : null;
           if (other && !st.hs[other].done) st.hs[other].tension = clamp(st.hs[other].tension - Math.round(10 * w));
         }
-        // A party that also sits at another table remembers what it won here.
+        // A party that also sits at another table remembers what it won here. Matching runs on the
+        // ontology's interest families, so a win on "recognition" here counts for "gdr_recognition" there.
+        const wonFams = familiesOf(tags.filter((t) => t !== "deal"));
         for (const p of H.parties) {
           for (const H2 of camp.hotspots) {
             if (H2.id === hid || st.hs[H2.id].done) continue;
             const p2 = H2.parties.find((x) => x.id === p.id);
-            if (p2 && tags.some((t) => p2.wants.includes(t))) st.hs[H2.id].parties[p.id].mood = clamp(st.hs[H2.id].parties[p.id].mood + 12);
+            if (p2 && (tags.some((t) => p2.wants.includes(t)) || familiesOf(p2.wants).some((f) => wonFams.includes(f)))) st.hs[H2.id].parties[p.id].mood = clamp(st.hs[H2.id].parties[p.id].mood + 12);
           }
         }
         log(st, "deal", `Deal signed in ${H.name}!`, { hs: hid, votes });
@@ -297,6 +290,30 @@ export function act(st, a, hid, opts = {}, ai = null) {
 }
 
 const cardName = (k) => ({ red: "red line", goal: "real goal", flex: "flexibility" })[k];
+
+// Clauses may declare excludes: [ids] (e.g. "single army now" vs "two armies"). A package holding both is void.
+export function contradicts(H, ids) {
+  const set = new Set(ids);
+  return ids.some((id) => ((H.clauses.find((c) => c.id === id) || {}).excludes || []).some((x) => set.has(x)));
+}
+
+// The one vote rule, shared by the deal action and the lab's package search. Pure: never mutates state.
+export function voteOn(st, H, ids) {
+  const h = st.hs[H.id];
+  const tags = ["deal", ...ids.flatMap((id) => H.clauses.find((c) => c.id === id).tags)];
+  const threshold = 2 - D(st).deal;
+  const votes = H.parties.map((p) => {
+    const s = h.parties[p.id];
+    if (s.walked) return { party: p.id, yes: false, why: "absent", v: null };
+    if (crossesRed(p, tags)) return { party: p.id, yes: false, why: "red", v: null };
+    const v = ids.reduce((x, id) => x + weight(p, H.clauses.find((c) => c.id === id)), 0) + (s.mood - 50) / 10;
+    return { party: p.id, yes: v >= threshold, why: v >= threshold ? "yes" : "no", v: Math.round(v * 10) / 10 };
+  });
+  const yes = votes.filter((v) => v.yes).length;
+  const vetoNo = H.parties.filter((p) => p.veto && !votes.find((v) => v.party === p.id).yes).map((p) => p.id);
+  const need = H.parties.length >= 3 ? H.parties.length - 1 : H.parties.length;
+  return { votes, yes, need, vetoNo, passed: vetoNo.length === 0 && yes >= need, threshold };
+}
 
 function walkOut(st, H, p, why, out) {
   const s = st.hs[H.id].parties[p.id];

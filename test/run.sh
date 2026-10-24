@@ -10,4 +10,7 @@ npx wrangler dev -c .wrangler.test.jsonc --port 8799 --ip 127.0.0.1 --persist-to
 PID=$!
 trap 'kill $PID 2>/dev/null; rm -rf "$STATE" .wrangler.test.jsonc' EXIT
 for i in $(seq 1 60); do curl -sf -m 2 http://127.0.0.1:8799/api/health >/dev/null && break; sleep 1; done
+node test/envoy-lab.mjs
+node test/envoy-backtest.mjs
 BASE=http://127.0.0.1:8799 node test/e2e.mjs
+BASE=http://127.0.0.1:8799 node test/envoy-lab-e2e.mjs
