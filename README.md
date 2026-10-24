@@ -79,10 +79,14 @@ same machinery runs on any conflict, curated or built live by CR-AI.
   every op and can drop any of them. Without AI, `lab.parseSimple()` handles the simple shapes.
 - `src/envoy/backtests.js` — six resolved conflicts (Dayton 1995, Helsinki/Aceh 2005, Havana/Colombia 2016,
   Chittagong Hill Tracts 1997, Bougainville 2001, Sudan CPA 2005) encoded from positions before the deal,
-  with terms that were debated but not signed as distractors. `test/envoy-backtest.mjs` asks the lab for
-  its best package and scores interest-family recall and wrong picks. Current: 91% recall, 0 distractors,
-  in-sample (positions and ranking rules were written together). The game's own 3-term deal cap holds the
-  "played" line at 59%: real framework agreements bundle 5 or 6 provisions.
+  with terms that were debated but not signed as distractors. `test/envoy-backtest.mjs` scores the lab's
+  best package by clause overlap with the real text, next to two one-line rules on the same encodings
+  ("every clause nobody red-lines", "net-positive and no red line") and a chance score. Current: lab 87%
+  with 0 wrong picks; the no-red-line rule scores 94% with 2 wrong picks; chance 54%. So on these six
+  cases the lab does not beat a trivial rule, and the positions were encoded by the same hand that wrote
+  the ranking. This is a smoke test against circularity, not validation. Validation needs held-out PA-X
+  cases encoded independently. The game's own 3-term deal cap also matters: real framework agreements
+  bundle 5 or 6 provisions.
 - `src/envoy/pax.js` + `scripts/pax-import.mjs` — PA-X category to family mapping and a CSV importer for
   the real dataset (download it from peaceagreements.org; it is not fetched or committed). Held-out PA-X
   cases encoded independently are the next step that would make the backtest numbers mean something.

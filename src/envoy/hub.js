@@ -5,7 +5,7 @@ import { DurableObject } from "cloudflare:workers";
 import { CAMPAIGN_BY_ID } from "./campaigns.js";
 import { newGame, act, endMonth, resolveCrisis, setDifficulty, view, catalog, summaryOf, campaignOf, DIFFS } from "./engine.js";
 import { readMessage, buildCampaign, readHypothesis } from "./llm.js";
-import { compare, simulate, explain, parseSimple, applyHypothesis, structuralZone, MAX_RUNS } from "./lab.js";
+import { compare, simulate, explain, parseSimple, applyHypothesis, structuralZone, scoreCase, MAX_RUNS } from "./lab.js";
 import { canonicalize, FAMILIES, LEVERS, ACTOR_KINDS } from "./ontology.js";
 import { BACKTESTS } from "./backtests.js";
 
@@ -176,17 +176,14 @@ export class EnvoyHub extends DurableObject {
   }
   backtest() {
     if (this._bt && Date.now() - this._bt.at < 3600 * 1000) return this._bt.r;
-    const fams = (H, ids) => [...new Set(ids.flatMap((id) => (H.clauses.find((c) => c.id === id) || { tags: [] }).tags))];
+    const nm = (H, ids) => ids.map((id) => (H.clauses.find((x) => x.id === id) || {}).name || id);
     const cases = BACKTESTS.map((c) => {
-      const H = c.hotspots[0];
-      const z = structuralZone(c, H, { maxK: Math.max(3, H.history.clauses.length) });
-      const best = z.zone[0] ? z.zone[0].ids : [];
-      const real = canonicalize(c).tables[0].clauses.filter((x) => H.history.clauses.includes(x.id)).flatMap((x) => x.families);
-      const got = canonicalize(c).tables[0].clauses.filter((x) => best.includes(x.id)).flatMap((x) => x.families);
-      const realSet = [...new Set(real)], gotSet = [...new Set(got)];
-      return { id: c.id, title: c.title, name: H.name, year: c.year, type: c.type, signed: H.history.clauses.map((id) => (H.clauses.find((x) => x.id === id) || {}).name), found: best.map((id) => (H.clauses.find((x) => x.id === id) || {}).name), distractors: best.filter((id) => !H.history.clauses.includes(id)).length, recall: Math.round((realSet.filter((f) => gotSet.includes(f)).length / realSet.length) * 100), source: c.source };
+      const H = c.hotspots[0]; const r = scoreCase(c);
+      return { id: c.id, title: c.title, name: H.name, year: c.year, type: c.type, signed: nm(H, r.signed), found: nm(H, r.lab.ids), jaccard: Math.round(r.lab.jaccard * 100), distractors: r.lab.distractors, noRed: Math.round(r.noRed.jaccard * 100), noRedDis: r.noRed.distractors, netPos: Math.round(r.netPos.jaccard * 100), netPosDis: r.netPos.distractors, permutation: Math.round(r.permutation * 100), source: c.source };
     });
-    const r = { cases, meanRecall: Math.round(cases.reduce((s, c) => s + c.recall, 0) / cases.length), distractors: cases.reduce((s, c) => s + c.distractors, 0), note: "In-sample: positions and ranking rules were written together. Held-out PA-X cases are the next step." };
+    const mean = (k) => Math.round(cases.reduce((s, c) => s + c[k], 0) / cases.length);
+    const r = { cases, mean: { lab: mean("jaccard"), noRed: mean("noRed"), netPos: mean("netPos"), permutation: mean("permutation") }, distractors: { lab: cases.reduce((s, c) => s + c.distractors, 0), noRed: cases.reduce((s, c) => s + c.noRedDis, 0), netPos: cases.reduce((s, c) => s + c.netPosDis, 0) },
+      note: "Smoke test, not validation: the positions were encoded by the same hand that wrote the ranking rules, and a one-line rule does about as well on them. Held-out PA-X cases encoded independently are what would make these numbers mean something." };
     this._bt = { at: Date.now(), r };
     return r;
   }

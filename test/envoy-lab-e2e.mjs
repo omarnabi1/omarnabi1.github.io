@@ -10,7 +10,7 @@ ok(ont.families && ont.families.security && ont.campaign && ont.campaign.tables.
 ok(ont.campaign.tables[0].actors.some((a) => a.kind === "armed" && !a.playable), "armed actors are flagged AI-only");
 
 const bt = await fetch(BASE + "/api/envoy/backtest").then(j);
-ok(bt.cases && bt.cases.length === 6 && bt.meanRecall >= 60, `backtest endpoint: ${bt.cases && bt.cases.length} cases, mean recall ${bt.meanRecall}%, distractors ${bt.distractors}`);
+ok(bt.cases && bt.cases.length === 6 && bt.mean && bt.mean.lab > bt.mean.permutation, `backtest endpoint: ${bt.cases && bt.cases.length} cases, lab ${bt.mean && bt.mean.lab}% vs rules ${bt.mean && bt.mean.noRed}%/${bt.mean && bt.mean.netPos}% vs chance ${bt.mean && bt.mean.permutation}%`);
 
 const post = (b) => fetch(BASE + "/api/envoy/lab", { method: "POST", headers: { "content-type": "application/json", origin: BASE }, body: JSON.stringify(b) }).then(j);
 const r1 = await post({ c: "now", text: "Tehran drops its red line on missile caps and Washington warms up", n: 120 });

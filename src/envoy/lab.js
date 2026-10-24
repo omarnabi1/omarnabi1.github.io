@@ -392,3 +392,24 @@ export function parseSimple(camp, text) {
 }
 
 export { canonicalize, familyOf, familiesOf, kindOf };
+
+/* ---------- backtest scoring (shared by test/envoy-backtest.mjs and the API) ---------- */
+// Clause-level Jaccard against the real agreement (not family recall, which almost any large package
+// satisfies), plus two one-line baselines and a permutation score, so the lab is judged against what a
+// trivial rule achieves on the same encodings rather than against zero.
+export function scoreCase(camp) {
+  const H = camp.hotspots[0];
+  const signed = new Set(H.history.clauses);
+  const k = Math.max(3, signed.size);
+  const jac = (ids) => { const a = new Set(ids); const inter = [...a].filter((x) => signed.has(x)).length; const uni = new Set([...a, ...signed]).size; return uni ? inter / uni : 0; };
+  const dis = (ids) => ids.filter((id) => !signed.has(id)).length;
+  const lab = structuralZone(camp, H, { maxK: k }).zone[0];
+  const labIds = lab ? lab.ids : [];
+  const noRed = H.clauses.filter((c) => !H.parties.some((p) => crossesRed(p, c.tags))).map((c) => c.id);
+  const netPos = H.clauses.filter((c) => !H.parties.some((p) => crossesRed(p, c.tags)) && H.parties.reduce((t, p) => t + weight(p, c), 0) > 0).map((c) => c.id);
+  // Permutation: the lab's package scored against random "signed" sets of the same size, averaged.
+  let perm = 0; const all = H.clauses.map((c) => c.id); let seed = 11;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 4294967296; };
+  for (let t = 0; t < 50; t++) { const pool = all.slice().sort(() => rnd() - 0.5).slice(0, signed.size); const fake = new Set(pool); const a = new Set(labIds); const inter = [...a].filter((x) => fake.has(x)).length; perm += inter / new Set([...a, ...fake]).size; }
+  return { lab: { ids: labIds, jaccard: jac(labIds), distractors: dis(labIds) }, noRed: { ids: noRed, jaccard: jac(noRed), distractors: dis(noRed) }, netPos: { ids: netPos, jaccard: jac(netPos), distractors: dis(netPos) }, permutation: perm / 50, signed: [...signed] };
+}
