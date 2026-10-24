@@ -178,10 +178,12 @@ function pickCrisis(st) {
 // The same sensible player used by the balance test. Deterministic given the state. Focus goes to the
 // two tables with open talks or the warmest parties. Known weakness, kept on purpose: it will chase a
 // table that warmed up but still cannot close. compare() reports that cost separately as "attention".
-export function mediatorTurn(st) {
+// opts.first: a table id the mediator works before any other while it is open. Used by compare() to
+// measure a hypothesis on its own table like-for-like, free of which table happens to look warmest.
+export function mediatorTurn(st, opts = {}) {
   const camp = campaignOf(st);
   if (st.crisis) resolveCrisis(st, pickCrisis(st));
-  const open = camp.hotspots.filter((H) => !st.hs[H.id].done).sort((a, b) => (st.hs[b.id].talks - st.hs[a.id].talks) || (avgMood(st, b) - avgMood(st, a)));
+  const open = camp.hotspots.filter((H) => !st.hs[H.id].done).sort((a, b) => ((b.id === opts.first) - (a.id === opts.first)) || (st.hs[b.id].talks - st.hs[a.id].talks) || (avgMood(st, b) - avgMood(st, a)));
   let guard = 0;
   while (st.envoys > 0 && !st.ended && guard++ < 12) {
     let did = false;
@@ -237,7 +239,7 @@ export function simulate(camp, opts = {}) {
     const c = uncertain ? perturb(camp, seed ^ 0x9e3779b9).camp : camp;
     const st = newGame(c.id, seed, opts.twist || "asis", c, diff);
     let guard = 0;
-    while (!st.ended && guard++ < 60) mediatorTurn(st);
+    while (!st.ended && guard++ < 60) mediatorTurn(st, { first: opts.first });
     tally[st.outcome || "timeout"] += 1;
     scores.push(st.score || 0);
     if (st.outcome === "win") winMonths.push(st.month);
@@ -286,22 +288,32 @@ export function compare(camp, hyp, opts = {}) {
   if (!applied.applied.length) return { error: "No change could be applied. Name a table and a party or clause that exists." };
   const after = simulate(applied.camp, opts);
   const delta = { win: Math.round((after.odds.win - base.odds.win) * 10) / 10, war: Math.round((after.odds.war - base.odds.war) * 10) / 10 };
+  const touched = applied.applied.map((o) => o.hs).find((id) => camp.hotspots.some((h) => h.id === id)) || camp.hotspots[0].id;
+  // The target table is measured like-for-like: both worlds played with the mediator working it first.
+  // Otherwise the result mostly reflects which table happened to look warmest to the mediator.
+  const baseF = simulate(camp, { ...opts, first: touched }), afterF = simulate(applied.camp, { ...opts, first: touched });
   const tables = camp.hotspots.map((H) => {
-    const a = base.tables.find((t) => t.id === H.id), b = after.tables.find((t) => t.id === H.id);
-    return { id: H.id, name: H.name, before: a.signed, after: b.signed, delta: Math.round((b.signed - a.signed) * 10) / 10 };
+    const focused = H.id === touched;
+    const a = (focused ? baseF : base).tables.find((t) => t.id === H.id), b = (focused ? afterF : after).tables.find((t) => t.id === H.id);
+    return { id: H.id, name: H.name, before: a.signed, after: b.signed, delta: Math.round((b.signed - a.signed) * 10) / 10, focused };
   });
   // Structural zone of agreement on the touched table: packages that pass once everyone is at the table
   // (mood 60, nobody walked). Independent of how the first months go.
-  const touched = applied.applied.map((o) => o.hs).find((id) => camp.hotspots.some((h) => h.id === id)) || camp.hotspots[0].id;
   const H0 = camp.hotspots.find((h) => h.id === touched), H1 = applied.camp.hotspots.find((h) => h.id === touched);
   const z0 = structuralZone(camp, H0, opts), z1 = structuralZone(applied.camp, H1, opts);
   const target = tables.find((t) => t.id === touched);
+  target.medianBefore = baseF.tables.find((t) => t.id === touched).medianMonth;
+  target.medianAfter = afterF.tables.find((t) => t.id === touched).medianMonth;
+  target.unit = camp.unit || "Month";
+  const short = (id) => (H1.parties.find((p) => p.id === id) || { short: id }).short;
+  const blockers = { before: blockersOf(z0.all).map(short), after: blockersOf(z1.all).map(short) };
+  const zone = { table: touched, name: H0.name, before: z0.zone.length, after: z1.zone.length, total: z1.all.length, best: z1.zone.slice(0, 3).map((p) => p.ids), bestBefore: z0.zone.slice(0, 3).map((p) => p.ids), blockers };
   return {
     hypothesis: { title: clip(hyp && hyp.title, 120) || "Untitled what-if", ops: applied.applied, warnings: applied.warnings },
-    base, after, delta, tables,
-    zone: { table: touched, name: H0.name, before: z0.zone.length, after: z1.zone.length, total: z1.all.length, best: z1.zone.slice(0, 3).map((p) => p.ids), bestBefore: z0.zone.slice(0, 3).map((p) => p.ids) },
+    base, after, delta, tables, focused: { before: baseF.odds, after: afterF.odds },
+    zone,
     sideEffects: tables.filter((t) => t.id !== touched && Math.abs(t.delta) >= 5),
-    verdict: verdictOf(target, delta),
+    verdict: verdictOf(target, delta, zone, blockers),
   };
 }
 export function structuralZone(camp, H, opts = {}) {
@@ -310,16 +322,28 @@ export function structuralZone(camp, H, opts = {}) {
   const all = searchPackages(st, H, opts.maxK || 3);
   return { all, zone: all.filter((p) => p.passed) };
 }
-function verdictOf(target, delta) {
-  const t = target ? target.delta : 0;
-  const at = t >= 30 ? `${target.name} resolves far more often (${target.before}% to ${target.after}%)` : t >= 10 ? `${target.name} resolves more often (${target.before}% to ${target.after}%)` : t <= -10 ? `${target.name} resolves less often (${target.before}% to ${target.after}%)` : `${target ? target.name : "the target"} barely moves (${target ? target.before + "% to " + target.after + "%" : ""})`;
-  const lead = t >= 30 ? "Strong" : t >= 10 ? "Helps" : t <= -10 ? "Backfires" : "Marginal";
-  // The world line: did pursuing this cost the other tables? That is the mediator's attention, not the idea.
+// Verdict leads with structure (which packages can pass, who blocks), because that is what the backtests
+// validate. The dynamic lines are secondary: they depend on the mediator's attention as much as the idea.
+function verdictOf(target, delta, zone, blockers) {
+  const z0 = zone.before, z1 = zone.after;
+  let lead, at;
+  if (z1 === 0) { lead = "Still blocked"; at = `no package can pass on ${zone.name}${blockers.after.length ? `: ${blockers.after.join(" and ")} cannot both sign` : ""}`; }
+  else if (z0 === 0) { lead = "Opens the door"; at = `${zone.name} goes from no possible deal to ${z1} package${z1 > 1 ? "s" : ""} that could pass`; }
+  else if (z1 >= z0 * 1.5) { lead = "Widens the deal space"; at = `${z0} to ${z1} of ${zone.total} packages could pass on ${zone.name}`; }
+  else if (z1 < z0) { lead = "Narrows the deal space"; at = `${z0} to ${z1} packages could pass on ${zone.name}`; }
+  else { lead = "Marginal"; at = `the deal space on ${zone.name} barely changes (${z0} to ${z1} packages)`; }
+  if (target && target.medianBefore && target.medianAfter && target.medianAfter !== target.medianBefore) at += `; with a mediator's full attention it closes in ${target.unit.toLowerCase()} ${target.medianAfter} instead of ${target.medianBefore}`;
   let world = "";
-  if (delta.war >= 10) world = ` But chasing it costs the world: war odds ${Math.round(delta.war)} points higher as other tables flare.`;
-  else if (delta.win <= -8) world = ` The world as a whole resolves less often (${Math.round(-delta.win)} points): effort shifts away from tables that were closing.`;
+  if (delta.war >= 10) world = ` Left to a mediator that follows the warmth, the whole world does worse: war odds ${Math.round(delta.war)} points higher, because attention shifts to this table while others flare.`;
+  else if (delta.win <= -8) world = ` The world as a whole resolves less often (${Math.round(-delta.win)} points) as attention shifts to this table.`;
   else if (delta.win >= 8) world = ` The world as a whole resolves more often too (${Math.round(delta.win)} points).`;
   return `${lead}: ${at}.${world}`;
+}
+// Who stops a deal: parties that veto or hit a red line in the most packages.
+function blockersOf(all) {
+  const n = {};
+  for (const p of all) { for (const id of p.vetoNo) n[id] = (n[id] || 0) + 1; for (const id of p.red) n[id] = (n[id] || 0) + 2; }
+  return Object.entries(n).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([id]) => id);
 }
 
 /* ---------- failure modes in words ---------- */

@@ -621,9 +621,13 @@ body.rm .hero h1 .sc path, body.rm .ko .sc path { stroke-dashoffset: 0; }
     });
   }
   function renderLab(r, c) {
-    var tone = /war odds|^Backfires/.test(r.verdict) ? "bad" : /^Strong|^Helps/.test(r.verdict) ? "good" : "";
+    var tone = /^Narrows|^Still blocked/.test(r.verdict) ? "bad" : /^Widens|^Opens/.test(r.verdict) ? "good" : "";
     var bars = r.tables.map(function (t) {
       var d = t.delta, cls = d >= 5 ? "up" : d <= -5 ? "down" : "";
+      if (t.focused) {
+        var u = (t.unit || "Month").toLowerCase(), mb = t.medianBefore, ma = t.medianAfter, mcls = ma && mb ? (ma < mb ? "up" : ma > mb ? "down" : "") : "";
+        return '<div class="bar"><span>' + esc(t.name) + ' <span class="lbl">· worked first</span></span><span class="tr" title="time to close with full attention"><i style="width:' + (mb ? Math.min(100, mb / 12 * 100) : 0) + '%"></i><b style="width:' + (ma ? Math.min(100, ma / 12 * 100) : 0) + '%"></b></span><span class="d ' + mcls + '">' + (mb ? "closes by " + u + " " + mb : "never closes") + " → " + (ma ? u + " " + ma : "never") + "</span></div>";
+      }
       return '<div class="bar"><span>' + esc(t.name) + '</span><span class="tr" title="before ' + t.before + '%, after ' + t.after + '%"><i style="width:' + t.before + '%"></i><b style="width:' + t.after + '%"></b></span><span class="d ' + cls + '">' + t.before + "% → " + t.after + "%</span></div>";
     }).join("");
     var world = '<div class="bar"><span><b>World resolves</b></span><span class="tr"><i style="width:' + r.base.odds.win + '%"></i><b style="width:' + r.after.odds.win + '%"></b></span><span class="d ' + (r.delta.win >= 5 ? "up" : r.delta.win <= -5 ? "down" : "") + '">' + r.base.odds.win + "% → " + r.after.odds.win + "%</span></div>" +
@@ -633,10 +637,10 @@ body.rm .hero h1 .sc path, body.rm .ko .sc path { stroke-dashoffset: 0; }
     $("labOut").innerHTML = '<div class="labr">' +
       '<div class="verdict ' + tone + '">' + esc(r.verdict) + "</div>" +
       '<div><span class="lbl">What CR-AI changed · click a change to drop it and rerun' + (r.source === "rules" ? " · rules-based read (AI offline)" : "") + '</span><div class="ops" style="margin-top:6px">' + r.hypothesis.ops.map(function (o, i) { return '<button type="button" class="chip" data-op="' + i + '" title="Remove this change">' + esc(opText(o)) + " ✕</button>"; }).join("") + "</div></div>" +
-      '<div><span class="lbl">Odds a deal is signed · ' + r.base.n + ' runs each · grey before, blue after</span><div class="bars" style="margin-top:6px">' + world + bars + "</div></div>" +
-      '<div class="lab2"><div class="box"><span class="lbl">Zone of agreement · ' + esc(r.zone.name) + '</span><div>' + r.zone.before + " → <b>" + r.zone.after + "</b> of " + r.zone.total + " possible packages could pass once everyone is at the table.</div>" + (r.zone.best.length ? "<div>Best package now: <b>" + esc(name(r.zone.best[0])) + "</b></div>" : "<div>No package can pass. Something structural has to move.</div>") + "</div>" +
+      '<div><span class="lbl">Odds a deal is signed in ' + r.base.n + ' simulated runs · grey before, blue after · CR-AI\'s mediator plays the world freely; the target table is also measured with the mediator working it first</span><div class="bars" style="margin-top:6px">' + world + bars + "</div></div>" +
+      '<div class="lab2"><div class="box"><span class="lbl">Zone of agreement · ' + esc(r.zone.name) + '</span><div>' + r.zone.before + " → <b>" + r.zone.after + "</b> of " + r.zone.total + " possible packages could pass once everyone is at the table.</div>" + (r.zone.best.length ? "<div>Best package now: <b>" + esc(name(r.zone.best[0])) + "</b></div>" : "<div>No package can pass. Something structural has to move.</div>") + (r.zone.blockers && r.zone.blockers.after.length ? "<div>Blocks the most packages: <b>" + esc(r.zone.blockers.after.join(", ")) + "</b></div>" : "") + "</div>" +
       '<div class="box"><span class="lbl">How it still fails</span><ul>' + r.failures.after.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>" + (r.sideEffects.length ? '<span class="lbl" style="margin-top:4px">Side effects</span><ul>' + r.sideEffects.map(function (t) { return "<li>" + esc(t.name) + ": " + t.before + "% → " + t.after + "%</li>"; }).join("") + "</ul>" : "") + "</div></div>" +
-      '<p style="color:var(--muted);font-size:.8rem;margin:0">Odds are inside the model: the same rules every scenario uses, with no tuning for this one. Thin-data parties vary run to run, so the spread reflects what CR-AI does not know.</p>' +
+      '<p style="color:var(--muted);font-size:.8rem;margin:0">The deal space is what the backtests validate. The run odds are inside the model, with no tuning for this scenario, and depend on where CR-AI\'s mediator spends its attention as much as on your idea. Thin-data parties vary run to run, so the spread reflects what CR-AI does not know.</p>' +
       "</div>";
     $("labOut").querySelector(".ops").addEventListener("click", function (e) { var b = e.target.closest("[data-op]"); if (!b) return; var ops = LAB.ops.filter(function (_, i) { return i !== +b.getAttribute("data-op"); }); if (!ops.length) { toast("Keep at least one change."); return; } runLab(ops); });
   }

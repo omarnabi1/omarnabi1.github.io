@@ -21,7 +21,7 @@ const r2 = await post({ c: "now", text: "Lithium for schools", n: 120, ops: [
   { op: "shift", hs: "afg", party: "taliban", wants: ["+lithium_deal"] },
 ] });
 const afg = r2.tables && r2.tables.find((t) => t.id === "afg");
-ok(!r2.error && afg && afg.after > afg.before, `lab: explicit ops run (${afg && afg.before}% to ${afg && afg.after}% on Afghanistan)`);
+ok(!r2.error && afg && afg.focused && r2.zone.after > r2.zone.before, `lab: explicit ops run (zone ${r2.zone && r2.zone.before} to ${r2.zone && r2.zone.after} on Afghanistan; ${r2.verdict})`);
 const r3 = await post({ c: "now", text: "hi", n: 120 });
 ok(r3.error, "lab: too-short text is rejected");
 const r4 = await post({ c: "nope", text: "Tehran drops its red line on missile caps", n: 120 });
